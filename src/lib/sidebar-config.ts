@@ -57,6 +57,12 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: "Users",
     href: "/hoccr",
     roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD"],
+    children: [
+      { id: "hoccr-operations", label: "Operations", icon: "Activity", href: "/hoccr/operations", roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD"] },
+      { id: "hoccr-culture", label: "Culture", icon: "Heart", href: "/hoccr/culture", roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD"] },
+      { id: "hoccr-hiring", label: "Hiring", icon: "UserPlus", href: "/hoccr/hiring", roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD"] },
+      { id: "hoccr-reports", label: "Reports", icon: "BarChart3", href: "/hoccr/reports", roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD"] },
+    ],
   },
   {
     id: "vritti",
@@ -80,6 +86,20 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     roles: ["ADMIN", "HEAD_HR"],
   },
   {
+    id: "departments",
+    label: "Departments",
+    icon: "Building2",
+    href: "/admin/departments",
+    roles: ["ADMIN"],
+  },
+  {
+    id: "clients",
+    label: "Clients & Brands",
+    icon: "Building",
+    href: "/admin/clients",
+    roles: ["ADMIN", "FINANCE"],
+  },
+  {
     id: "gi-config",
     label: "GI Config",
     icon: "Sparkles",
@@ -87,11 +107,18 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     roles: ["ADMIN"],
   },
   {
-    id: "leaderboard",
-    label: "Leaderboard",
+    id: "gamification",
+    label: "Achievements",
     icon: "Trophy",
-    href: "/leaderboard",
-    roles: ["MEMBER"],
+    href: "/pms/gamification",
+    roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER", "CONTRACTOR"],
+  },
+  {
+    id: "credibility",
+    label: "Credibility",
+    icon: "ShieldCheck",
+    href: "/credibility",
+    roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER", "CONTRACTOR"],
   },
   {
     id: "calendar",

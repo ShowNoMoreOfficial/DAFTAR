@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -11,7 +12,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Plus, Mail, XCircle, Clock, CheckCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
 
 interface UserRecord {
@@ -23,6 +25,21 @@ interface UserRecord {
   isActive: boolean;
   primaryDepartment: { id: string; name: string } | null;
   createdAt: string;
+}
+
+interface InviteRecord {
+  id: string;
+  email: string;
+  role: Role;
+  status: string;
+  department: { id: string; name: string } | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
+interface DeptOption {
+  id: string;
+  name: string;
 }
 
 const ROLES: Role[] = [
@@ -45,36 +62,74 @@ const ROLE_COLORS: Record<Role, string> = {
   CONTRACTOR: "bg-orange-100 text-orange-700",
 };
 
+const INVITE_STATUS_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
+  PENDING: { bg: "bg-amber-100 text-amber-700", icon: <Clock className="h-3 w-3" /> },
+  ACCEPTED: { bg: "bg-emerald-100 text-emerald-700", icon: <CheckCircle className="h-3 w-3" /> },
+  REVOKED: { bg: "bg-red-100 text-red-700", icon: <XCircle className="h-3 w-3" /> },
+};
+
 export default function UsersPage() {
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [invites, setInvites] = useState<InviteRecord[]>([]);
+  const [departments, setDepartments] = useState<DeptOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"users" | "invites">("users");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ email: "", name: "", role: "MEMBER" as Role });
+  const [form, setForm] = useState({ email: "", role: "MEMBER" as Role, departmentId: "" });
+  const [inviteError, setInviteError] = useState("");
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
+    fetchAll();
   }, []);
 
-  async function fetchUsers() {
-    const res = await fetch("/api/users");
-    if (res.ok) {
-      setUsers(await res.json());
-    }
+  async function fetchAll() {
+    setLoading(true);
+    const [usersRes, invitesRes, deptsRes] = await Promise.all([
+      fetch("/api/users"),
+      fetch("/api/invites"),
+      fetch("/api/departments"),
+    ]);
+    if (usersRes.ok) setUsers(await usersRes.json());
+    if (invitesRes.ok) setInvites(await invitesRes.json());
+    if (deptsRes.ok) setDepartments(await deptsRes.json());
     setLoading(false);
   }
 
-  async function createUser(e: React.FormEvent) {
+  async function sendInvite(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setDialogOpen(false);
-      setForm({ email: "", name: "", role: "MEMBER" });
-      fetchUsers();
+    setInviteError("");
+    setInviting(true);
+    try {
+      const res = await fetch("/api/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          role: form.role,
+          departmentId: form.departmentId || null,
+        }),
+      });
+      if (res.ok) {
+        setDialogOpen(false);
+        setForm({ email: "", role: "MEMBER", departmentId: "" });
+        fetchAll();
+      } else {
+        const data = await res.json();
+        setInviteError(data.error || "Failed to send invite");
+      }
+    } finally {
+      setInviting(false);
     }
+  }
+
+  async function revokeInvite(id: string) {
+    const res = await fetch("/api/invites", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "revoke" }),
+    });
+    if (res.ok) fetchAll();
   }
 
   if (loading) {
@@ -87,33 +142,24 @@ export default function UsersPage() {
         <div>
           <h1 className="text-xl font-semibold text-[#1A1A1A]">Users & Roles</h1>
           <p className="mt-1 text-sm text-[#6B7280]">
-            Manage team members, assign roles and departments.
+            Manage team members, send invites, and assign roles.
           </p>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger
-            className="inline-flex items-center gap-2 rounded-md bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E86AB]/90"
-          >
-            <Plus className="h-4 w-4" />
-            Invite User
+        <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); setInviteError(""); }}>
+          <DialogTrigger>
+            <Button>
+              <Mail className="mr-1.5 h-4 w-4" />
+              Invite User
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Invite New User</DialogTitle>
+              <DialogTitle>Send Invitation</DialogTitle>
             </DialogHeader>
-            <form onSubmit={createUser} className="space-y-4 pt-2">
+            <form onSubmit={sendInvite} className="space-y-4 pt-2">
               <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Name</label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Full name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Email</label>
+                <label className="text-sm font-medium text-[#1A1A1A]">Email *</label>
                 <Input
                   type="email"
                   value={form.email}
@@ -122,86 +168,194 @@ export default function UsersPage() {
                   required
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Role</label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
-                  className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
-                >
-                  {ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {r.replace("_", " ")}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium text-[#1A1A1A]">Role</label>
+                  <select
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
+                    className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {r.replace("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#1A1A1A]">Department</label>
+                  <select
+                    value={form.departmentId}
+                    onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="">None</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E86AB]/90"
-              >
-                Send Invitation
-              </button>
+              {inviteError && (
+                <p className="text-sm text-red-600">{inviteError}</p>
+              )}
+              <Button type="submit" className="w-full" disabled={inviting || !form.email}>
+                {inviting ? "Sending..." : "Send Invitation"}
+              </Button>
+              <p className="text-[10px] text-[#9CA3AF] text-center">
+                The user will be able to sign in via Google or Microsoft OAuth. Invite expires in 7 days.
+              </p>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Users Table */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-[#E5E7EB] text-left text-xs font-medium uppercase tracking-wider text-[#6B7280]">
-              <th className="px-6 py-3">User</th>
-              <th className="px-6 py-3">Role</th>
-              <th className="px-6 py-3">Department</th>
-              <th className="px-6 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E5E7EB]">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-[#F8F9FA]">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar || undefined} />
-                      <AvatarFallback className="bg-[#2E86AB] text-white text-xs">
-                        {user.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium text-[#1A1A1A]">{user.name}</p>
-                      <p className="text-xs text-[#6B7280]">{user.email}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <Badge className={ROLE_COLORS[user.role]} variant="secondary">
-                    {user.role.replace("_", " ")}
-                  </Badge>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-[#6B7280]">
-                    {user.primaryDepartment?.name || "—"}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <Badge variant={user.isActive ? "default" : "secondary"}>
-                    {user.isActive ? "Active" : "Pending"}
-                  </Badge>
-                </td>
-              </tr>
-            ))}
-            {users.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-sm text-[#9CA3AF]">
-                  No users yet. Click &quot;Invite User&quot; to add team members.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-lg border border-[#E5E7EB] bg-white p-0.5 w-fit">
+        <button
+          onClick={() => setTab("users")}
+          className={cn(
+            "rounded-md px-4 py-1.5 text-xs font-medium transition-colors",
+            tab === "users" ? "bg-[#2E86AB] text-white" : "text-[#6B7280] hover:bg-[#F0F2F5]"
+          )}
+        >
+          Users ({users.length})
+        </button>
+        <button
+          onClick={() => setTab("invites")}
+          className={cn(
+            "rounded-md px-4 py-1.5 text-xs font-medium transition-colors",
+            tab === "invites" ? "bg-[#2E86AB] text-white" : "text-[#6B7280] hover:bg-[#F0F2F5]"
+          )}
+        >
+          Invites ({invites.filter((i) => i.status === "PENDING").length} pending)
+        </button>
       </div>
+
+      {tab === "users" ? (
+        <div className="rounded-xl border border-[#E5E7EB] bg-white">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#E5E7EB] text-left text-xs font-medium uppercase tracking-wider text-[#6B7280]">
+                <th className="px-6 py-3">User</th>
+                <th className="px-6 py-3">Role</th>
+                <th className="px-6 py-3">Department</th>
+                <th className="px-6 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E7EB]">
+              {users.map((user) => (
+                <tr key={user.id} className="hover:bg-[#F8F9FA]">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar || undefined} />
+                        <AvatarFallback className="bg-[#2E86AB] text-white text-xs">
+                          {user.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium text-[#1A1A1A]">{user.name}</p>
+                        <p className="text-xs text-[#6B7280]">{user.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge className={ROLE_COLORS[user.role]} variant="secondary">
+                      {user.role.replace("_", " ")}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-[#6B7280]">
+                      {user.primaryDepartment?.name || "—"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge variant={user.isActive ? "default" : "secondary"}>
+                      {user.isActive ? "Active" : "Pending"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-[#9CA3AF]">
+                    No users yet. Click &quot;Invite User&quot; to add team members.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-[#E5E7EB] bg-white">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#E5E7EB] text-left text-xs font-medium uppercase tracking-wider text-[#6B7280]">
+                <th className="px-6 py-3">Email</th>
+                <th className="px-6 py-3">Role</th>
+                <th className="px-6 py-3">Department</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3">Sent</th>
+                <th className="px-6 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E7EB]">
+              {invites.map((invite) => {
+                const isExpired = new Date(invite.expiresAt) < new Date() && invite.status === "PENDING";
+                const style = isExpired
+                  ? { bg: "bg-gray-100 text-gray-500", icon: <Clock className="h-3 w-3" /> }
+                  : INVITE_STATUS_STYLES[invite.status];
+                return (
+                  <tr key={invite.id} className="hover:bg-[#F8F9FA]">
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-[#1A1A1A]">{invite.email}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge className={ROLE_COLORS[invite.role]} variant="secondary">
+                        {invite.role.replace("_", " ")}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-[#6B7280]">
+                      {invite.department?.name || "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge className={cn("gap-1", style.bg)}>
+                        {style.icon}
+                        {isExpired ? "EXPIRED" : invite.status}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-[#6B7280]">
+                      {new Date(invite.createdAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </td>
+                    <td className="px-6 py-4">
+                      {invite.status === "PENDING" && !isExpired && (
+                        <button
+                          onClick={() => revokeInvite(invite.id)}
+                          className="text-xs text-red-600 hover:underline"
+                        >
+                          Revoke
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {invites.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-[#9CA3AF]">
+                    No invitations sent yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-utils";
 import type { TaskStatus } from "@prisma/client";
+import { notifyTaskStatusChanged, notifyDeliverableReady } from "@/lib/notifications";
+import { recordActivity, checkTaskAchievements } from "@/lib/gamification";
 
 const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   CREATED: ["ASSIGNED", "CANCELLED"],
@@ -60,6 +62,31 @@ export async function PATCH(
       newValue: status,
     },
   });
+
+  // Notify relevant users about status change
+  const notifyUserId =
+    session.user.id === task.creatorId ? task.assigneeId : task.creatorId;
+  if (notifyUserId && notifyUserId !== session.user.id) {
+    notifyTaskStatusChanged(notifyUserId, task.title, task.id, task.status, status).catch(() => {});
+  }
+
+  // Notify client when task is approved (deliverable ready)
+  if (status === "APPROVED" && task.brandId) {
+    const brand = await prisma.brand.findUnique({
+      where: { id: task.brandId },
+      include: { client: { select: { userId: true } } },
+    });
+    if (brand?.client?.userId) {
+      notifyDeliverableReady(brand.client.userId, task.title, task.id).catch(() => {});
+    }
+  }
+
+  // Gamification: record activity and check achievements on completion
+  if (status === "DONE" && task.assigneeId) {
+    const xp = task.difficultyWeight * 10;
+    recordActivity(task.assigneeId, xp).catch(() => {});
+    checkTaskAchievements(task.assigneeId).catch(() => {});
+  }
 
   // Update credibility score on task completion
   if (status === "DONE" && task.assigneeId) {

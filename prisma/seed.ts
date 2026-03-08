@@ -209,6 +209,500 @@ async function main() {
   }
 
   console.log("GI tier assignments configured");
+
+  // ─── Workflow Templates ──────────────────────────────────
+  const mediaDept = departments.find((d) => d.name === "Media");
+  const techDept = departments.find((d) => d.name === "Tech");
+
+  await prisma.workflowTemplate.upsert({
+    where: { name: "Media Production" },
+    update: {},
+    create: {
+      name: "Media Production",
+      description: "End-to-end media content production workflow",
+      departmentId: mediaDept?.id,
+      stages: [
+        { name: "Script", order: 1, approvalGate: false },
+        { name: "Assets", order: 2, approvalGate: false },
+        { name: "Edit", order: 3, approvalGate: false },
+        { name: "Review", order: 4, approvalGate: true },
+        { name: "Approve", order: 5, approvalGate: true },
+        { name: "Publish", order: 6, approvalGate: false },
+      ],
+      triggers: { events: ["task_created", "brand_assigned"] },
+      escalation: { overdueHours: 24, notifyRoles: ["DEPT_HEAD", "ADMIN"] },
+    },
+  });
+
+  await prisma.workflowTemplate.upsert({
+    where: { name: "Tech Development" },
+    update: {},
+    create: {
+      name: "Tech Development",
+      description: "Software development lifecycle workflow",
+      departmentId: techDept?.id,
+      stages: [
+        { name: "Spec", order: 1, approvalGate: false },
+        { name: "Development", order: 2, approvalGate: false },
+        { name: "Code Review", order: 3, approvalGate: true },
+        { name: "QA", order: 4, approvalGate: true },
+        { name: "Deploy", order: 5, approvalGate: true },
+      ],
+      triggers: { events: ["task_created"] },
+      escalation: { overdueHours: 48, notifyRoles: ["DEPT_HEAD"] },
+    },
+  });
+
+  await prisma.workflowTemplate.upsert({
+    where: { name: "General Task" },
+    update: {},
+    create: {
+      name: "General Task",
+      description: "Default workflow for general tasks",
+      stages: [
+        { name: "Created", order: 1, approvalGate: false },
+        { name: "Assigned", order: 2, approvalGate: false },
+        { name: "In Progress", order: 3, approvalGate: false },
+        { name: "Review", order: 4, approvalGate: true },
+        { name: "Done", order: 5, approvalGate: false },
+      ],
+      isDefault: true,
+    },
+  });
+
+  console.log("Workflow templates created");
+
+  // ─── Platform Configs ────────────────────────────────────
+  const platformSeeds = [
+    {
+      platform: "youtube",
+      displayName: "YouTube",
+      deliverableTypes: [
+        { type: "long_video", formatSpecs: { minLength: 600, maxLength: 7200 }, dimensions: "1920x1080" },
+        { type: "short", formatSpecs: { minLength: 15, maxLength: 60 }, dimensions: "1080x1920" },
+        { type: "thumbnail", formatSpecs: {}, dimensions: "1280x720" },
+      ],
+      postingRules: { maxPerDay: 3, bestTimes: ["09:00", "17:00", "20:00"] },
+      analyticsMetrics: ["views", "watch_time", "subscribers", "ctr", "impressions"],
+    },
+    {
+      platform: "instagram",
+      displayName: "Instagram",
+      deliverableTypes: [
+        { type: "reel", formatSpecs: { minLength: 5, maxLength: 90 }, dimensions: "1080x1920" },
+        { type: "post", formatSpecs: {}, dimensions: "1080x1080" },
+        { type: "story", formatSpecs: { maxLength: 15 }, dimensions: "1080x1920" },
+        { type: "carousel", formatSpecs: { maxSlides: 10 }, dimensions: "1080x1080" },
+      ],
+      postingRules: { maxPerDay: 5, hashtagLimit: 30, bestTimes: ["11:00", "14:00", "19:00"] },
+      analyticsMetrics: ["reach", "impressions", "engagement_rate", "saves", "shares"],
+    },
+    {
+      platform: "x",
+      displayName: "X (Twitter)",
+      deliverableTypes: [
+        { type: "tweet", formatSpecs: { maxChars: 280 }, dimensions: null },
+        { type: "thread", formatSpecs: { maxTweets: 25 }, dimensions: null },
+        { type: "video", formatSpecs: { maxLength: 140 }, dimensions: "1920x1080" },
+      ],
+      postingRules: { maxPerDay: 10, bestTimes: ["08:00", "12:00", "17:00"] },
+      analyticsMetrics: ["impressions", "engagements", "retweets", "likes", "replies"],
+    },
+    {
+      platform: "linkedin",
+      displayName: "LinkedIn",
+      deliverableTypes: [
+        { type: "post", formatSpecs: { maxChars: 3000 }, dimensions: null },
+        { type: "article", formatSpecs: {}, dimensions: null },
+        { type: "video", formatSpecs: { maxLength: 600 }, dimensions: "1920x1080" },
+        { type: "document", formatSpecs: { maxPages: 300 }, dimensions: null },
+      ],
+      postingRules: { maxPerDay: 2, bestTimes: ["08:00", "10:00", "12:00"] },
+      analyticsMetrics: ["impressions", "clicks", "engagement_rate", "followers"],
+    },
+    {
+      platform: "facebook",
+      displayName: "Facebook",
+      deliverableTypes: [
+        { type: "post", formatSpecs: {}, dimensions: null },
+        { type: "reel", formatSpecs: { maxLength: 90 }, dimensions: "1080x1920" },
+        { type: "video", formatSpecs: { maxLength: 14400 }, dimensions: "1920x1080" },
+        { type: "story", formatSpecs: { maxLength: 20 }, dimensions: "1080x1920" },
+      ],
+      postingRules: { maxPerDay: 5, bestTimes: ["09:00", "13:00", "16:00"] },
+      analyticsMetrics: ["reach", "impressions", "engagement", "shares", "reactions"],
+    },
+  ];
+
+  for (const ps of platformSeeds) {
+    await prisma.platformConfig.upsert({
+      where: { platform: ps.platform },
+      update: {},
+      create: ps,
+    });
+  }
+
+  console.log("Platform configs created");
+
+  // ─── Role Configs ────────────────────────────────────────
+  const roleSeeds = [
+    {
+      role: "ADMIN" as const,
+      dashboardViews: ["overview", "departments", "users", "finance", "analytics", "config", "gi"],
+      notifications: { events: ["*"] },
+      reportAccess: ["*"],
+      giConversation: { topics: ["*"], tier: 1 },
+    },
+    {
+      role: "HEAD_HR" as const,
+      dashboardViews: ["overview", "hiring", "team", "reports", "culture"],
+      notifications: { events: ["candidate_applied", "interview_scheduled", "offer_accepted", "task_overdue"] },
+      reportAccess: ["hiring_pipeline", "team_workload", "department_performance"],
+      giConversation: { topics: ["hiring", "team_management", "culture", "operations"], tier: 2 },
+    },
+    {
+      role: "DEPT_HEAD" as const,
+      dashboardViews: ["department_overview", "team", "tasks", "reports"],
+      notifications: { events: ["task_assigned", "task_overdue", "approval_pending", "deliverable_ready"] },
+      reportAccess: ["department_performance", "team_workload", "task_completion"],
+      giConversation: { topics: ["department_tasks", "team_performance", "deadlines"], tier: 2 },
+    },
+    {
+      role: "MEMBER" as const,
+      dashboardViews: ["my_tasks", "calendar", "leaderboard"],
+      notifications: { events: ["task_assigned", "task_comment", "approval_completed"] },
+      reportAccess: ["my_performance"],
+      giConversation: { topics: ["my_tasks", "guidelines", "best_practices"], tier: 3 },
+    },
+    {
+      role: "CLIENT" as const,
+      dashboardViews: ["brand_overview", "content_calendar", "deliverables"],
+      notifications: { events: ["deliverable_ready", "approval_pending"] },
+      reportAccess: ["brand_analytics"],
+      giConversation: { topics: ["brand_content", "approvals", "analytics"], tier: 3 },
+    },
+    {
+      role: "FINANCE" as const,
+      dashboardViews: ["finance_overview", "invoices", "expenses", "reports"],
+      notifications: { events: ["invoice_overdue", "expense_submitted", "budget_alert"] },
+      reportAccess: ["financial_summary", "department_budgets", "invoice_aging"],
+      giConversation: { topics: ["budgets", "invoices", "expenses", "financial_reports"], tier: 2 },
+    },
+    {
+      role: "CONTRACTOR" as const,
+      dashboardViews: ["my_tasks", "calendar"],
+      notifications: { events: ["task_assigned", "task_comment"] },
+      reportAccess: ["my_performance"],
+      giConversation: { topics: ["my_tasks", "guidelines"], tier: 4 },
+    },
+  ];
+
+  for (const rs of roleSeeds) {
+    await prisma.roleConfig.upsert({
+      where: { role: rs.role },
+      update: {},
+      create: rs,
+    });
+  }
+
+  console.log("Role configs created");
+
+  // ─── Achievement Definitions ──────────────────────────
+  const achievementSeeds = [
+    // Milestones
+    { key: "first_task", name: "First Steps", description: "Complete your first task", icon: "🎯", category: "milestone", threshold: 1, points: 10 },
+    { key: "ten_tasks", name: "Getting Started", description: "Complete 10 tasks", icon: "📋", category: "milestone", threshold: 10, points: 25 },
+    { key: "fifty_tasks", name: "Consistent Performer", description: "Complete 50 tasks", icon: "🏅", category: "milestone", threshold: 50, points: 50 },
+    { key: "hundred_tasks", name: "Century Club", description: "Complete 100 tasks", icon: "💯", category: "milestone", threshold: 100, points: 100 },
+    { key: "five_hundred_tasks", name: "Legend", description: "Complete 500 tasks", icon: "👑", category: "milestone", threshold: 500, points: 250 },
+    // Streaks
+    { key: "streak_3", name: "Hat Trick", description: "Maintain a 3-day streak", icon: "🔥", category: "streak", threshold: 3, points: 15 },
+    { key: "streak_7", name: "Weekly Warrior", description: "Maintain a 7-day streak", icon: "🔥", category: "streak", threshold: 7, points: 30 },
+    { key: "streak_14", name: "Fortnight Force", description: "Maintain a 14-day streak", icon: "🔥", category: "streak", threshold: 14, points: 60 },
+    { key: "streak_30", name: "Monthly Machine", description: "Maintain a 30-day streak", icon: "🔥", category: "streak", threshold: 30, points: 150 },
+    // Quality
+    { key: "first_pass_5", name: "Sharp Shooter", description: "Get 5 first-pass approvals", icon: "✅", category: "quality", threshold: 5, points: 20 },
+    { key: "first_pass_20", name: "Precision Pro", description: "Get 20 first-pass approvals", icon: "✅", category: "quality", threshold: 20, points: 50 },
+    { key: "quality_master", name: "Quality Master", description: "Achieve 95%+ approval rate over 50 tasks", icon: "💎", category: "quality", threshold: 95, points: 200 },
+    // Speed
+    { key: "speed_demon", name: "Speed Demon", description: "Complete a task on the same day it was created", icon: "⚡", category: "speed", threshold: 1, points: 15 },
+    { key: "rapid_fire", name: "Rapid Fire", description: "Complete 3 tasks in a single day", icon: "🚀", category: "speed", threshold: 3, points: 30 },
+    // Collaboration
+    { key: "team_player", name: "Team Player", description: "Leave 10 comments on others' tasks", icon: "🤝", category: "collaboration", threshold: 10, points: 25 },
+    { key: "mentor", name: "Mentor", description: "Help 5 different users via comments", icon: "🎓", category: "collaboration", threshold: 5, points: 40 },
+    // Special
+    { key: "early_bird", name: "Early Bird", description: "Complete a task before 9 AM", icon: "🌅", category: "special", threshold: 1, points: 10 },
+    { key: "night_owl", name: "Night Owl", description: "Complete a task after 9 PM", icon: "🦉", category: "special", threshold: 1, points: 10 },
+    { key: "weekend_warrior", name: "Weekend Warrior", description: "Complete a task on a weekend", icon: "🏋️", category: "special", threshold: 1, points: 15 },
+  ];
+
+  for (const a of achievementSeeds) {
+    await prisma.achievement.upsert({
+      where: { key: a.key },
+      update: { name: a.name, description: a.description, icon: a.icon, category: a.category, threshold: a.threshold, points: a.points },
+      create: a,
+    });
+  }
+
+  console.log(`Seeded ${achievementSeeds.length} achievements`);
+
+  // ─── Demo Team Members ────────────────────────────────
+  const demoUsers = [
+    { email: "arjun@demo.shownomore.com", name: "Arjun Mehta", role: "DEPT_HEAD" as const, deptName: "Media" },
+    { email: "priya@demo.shownomore.com", name: "Priya Sharma", role: "MEMBER" as const, deptName: "Media" },
+    { email: "rohit@demo.shownomore.com", name: "Rohit Kumar", role: "MEMBER" as const, deptName: "Tech" },
+    { email: "neha@demo.shownomore.com", name: "Neha Gupta", role: "DEPT_HEAD" as const, deptName: "Tech" },
+    { email: "vikram@demo.shownomore.com", name: "Vikram Singh", role: "MEMBER" as const, deptName: "Marketing" },
+    { email: "ananya@demo.shownomore.com", name: "Ananya Patel", role: "MEMBER" as const, deptName: "Production" },
+    { email: "kiran@demo.shownomore.com", name: "Kiran Reddy", role: "HEAD_HR" as const, deptName: "HR & Operations" },
+    { email: "finance@demo.shownomore.com", name: "Deepak Joshi", role: "FINANCE" as const, deptName: "HR & Operations" },
+  ];
+
+  const createdUsers: Record<string, string> = {};
+  for (const du of demoUsers) {
+    const dept = departments.find((d) => d.name === du.deptName);
+    const user = await prisma.user.upsert({
+      where: { email: du.email },
+      update: {},
+      create: {
+        email: du.email,
+        name: du.name,
+        role: du.role,
+        isActive: true,
+        primaryDeptId: dept?.id,
+      },
+    });
+    createdUsers[du.email] = user.id;
+
+    // Add as department member
+    if (dept) {
+      await prisma.departmentMember.upsert({
+        where: { userId_departmentId: { userId: user.id, departmentId: dept.id } },
+        update: {},
+        create: { userId: user.id, departmentId: dept.id, isPrimary: true },
+      });
+    }
+
+    // Set as dept head
+    if (du.role === "DEPT_HEAD" && dept) {
+      await prisma.department.update({ where: { id: dept.id }, data: { headId: user.id } });
+    }
+  }
+
+  console.log(`Created ${demoUsers.length} demo users`);
+
+  // ─── Demo Tasks ──────────────────────────────────────
+  const now = new Date();
+  const daysAgo = (d: number) => new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+  const daysFromNow = (d: number) => new Date(now.getTime() + d * 24 * 60 * 60 * 1000);
+
+  const brands = await prisma.brand.findMany({ take: 2 });
+  const brandId = brands[0]?.id;
+
+  const taskData = [
+    { title: "Edit Bhupendra Chaubey interview — Episode 45", status: "IN_PROGRESS" as const, priority: "HIGH" as const, assignee: "priya@demo.shownomore.com", dept: "Media", due: daysFromNow(2), weight: 3 },
+    { title: "YouTube thumbnail for Breaking Tube Ep 45", status: "ASSIGNED" as const, priority: "MEDIUM" as const, assignee: "ananya@demo.shownomore.com", dept: "Production", due: daysFromNow(3), weight: 1 },
+    { title: "Write script for The Squirrels weekly analysis", status: "REVIEW" as const, priority: "HIGH" as const, assignee: "priya@demo.shownomore.com", dept: "Media", due: daysFromNow(1), weight: 2 },
+    { title: "Deploy PMS v2 hotfix — notification bell", status: "DONE" as const, priority: "URGENT" as const, assignee: "rohit@demo.shownomore.com", dept: "Tech", due: daysAgo(1), weight: 2, completedAt: daysAgo(1) },
+    { title: "Set up Instagram Reels automation pipeline", status: "IN_PROGRESS" as const, priority: "MEDIUM" as const, assignee: "rohit@demo.shownomore.com", dept: "Tech", due: daysFromNow(5), weight: 4 },
+    { title: "Q1 campaign strategy for Breaking Tube", status: "APPROVED" as const, priority: "HIGH" as const, assignee: "vikram@demo.shownomore.com", dept: "Marketing", due: daysAgo(2), weight: 3 },
+    { title: "Color grade B-roll footage — Delhi shoot", status: "ASSIGNED" as const, priority: "LOW" as const, assignee: "ananya@demo.shownomore.com", dept: "Production", due: daysFromNow(7), weight: 2 },
+    { title: "Monthly HR compliance report", status: "CREATED" as const, priority: "MEDIUM" as const, assignee: null, dept: "HR & Operations", due: daysFromNow(10), weight: 1 },
+    { title: "Optimize database queries for dashboard API", status: "IN_PROGRESS" as const, priority: "HIGH" as const, assignee: "rohit@demo.shownomore.com", dept: "Tech", due: daysFromNow(3), weight: 3 },
+    { title: "Social media calendar for March", status: "DONE" as const, priority: "MEDIUM" as const, assignee: "vikram@demo.shownomore.com", dept: "Marketing", due: daysAgo(3), weight: 2, completedAt: daysAgo(4) },
+    { title: "Record podcast intro jingle", status: "CANCELLED" as const, priority: "LOW" as const, assignee: "priya@demo.shownomore.com", dept: "Media", due: daysAgo(5), weight: 1 },
+    { title: "PPC report for client review — February", status: "REVIEW" as const, priority: "HIGH" as const, assignee: "vikram@demo.shownomore.com", dept: "Marketing", due: daysFromNow(0), weight: 2 },
+  ];
+
+  for (const td of taskData) {
+    const dept = departments.find((d) => d.name === td.dept);
+    await prisma.task.create({
+      data: {
+        title: td.title,
+        status: td.status,
+        priority: td.priority,
+        difficultyWeight: td.weight,
+        creatorId: admin.id,
+        assigneeId: td.assignee ? createdUsers[td.assignee] : null,
+        departmentId: dept?.id,
+        brandId: td.status !== "CREATED" ? brandId : undefined,
+        dueDate: td.due,
+        startedAt: ["IN_PROGRESS", "REVIEW", "APPROVED", "DONE"].includes(td.status) ? daysAgo(5) : null,
+        completedAt: (td as Record<string, unknown>).completedAt as Date | undefined,
+      },
+    });
+  }
+
+  console.log(`Created ${taskData.length} demo tasks`);
+
+  // ─── Demo Credibility Scores ──────────────────────────
+  const credibilityData = [
+    { email: "priya@demo.shownomore.com", reliability: 78, quality: 85, consistency: 72, overall: 78, completed: 34, onTime: 28, late: 6 },
+    { email: "rohit@demo.shownomore.com", reliability: 92, quality: 88, consistency: 90, overall: 90, completed: 45, onTime: 42, late: 3 },
+    { email: "vikram@demo.shownomore.com", reliability: 65, quality: 70, consistency: 60, overall: 65, completed: 22, onTime: 15, late: 7 },
+    { email: "ananya@demo.shownomore.com", reliability: 85, quality: 90, consistency: 82, overall: 86, completed: 28, onTime: 25, late: 3 },
+  ];
+
+  for (const cd of credibilityData) {
+    const userId = createdUsers[cd.email];
+    if (!userId) continue;
+    await prisma.credibilityScore.upsert({
+      where: { userId },
+      update: {},
+      create: {
+        userId,
+        reliability: cd.reliability,
+        quality: cd.quality,
+        consistency: cd.consistency,
+        overallScore: cd.overall,
+        tasksCompleted: cd.completed,
+        tasksOnTime: cd.onTime,
+        tasksLate: cd.late,
+      },
+    });
+  }
+
+  console.log("Demo credibility scores created");
+
+  // ─── Demo Hiring Positions & Candidates ───────────────
+  const mediaDeptId = departments.find((d) => d.name === "Media")?.id;
+  const techDeptId = departments.find((d) => d.name === "Tech")?.id;
+
+  if (mediaDeptId) {
+    const pos = await prisma.hiringPosition.upsert({
+      where: { id: "demo-position-editor" },
+      update: {},
+      create: {
+        id: "demo-position-editor",
+        title: "Senior Video Editor",
+        departmentId: mediaDeptId,
+        description: "Looking for an experienced editor with Premiere Pro and DaVinci Resolve skills.",
+        requirements: ["5+ years experience", "Premiere Pro", "DaVinci Resolve", "Motion Graphics"],
+      },
+    });
+    await prisma.hiringCandidate.upsert({
+      where: { id: "demo-candidate-1" },
+      update: {},
+      create: { id: "demo-candidate-1", name: "Amit Verma", email: "amit@example.com", phone: "+91 9876543210", status: "INTERVIEW", positionId: pos.id, rating: 4, notes: "Strong portfolio, scheduled for technical round" },
+    });
+    await prisma.hiringCandidate.upsert({
+      where: { id: "demo-candidate-2" },
+      update: {},
+      create: { id: "demo-candidate-2", name: "Sneha Kapoor", email: "sneha@example.com", status: "SCREENING", positionId: pos.id, rating: 3, notes: "Impressive reel, reviewing references" },
+    });
+  }
+
+  if (techDeptId) {
+    await prisma.hiringPosition.upsert({
+      where: { id: "demo-position-dev" },
+      update: {},
+      create: {
+        id: "demo-position-dev",
+        title: "Full Stack Developer",
+        departmentId: techDeptId,
+        description: "Next.js, TypeScript, PostgreSQL experience required.",
+        requirements: ["Next.js", "TypeScript", "PostgreSQL", "3+ years"],
+      },
+    });
+  }
+
+  console.log("Demo hiring data created");
+
+  // ─── Demo Streaks ──────────────────────────────────────
+  const streakData = [
+    { email: "rohit@demo.shownomore.com", current: 12, longest: 18, xp: 850, level: 5 },
+    { email: "priya@demo.shownomore.com", current: 5, longest: 9, xp: 520, level: 3 },
+    { email: "ananya@demo.shownomore.com", current: 8, longest: 14, xp: 680, level: 4 },
+    { email: "vikram@demo.shownomore.com", current: 2, longest: 6, xp: 310, level: 2 },
+  ];
+
+  for (const sd of streakData) {
+    const userId = createdUsers[sd.email];
+    if (!userId) continue;
+    await prisma.userStreak.upsert({
+      where: { userId },
+      update: {},
+      create: {
+        userId,
+        currentStreak: sd.current,
+        longestStreak: sd.longest,
+        totalXp: sd.xp,
+        level: sd.level,
+        lastActivityAt: daysAgo(0),
+      },
+    });
+  }
+
+  console.log("Demo streaks created");
+
+  // ─── Demo Invoices ──────────────────────────────────────
+  const invoiceData = [
+    { number: "INV-00001", status: "PAID" as const, amount: 150000, tax: 27000, totalAmount: 177000, dueDate: daysAgo(10), description: "Video production — Breaking Tube Ep 40-44" },
+    { number: "INV-00002", status: "SENT" as const, amount: 85000, tax: 15300, totalAmount: 100300, dueDate: daysFromNow(15), description: "Monthly retainer — The Squirrels March" },
+    { number: "INV-00003", status: "DRAFT" as const, amount: 45000, tax: 8100, totalAmount: 53100, dueDate: daysFromNow(30), description: "Social media management — Q1" },
+    { number: "INV-00004", status: "OVERDUE" as const, amount: 120000, tax: 21600, totalAmount: 141600, dueDate: daysAgo(5), description: "PPC campaign setup and management" },
+    { number: "INV-00005", status: "PAID" as const, amount: 75000, tax: 13500, totalAmount: 88500, dueDate: daysAgo(20), description: "Photography shoot — product catalog" },
+  ];
+
+  for (const inv of invoiceData) {
+    await prisma.invoice.upsert({
+      where: { number: inv.number },
+      update: {},
+      create: {
+        ...inv,
+        brandId: brandId || undefined,
+        clientId: client.id,
+        createdById: admin.id,
+        items: null,
+      },
+    });
+  }
+
+  console.log(`Created ${invoiceData.length} demo invoices`);
+
+  // ─── Demo Expenses ──────────────────────────────────────
+  const expenseData = [
+    { title: "Adobe Creative Cloud — Annual License", category: "SOFTWARE" as const, amount: 58000, dept: "Media", date: daysAgo(15) },
+    { title: "Camera equipment rental — Delhi shoot", category: "EQUIPMENT" as const, amount: 35000, dept: "Photography & Cinematography", date: daysAgo(8) },
+    { title: "Team travel — Client meeting Mumbai", category: "TRAVEL" as const, amount: 42000, dept: "Marketing", date: daysAgo(12) },
+    { title: "Office supplies — Q1", category: "OFFICE" as const, amount: 12000, dept: "HR & Operations", date: daysAgo(20) },
+    { title: "Facebook Ads spend — February", category: "MARKETING" as const, amount: 95000, dept: "PPC", date: daysAgo(5) },
+    { title: "Freelance editor payment — Ep 42-44", category: "PRODUCTION" as const, amount: 60000, dept: "Production", date: daysAgo(3) },
+    { title: "Server hosting — AWS February", category: "SOFTWARE" as const, amount: 28000, dept: "Tech", date: daysAgo(2), approved: true },
+    { title: "Team lunch — department outing", category: "MISCELLANEOUS" as const, amount: 8500, dept: "Media", date: daysAgo(7) },
+  ];
+
+  for (const exp of expenseData) {
+    const dept = departments.find((d) => d.name === exp.dept);
+    await prisma.expense.create({
+      data: {
+        title: exp.title,
+        category: exp.category,
+        amount: exp.amount,
+        departmentId: dept?.id,
+        date: exp.date,
+        approved: (exp as Record<string, unknown>).approved as boolean | undefined,
+        createdById: admin.id,
+      },
+    });
+  }
+
+  console.log(`Created ${expenseData.length} demo expenses`);
+
+  // ─── Demo Notifications ─────────────────────────────────
+  const notifData = [
+    { userId: createdUsers["priya@demo.shownomore.com"], type: "TASK_ASSIGNED" as const, title: "New task assigned", message: "Stallone2K assigned you \"Edit Bhupendra Chaubey interview — Episode 45\"", link: "/tasks" },
+    { userId: createdUsers["rohit@demo.shownomore.com"], type: "TASK_STATUS_CHANGED" as const, title: "Task status updated", message: "\"Deploy PMS v2 hotfix\" moved from IN_PROGRESS to DONE", link: "/pms/board" },
+    { userId: createdUsers["vikram@demo.shownomore.com"], type: "TASK_OVERDUE" as const, title: "Task overdue", message: "\"PPC report for client review\" is past its due date", link: "/tasks" },
+    { userId: admin.id, type: "SYSTEM" as const, title: "Invoice paid", message: "Invoice INV-00001 has been marked as paid", link: "/finance" },
+  ];
+
+  for (const n of notifData) {
+    if (!n.userId) continue;
+    await prisma.notification.create({ data: n });
+  }
+
+  console.log(`Created ${notifData.length} demo notifications`);
   console.log("Seed complete!");
 }
 

@@ -1,30 +1,55 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import type { NotificationType } from "@prisma/client";
 
-// GET /api/notifications — fetch current user's notifications
+// GET /api/notifications — fetch current user's notifications with pagination & filters
 export async function GET(req: Request) {
   const session = await getAuthSession();
   if (!session) return unauthorized();
 
   const { searchParams } = new URL(req.url);
-  const unreadOnly = searchParams.get("unread") === "true";
-  const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
+  const page = Math.max(parseInt(searchParams.get("page") || "1"), 1);
+  const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "20"), 1), 50);
+  const type = searchParams.get("type") as NotificationType | null;
+  const isReadParam = searchParams.get("isRead");
+  const skip = (page - 1) * limit;
 
-  const notifications = await prisma.notification.findMany({
-    where: {
-      userId: session.user.id,
-      ...(unreadOnly ? { isRead: false } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    take: limit,
+  const where: Record<string, unknown> = {
+    userId: session.user.id,
+  };
+
+  if (type) {
+    where.type = type;
+  }
+
+  if (isReadParam === "true") {
+    where.isRead = true;
+  } else if (isReadParam === "false") {
+    where.isRead = false;
+  }
+
+  const [notifications, total, unreadCount] = await Promise.all([
+    prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.notification.count({ where }),
+    prisma.notification.count({
+      where: { userId: session.user.id, isRead: false },
+    }),
+  ]);
+
+  return NextResponse.json({
+    notifications,
+    unreadCount,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
   });
-
-  const unreadCount = await prisma.notification.count({
-    where: { userId: session.user.id, isRead: false },
-  });
-
-  return NextResponse.json({ notifications, unreadCount });
 }
 
 // PATCH /api/notifications — mark notifications as read

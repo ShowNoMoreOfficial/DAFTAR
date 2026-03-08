@@ -51,15 +51,23 @@ export function GIAssistant() {
 
       if (res.ok) {
         const data = await res.json();
-        setMessages((prev) => [
-          ...prev,
+        const newMessages: ChatMessage[] = [
           {
             role: "gi",
             content: data.message,
             suggestions: data.suggestions,
             timestamp: new Date(),
           },
-        ]);
+        ];
+        // Show proactive insight if available
+        if (data.proactiveInsight) {
+          newMessages.push({
+            role: "gi",
+            content: data.proactiveInsight,
+            timestamp: new Date(),
+          });
+        }
+        setMessages((prev) => [...prev, ...newMessages]);
       } else {
         setMessages((prev) => [
           ...prev,
@@ -110,7 +118,7 @@ export function GIAssistant() {
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-white" />
           <span className="text-sm font-medium text-white">GI Assistant</span>
-          <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] text-white/80">v1</span>
+          <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] text-white/80">v2</span>
         </div>
         <div className="flex items-center gap-1">
           <button

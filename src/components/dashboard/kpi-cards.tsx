@@ -51,7 +51,8 @@ export function KPICards({ role }: KPICardsProps) {
         }
 
         if (tasksRes.ok) {
-          const tasks = await tasksRes.json();
+          const tasksJson = await tasksRes.json();
+          const tasks = tasksJson.data ?? tasksJson;
           if (Array.isArray(tasks)) {
             setMyStats({
               assigned: tasks.filter(

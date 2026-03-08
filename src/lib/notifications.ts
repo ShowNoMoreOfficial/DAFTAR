@@ -8,7 +8,7 @@ interface CreateNotificationInput {
   title: string;
   message: string;
   link?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 export async function createNotification(input: CreateNotificationInput) {
@@ -19,7 +19,7 @@ export async function createNotification(input: CreateNotificationInput) {
       title: input.title,
       message: input.message,
       link: input.link || null,
-      metadata: input.metadata || null,
+      metadata: input.metadata as never || undefined,
     },
   });
 
@@ -93,4 +93,107 @@ export async function notifyApprovalPending(
     message: `"${itemTitle}" is waiting for your review`,
     link,
   });
+}
+
+export async function notifyTaskOverdue(
+  userId: string,
+  taskTitle: string,
+  taskId: string
+) {
+  return createNotification({
+    userId,
+    type: "TASK_OVERDUE",
+    title: "Task overdue",
+    message: `"${taskTitle}" is past its due date`,
+    link: `/tasks`,
+    metadata: { taskId },
+  });
+}
+
+export async function notifyDeliverableReady(
+  clientUserId: string,
+  taskTitle: string,
+  taskId: string
+) {
+  return createNotification({
+    userId: clientUserId,
+    type: "DELIVERABLE_READY",
+    title: "Deliverable ready",
+    message: `"${taskTitle}" has been approved and is ready for review`,
+    link: `/brands`,
+    metadata: { taskId },
+  });
+}
+
+export async function notifyInvoiceSent(
+  clientUserId: string,
+  invoiceNumber: string,
+  invoiceId: string,
+  amount: string
+) {
+  return createNotification({
+    userId: clientUserId,
+    type: "SYSTEM",
+    title: "Invoice received",
+    message: `Invoice ${invoiceNumber} for ${amount} has been sent to you`,
+    link: `/finance`,
+    metadata: { invoiceId },
+  });
+}
+
+export async function notifyInvoicePaid(
+  creatorId: string,
+  invoiceNumber: string,
+  invoiceId: string
+) {
+  return createNotification({
+    userId: creatorId,
+    type: "SYSTEM",
+    title: "Invoice paid",
+    message: `Invoice ${invoiceNumber} has been marked as paid`,
+    link: `/finance`,
+    metadata: { invoiceId },
+  });
+}
+
+/**
+ * Check for overdue tasks and send notifications.
+ * Call from /api/cron/overdue-check endpoint.
+ */
+export async function checkOverdueTasks() {
+  const overdueTasks = await prisma.task.findMany({
+    where: {
+      status: { notIn: ["DONE", "CANCELLED"] },
+      dueDate: { lt: new Date() },
+    },
+    select: {
+      id: true,
+      title: true,
+      assigneeId: true,
+      creatorId: true,
+    },
+  });
+
+  const sent: string[] = [];
+
+  for (const task of overdueTasks) {
+    const userId = task.assigneeId || task.creatorId;
+
+    // Avoid duplicate overdue notifications (check last 24h)
+    const recent = await prisma.notification.findFirst({
+      where: {
+        userId,
+        type: "TASK_OVERDUE",
+        metadata: { path: ["taskId"], equals: task.id },
+        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
+    });
+
+    if (!recent) {
+      await notifyTaskOverdue(userId, task.title, task.id);
+      sent.push(task.id);
+    }
+  }
+
+  return { checked: overdueTasks.length, notified: sent.length };
 }

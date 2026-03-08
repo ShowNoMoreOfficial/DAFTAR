@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
+import { notifyTaskAssigned } from "@/lib/notifications";
+import { parsePagination, paginatedResponse } from "@/lib/pagination";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -14,6 +16,7 @@ export async function GET(req: NextRequest) {
   const brandId = searchParams.get("brandId");
   const projectId = searchParams.get("projectId");
   const priority = searchParams.get("priority");
+  const search = searchParams.get("search");
 
   const where: Record<string, unknown> = {};
 
@@ -31,22 +34,30 @@ export async function GET(req: NextRequest) {
   if (brandId) where.brandId = brandId;
   if (projectId) where.projectId = projectId;
   if (priority) where.priority = priority;
+  if (search) where.title = { contains: search, mode: "insensitive" };
 
-  const tasks = await prisma.task.findMany({
-    where,
-    include: {
-      assignee: { select: { id: true, name: true, avatar: true } },
-      creator: { select: { id: true, name: true, avatar: true } },
-      department: { select: { id: true, name: true } },
-      brand: { select: { id: true, name: true } },
-      project: { select: { id: true, name: true } },
-      tags: { select: { name: true } },
-      _count: { select: { comments: true } },
-    },
-    orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
-  });
+  const pg = parsePagination(req, 25);
 
-  return NextResponse.json(tasks);
+  const [tasks, total] = await Promise.all([
+    prisma.task.findMany({
+      where,
+      include: {
+        assignee: { select: { id: true, name: true, avatar: true } },
+        creator: { select: { id: true, name: true, avatar: true } },
+        department: { select: { id: true, name: true } },
+        brand: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true } },
+        tags: { select: { name: true } },
+        _count: { select: { comments: true } },
+      },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      skip: pg.skip,
+      take: pg.limit,
+    }),
+    prisma.task.count({ where }),
+  ]);
+
+  return NextResponse.json(paginatedResponse(tasks, total, pg));
 }
 
 export async function POST(req: NextRequest) {
@@ -99,6 +110,11 @@ export async function POST(req: NextRequest) {
       action: "created",
     },
   });
+
+  // Notify assignee
+  if (assigneeId && assigneeId !== session.user.id) {
+    notifyTaskAssigned(assigneeId, title, task.id, session.user.name).catch(() => {});
+  }
 
   return NextResponse.json(task, { status: 201 });
 }

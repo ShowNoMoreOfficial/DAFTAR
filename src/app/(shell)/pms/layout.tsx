@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Kanban, List, BarChart3 } from "lucide-react";
+import { Kanban, List, BarChart3, Trophy } from "lucide-react";
 
 const tabs = [
   { label: "Board", href: "/pms/board", icon: Kanban },
   { label: "List", href: "/pms/list", icon: List },
   { label: "Workload", href: "/pms/workload", icon: BarChart3 },
+  { label: "Gamification", href: "/pms/gamification", icon: Trophy },
 ];
 
 export default function PMSLayout({ children }: { children: React.ReactNode }) {

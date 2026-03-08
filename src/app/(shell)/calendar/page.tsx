@@ -29,9 +29,10 @@ export default function CalendarPage() {
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
 
   useEffect(() => {
-    fetch("/api/tasks")
+    fetch("/api/tasks?limit=100")
       .then((r) => r.json())
-      .then((data) => {
+      .then((json) => {
+        const data = json.data ?? json;
         if (Array.isArray(data)) {
           setTasks(data.filter((t: CalendarTask) => t.dueDate));
         }

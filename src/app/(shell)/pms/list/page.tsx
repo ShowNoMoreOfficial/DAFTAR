@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CreateTaskDialog } from "@/components/pms/create-task-dialog";
 import { TaskDetailPanel } from "@/components/pms/task-detail-panel";
-import { Plus, Flag, Calendar, ArrowUpDown } from "lucide-react";
+import { Plus, Flag, Calendar, ArrowUpDown, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Task {
@@ -58,7 +58,10 @@ export default function PMSListPage() {
 
     try {
       const res = await fetch(`/api/tasks?${params}`);
-      if (res.ok) setTasks(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        setTasks(json.data ?? json);
+      }
     } finally {
       setLoading(false);
     }
@@ -94,6 +97,10 @@ export default function PMSListPage() {
             ))}
           </select>
         </div>
+        <Button variant="outline" size="sm" onClick={() => window.open("/api/tasks/export", "_blank")}>
+          <Download className="mr-1.5 h-3.5 w-3.5" />
+          Export
+        </Button>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           New Task

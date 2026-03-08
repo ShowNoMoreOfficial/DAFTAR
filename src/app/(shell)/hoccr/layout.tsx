@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Users, BarChart3 } from "lucide-react";
+import { Users, BarChart3, Activity, Heart } from "lucide-react";
 
 const tabs = [
+  { label: "Operations", href: "/hoccr/operations", icon: Activity },
+  { label: "Culture", href: "/hoccr/culture", icon: Heart },
   { label: "Hiring", href: "/hoccr/hiring", icon: Users },
   { label: "Reports", href: "/hoccr/reports", icon: BarChart3 },
 ];

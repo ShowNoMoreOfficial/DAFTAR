@@ -44,9 +44,10 @@ export function UpcomingDeadlines() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/tasks?limit=200")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => {
+    fetch("/api/tasks?limit=100")
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((json) => {
+        const data = json.data ?? json;
         if (Array.isArray(data)) {
           const upcoming = data
             .filter(

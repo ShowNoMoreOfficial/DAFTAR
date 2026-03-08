@@ -37,6 +37,27 @@ enum DepartmentType {
   CUSTOM
 }
 
+// ─── Invitations ────────────────────────────────────────
+
+model Invite {
+  id           String       @id @default(cuid())
+  email        String
+  role         Role         @default(MEMBER)
+  departmentId String?
+  department   Department?  @relation("DeptInvites", fields: [departmentId], references: [id])
+  status       InviteStatus @default(PENDING)
+  token        String       @unique @default(cuid())
+  invitedById  String
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([email])
+  @@index([token])
+  @@map("invites")
+}
+
 // ─── Core Models ─────────────────────────────────────────
 
 model User {
@@ -66,6 +87,9 @@ model User {
   createdReports      Report[]            @relation("ReportCreator")
   // Notifications
   notifications       Notification[]
+  // Gamification
+  achievements        UserAchievement[]
+  streak              UserStreak?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -126,7 +150,9 @@ model Department {
   tasks        Task[]             @relation("DeptTasks")
   positions    HiringPosition[]   @relation("DeptPositions")
   reports      Report[]           @relation("DeptReports")
+  workflows    WorkflowTemplate[]
   expenses     Expense[]          @relation("DeptExpenses")
+  invites      Invite[]           @relation("DeptInvites")
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -174,6 +200,7 @@ model Brand {
   userAccess UserBrandAccess[]
   tasks      Task[]
   invoices   Invoice[]
+  posts      ContentPost[]
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
@@ -461,6 +488,103 @@ model Report {
   @@map("reports")
 }
 
+// ─── HOCCR: Culture & Sentiment ─────────────────────────
+
+enum SentimentLevel {
+  VERY_NEGATIVE
+  NEGATIVE
+  NEUTRAL
+  POSITIVE
+  VERY_POSITIVE
+}
+
+model SentimentEntry {
+  id           String         @id @default(cuid())
+  userId       String
+  departmentId String?
+  sentiment    SentimentLevel @default(NEUTRAL)
+  score        Float          @default(3.0) // 1-5 scale
+  source       String         @default("manual") // manual, pulse, gi_detected
+  notes        String?        @db.Text
+  isAnonymous  Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+
+  @@index([userId, createdAt])
+  @@index([departmentId, createdAt])
+  @@map("sentiment_entries")
+}
+
+model Recognition {
+  id           String   @id @default(cuid())
+  fromUserId   String
+  toUserId     String
+  category     String   // kudos, teamwork, innovation, quality, leadership
+  message      String   @db.Text
+  isPublic     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([toUserId, createdAt])
+  @@index([fromUserId])
+  @@map("recognitions")
+}
+
+model EngagementMetric {
+  id           String   @id @default(cuid())
+  userId       String
+  departmentId String?
+  period       String   // "2026-W10", "2026-03"
+  taskCompletionRate Float @default(0)
+  avgResponseTime    Float @default(0) // hours
+  collaborationScore Float @default(0) // 0-100
+  activeDays         Int   @default(0)
+  recognitionsGiven  Int   @default(0)
+  recognitionsReceived Int @default(0)
+  overallScore       Float @default(0) // 0-100
+  computedAt         DateTime @default(now())
+
+  @@unique([userId, period])
+  @@index([departmentId, period])
+  @@map("engagement_metrics")
+}
+
+// ─── HOCCR: Operations ──────────────────────────────────
+
+model Bottleneck {
+  id           String   @id @default(cuid())
+  type         String   // task_blocked, approval_delayed, capacity_exceeded, dependency_waiting
+  severity     String   @default("medium") // low, medium, high, critical
+  title        String
+  description  String?  @db.Text
+  departmentId String?
+  taskId       String?
+  blockedById  String?  // user causing the block
+  affectedIds  Json?    // array of affected user/task ids
+  status       String   @default("active") // active, acknowledged, resolved
+  detectedAt   DateTime @default(now())
+  resolvedAt   DateTime?
+
+  @@index([status, severity])
+  @@index([departmentId])
+  @@map("bottlenecks")
+}
+
+model CapacitySnapshot {
+  id           String   @id @default(cuid())
+  userId       String
+  departmentId String?
+  period       String   // "2026-W10"
+  totalCapacity Int     @default(40) // hours/week
+  allocatedHours Float  @default(0)
+  activeTaskCount Int   @default(0)
+  totalWeight    Float  @default(0)
+  utilizationPct Float  @default(0) // 0-100
+  computedAt    DateTime @default(now())
+
+  @@unique([userId, period])
+  @@index([departmentId, period])
+  @@map("capacity_snapshots")
+}
+
 // ─── Notifications ──────────────────────────────────────
 
 enum NotificationType {
@@ -490,6 +614,18 @@ model Notification {
   @@index([userId, isRead])
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+model NotificationPreference {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  // JSON map of NotificationType -> {enabled: boolean, channels: ["in_app", "email"]}
+  preferences     Json     @default("{}")
+  quietHoursStart String?  // "22:00"
+  quietHoursEnd   String?  // "08:00"
+  updatedAt       DateTime @updatedAt
+
+  @@map("notification_preferences")
 }
 
 // ─── Finance ────────────────────────────────────────────
@@ -557,6 +693,148 @@ model Expense {
   @@map("expenses")
 }
 
+// ─── Configuration-over-Code ──────────────────────────────
+
+model WorkflowTemplate {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  department  Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  stages      Json     // Array of stage definitions [{name, order, participants, approvalGate, autoGenRules}]
+  triggers    Json?    // What events start this workflow
+  escalation  Json?    // Escalation rules
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("workflow_templates")
+}
+
+model PlatformConfig {
+  id              String  @id @default(cuid())
+  platform        String  @unique  // youtube, x, instagram, linkedin, facebook
+  displayName     String
+  deliverableTypes Json   // [{type, formatSpecs, dimensions}]
+  postingRules    Json?   // frequency limits, hashtag rules, etc
+  analyticsMetrics Json?  // metrics tracked per platform
+  isActive        Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("platform_configs")
+}
+
+model RoleConfig {
+  id              String  @id @default(cuid())
+  role            Role    @unique
+  dashboardViews  Json    // accessible screens
+  notifications   Json?   // event triggers for alerts
+  reportAccess    Json?   // visible dashboards
+  giConversation  Json?   // GI topic boundaries
+  updatedAt       DateTime @updatedAt
+
+  @@map("role_configs")
+}
+
+// ─── Gamification ──────────────────────────────────────
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., "first_task", "streak_7", "quality_master"
+  name        String
+  description String
+  icon        String   // emoji or icon name
+  category    String   // milestone, streak, quality, speed, collaboration, special
+  threshold   Int      @default(1) // e.g., complete 10 tasks, 7-day streak
+  points      Int      @default(10)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  unlocks     UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+  notified      Boolean     @default(false)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+model UserStreak {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String   @unique
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastActivityAt DateTime @default(now())
+  totalXp        Int      @default(0)
+  level          Int      @default(1)
+  updatedAt      DateTime @updatedAt
+
+  @@map("user_streaks")
+}
+
+model MicroChallenge {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  type        String   // speed, quality, volume, collaboration
+  metric      String   // e.g., "fastest_task_completion", "most_first_pass_approvals"
+  targetValue Float?   // optional target to beat
+  currentRecord Json?  // {userId, value, recordedAt}
+  departmentId String? // null = org-wide
+  startsAt    DateTime
+  endsAt      DateTime
+  bonusPoints Int      @default(25)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  entries     ChallengeEntry[]
+
+  @@index([isActive, endsAt])
+  @@map("micro_challenges")
+}
+
+model ChallengeEntry {
+  id           String         @id @default(cuid())
+  challenge    MicroChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId  String
+  userId       String
+  value        Float
+  taskId       String?
+  submittedAt  DateTime       @default(now())
+
+  @@unique([challengeId, userId])
+  @@map("challenge_entries")
+}
+
+model VariableReward {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // surprise_bonus, spotlight, badge_upgrade, streak_save
+  title     String
+  message   String
+  points    Int      @default(0)
+  metadata  Json?
+  claimed   Boolean  @default(false)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, claimed])
+  @@map("variable_rewards")
+}
+
 // ─── GI Configuration ───────────────────────────────────
 
 model GIConfig {
@@ -578,4 +856,149 @@ model GITierAssignment {
   updatedAt  DateTime @updatedAt
 
   @@map("gi_tier_assignments")
+}
+
+// ─── Relay: Content Distribution ────────────────────────
+
+enum PostStatus {
+  DRAFT
+  QUEUED
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+model ContentPost {
+  id            String     @id @default(cuid())
+  title         String
+  content       String?    @db.Text
+  platform      String     // youtube, x, instagram, linkedin, facebook
+  brandId       String
+  brand         Brand      @relation(fields: [brandId], references: [id])
+  status        PostStatus @default(DRAFT)
+  scheduledAt   DateTime?
+  publishedAt   DateTime?
+  publishedUrl  String?
+  metadata      Json?      // platform-specific data (hashtags, thumbnails, etc.)
+  taskId        String?    // link to originating PMS task
+  createdById   String
+  errorMessage  String?
+  analytics     PostAnalytics?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([brandId, status])
+  @@index([platform, status])
+  @@index([scheduledAt])
+  @@map("content_posts")
+}
+
+model PostAnalytics {
+  id            String      @id @default(cuid())
+  post          ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId        String      @unique
+  views         Int         @default(0)
+  likes         Int         @default(0)
+  shares        Int         @default(0)
+  comments      Int         @default(0)
+  clicks        Int         @default(0)
+  reach         Int         @default(0)
+  impressions   Int         @default(0)
+  engagement    Float       @default(0) // engagement rate %
+  rawData       Json?       // full platform analytics payload
+  lastSyncedAt  DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+
+  @@map("post_analytics")
+}
+
+model ContentCalendarEntry {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  brandId       String
+  platform      String
+  deliverableType String // video, carousel, reel, thread, post, story
+  date          DateTime
+  assigneeId    String?
+  status        String   @default("planned") // planned, in_progress, ready, posted
+  postId        String?  // links to ContentPost when created
+  metadata      Json?
+  createdById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([brandId, date])
+  @@index([date])
+  @@map("content_calendar")
+}
+
+// ─── Communication ──────────────────────────────────────
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Announcement {
+  id           String               @id @default(cuid())
+  title        String
+  content      String               @db.Text
+  priority     AnnouncementPriority @default(NORMAL)
+  authorId     String
+  departmentId String?              // null = org-wide
+  isPinned     Boolean              @default(false)
+  expiresAt    DateTime?
+  readBy       AnnouncementRead[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([departmentId, createdAt])
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id             String       @id @default(cuid())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  announcementId String
+  userId         String
+  readAt         DateTime     @default(now())
+
+  @@unique([announcementId, userId])
+  @@map("announcement_reads")
+}
+
+model FeedbackChannel {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  type        String           @default("suggestion") // suggestion, concern, idea, general
+  isAnonymous Boolean          @default(true)
+  isActive    Boolean          @default(true)
+  entries     FeedbackEntry[]
+  createdAt   DateTime         @default(now())
+
+  @@map("feedback_channels")
+}
+
+model FeedbackEntry {
+  id        String          @id @default(cuid())
+  channel   FeedbackChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId String
+  userId    String?         // null if anonymous
+  content   String          @db.Text
+  status    String          @default("open") // open, acknowledged, in_progress, resolved, closed
+  response  String?         @db.Text
+  respondedBy String?
+  respondedAt DateTime?
+  upvotes   Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([channelId, status])
+  @@map("feedback_entries")
 }

@@ -56,6 +56,58 @@ export async function POST(req: NextRequest) {
       _count: true,
     });
     generatedData = { pipeline: candidates.map((c) => ({ status: c.status, count: c._count })) };
+  } else if (type === "DEPARTMENT_PERFORMANCE") {
+    const deptWhere: Record<string, unknown> = {};
+    if (departmentId) deptWhere.departmentId = departmentId;
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [total, completed, overdue, byStatus] = await Promise.all([
+      prisma.task.count({ where: { ...deptWhere, createdAt: { gte: thirtyDaysAgo } } }),
+      prisma.task.count({ where: { ...deptWhere, status: "DONE", createdAt: { gte: thirtyDaysAgo } } }),
+      prisma.task.count({
+        where: { ...deptWhere, status: { notIn: ["DONE", "CANCELLED"] }, dueDate: { lt: new Date() } },
+      }),
+      prisma.task.groupBy({ by: ["status"], where: deptWhere, _count: true }),
+    ]);
+
+    generatedData = {
+      total,
+      completed,
+      overdue,
+      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+      statusBreakdown: byStatus.map((s) => ({ status: s.status, count: s._count })),
+    };
+  } else if (type === "TEAM_WORKLOAD") {
+    const users = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        ...(departmentId ? { primaryDeptId: departmentId } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        _count: {
+          select: {
+            assignedTasks: { where: { status: { notIn: ["DONE", "CANCELLED"] } } },
+          },
+        },
+      },
+    });
+
+    generatedData = {
+      teamMembers: users.map((u) => ({
+        name: u.name,
+        role: u.role,
+        activeTasks: u._count.assignedTasks,
+      })),
+      totalActive: users.reduce((sum, u) => sum + u._count.assignedTasks, 0),
+      avgPerMember: users.length > 0
+        ? Math.round(users.reduce((sum, u) => sum + u._count.assignedTasks, 0) / users.length * 10) / 10
+        : 0,
+    };
   }
 
   const report = await prisma.report.create({

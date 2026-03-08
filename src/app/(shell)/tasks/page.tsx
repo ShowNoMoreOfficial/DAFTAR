@@ -45,10 +45,10 @@ export default function MyTasksPage() {
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/tasks");
+      const res = await fetch("/api/tasks?limit=100");
       if (res.ok) {
-        const data = await res.json();
-        setTasks(data);
+        const json = await res.json();
+        setTasks(json.data ?? json);
       }
     } finally {
       setLoading(false);

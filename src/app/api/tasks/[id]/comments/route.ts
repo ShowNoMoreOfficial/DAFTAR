@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { notifyTaskComment } from "@/lib/notifications";
 
 export async function POST(
   req: NextRequest,
@@ -32,6 +33,22 @@ export async function POST(
       action: "commented",
     },
   });
+
+  // Notify task creator and assignee about the comment
+  const task = await prisma.task.findUnique({
+    where: { id },
+    select: { title: true, creatorId: true, assigneeId: true },
+  });
+  if (task) {
+    const notifyIds = new Set(
+      [task.creatorId, task.assigneeId].filter(
+        (uid): uid is string => !!uid && uid !== session.user.id
+      )
+    );
+    for (const uid of notifyIds) {
+      notifyTaskComment(uid, task.title, id, session.user.name).catch(() => {});
+    }
+  }
 
   return NextResponse.json(comment, { status: 201 });
 }
