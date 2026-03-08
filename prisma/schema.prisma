@@ -90,6 +90,12 @@ model User {
   // Gamification
   achievements        UserAchievement[]
   streak              UserStreak?
+  // Vritti
+  authoredArticles    Article[]           @relation("ArticleAuthor")
+  editedArticles      Article[]           @relation("ArticleEditor")
+  reviewedArticles    Article[]           @relation("ArticleReviewer")
+  uploadedMedia       ArticleMedia[]      @relation("MediaUploader")
+  editorialComments   EditorialComment[]  @relation("EditorialComments")
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -1049,4 +1055,194 @@ model FeedbackEntry {
 
   @@index([channelId, status])
   @@map("feedback_entries")
+}
+
+// ─── Vritti: CMS ───────────────────────────────────────
+
+enum ArticleStatus {
+  IDEA
+  DRAFTING
+  EDITING
+  REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+model ArticleCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  color       String?   // hex color for UI
+  parentId    String?
+  parent      ArticleCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    ArticleCategory[] @relation("CategoryTree")
+  articles    Article[]
+  createdAt   DateTime  @default(now())
+
+  @@map("article_categories")
+}
+
+model Article {
+  id            String        @id @default(cuid())
+  title         String
+  slug          String        @unique
+  excerpt       String?       @db.Text
+  body          String?       @db.Text  // rich text / markdown
+  status        ArticleStatus @default(IDEA)
+  categoryId    String?
+  category      ArticleCategory? @relation(fields: [categoryId], references: [id])
+  brandId       String?
+  tags          String[]      // array of tag strings
+  coverImageUrl String?
+  seoTitle      String?
+  seoDescription String?
+  authorId      String
+  author        User          @relation("ArticleAuthor", fields: [authorId], references: [id])
+  editorId      String?       // assigned editor
+  editor        User?         @relation("ArticleEditor", fields: [editorId], references: [id])
+  reviewerId    String?       // assigned reviewer
+  reviewer      User?         @relation("ArticleReviewer", fields: [reviewerId], references: [id])
+  wordCount     Int           @default(0)
+  readTimeMin   Int           @default(0)
+  publishedAt   DateTime?
+  scheduledAt   DateTime?
+  metadata      Json?         // custom fields, layout config
+  versions      ArticleVersion[]
+  media         ArticleMedia[]
+  comments      EditorialComment[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status, categoryId])
+  @@index([authorId, status])
+  @@index([brandId])
+  @@index([publishedAt])
+  @@map("articles")
+}
+
+model ArticleVersion {
+  id         String   @id @default(cuid())
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleId  String
+  version    Int
+  title      String
+  body       String?  @db.Text
+  editedById String
+  changeNote String?
+  createdAt  DateTime @default(now())
+
+  @@unique([articleId, version])
+  @@map("article_versions")
+}
+
+model ArticleMedia {
+  id        String   @id @default(cuid())
+  article   Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  articleId String?
+  fileName  String
+  fileUrl   String
+  fileType  String   // image, video, document, audio
+  fileSize  Int      @default(0) // bytes
+  altText   String?
+  caption   String?
+  uploadedById String
+  uploadedBy   User     @relation("MediaUploader", fields: [uploadedById], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([articleId])
+  @@index([fileType])
+  @@map("article_media")
+}
+
+model EditorialComment {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("EditorialComments", fields: [authorId], references: [id])
+  content   String   @db.Text
+  type      String   @default("comment") // comment, suggestion, revision_request
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([articleId, resolved])
+  @@map("editorial_comments")
+}
+
+// ─── Client Portal ─────────────────────────────────────
+
+model ClientDeliverable {
+  id           String   @id @default(cuid())
+  clientId     String
+  brandId      String
+  title        String
+  description  String?  @db.Text
+  type         String   // video, article, graphic, report, social_post
+  fileUrl      String?
+  thumbnailUrl String?
+  status       String   @default("pending") // pending, ready_for_review, approved, revision_requested, final
+  taskId       String?  // links to originating PMS task
+  postId       String?  // links to ContentPost if applicable
+  feedback     String?  @db.Text
+  approvedAt   DateTime?
+  approvedBy   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([clientId, brandId])
+  @@index([status])
+  @@map("client_deliverables")
+}
+
+model ClientReport {
+  id          String   @id @default(cuid())
+  clientId    String
+  brandId     String
+  title       String
+  period      String   // "2026-03", "2026-Q1"
+  type        String   @default("monthly") // weekly, monthly, quarterly
+  metrics     Json     // {views, engagement, posts_published, top_content, growth}
+  summary     String?  @db.Text
+  generatedAt DateTime @default(now())
+
+  @@index([clientId, brandId])
+  @@index([period])
+  @@map("client_reports")
+}
+
+// ─── GI: Pattern History (Adolescent) ──────────────────
+
+model GIPatternLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  departmentId String?
+  patternType  String   // velocity_trend, quality_trend, workload_shift, engagement_drop, collaboration_pattern
+  description  String   @db.Text
+  data         Json     // {trend, periods, values, comparison}
+  severity     String   @default("info") // info, warning, critical
+  isActive     Boolean  @default(true)
+  detectedAt   DateTime @default(now())
+  expiresAt    DateTime?
+
+  @@index([userId, patternType])
+  @@index([departmentId, patternType])
+  @@index([isActive, detectedAt])
+  @@map("gi_pattern_logs")
+}
+
+model GIMotivationProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  // Calibrated preferences for personalized nudges
+  preferredTone   String   @default("balanced") // encouraging, direct, balanced, competitive
+  nudgeFrequency  String   @default("normal") // minimal, normal, frequent
+  motivators      Json     @default("[]") // ["achievement", "recognition", "mastery", "autonomy"]
+  demotivators    Json     @default("[]") // ["micromanagement", "repetition", "isolation"]
+  responseHistory Json     @default("{}") // {insight_type: {shown, clicked, dismissed}}
+  lastCalibrated  DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("gi_motivation_profiles")
 }
