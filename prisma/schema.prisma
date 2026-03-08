@@ -96,6 +96,7 @@ model User {
   reviewedArticles    Article[]           @relation("ArticleReviewer")
   uploadedMedia       ArticleMedia[]      @relation("MediaUploader")
   editorialComments   EditorialComment[]  @relation("EditorialComments")
+  articleVersionEdits ArticleVersion[]    @relation("VersionEditor")
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -208,6 +209,7 @@ model Brand {
   invoices   Invoice[]
   posts               ContentPost[]
   platformConnections PlatformConnection[]
+  articles   Article[]         @relation("ArticleBrand")
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
@@ -1094,6 +1096,7 @@ model Article {
   categoryId    String?
   category      ArticleCategory? @relation(fields: [categoryId], references: [id])
   brandId       String?
+  brand         Brand?        @relation("ArticleBrand", fields: [brandId], references: [id])
   tags          String[]      // array of tag strings
   coverImageUrl String?
   seoTitle      String?
@@ -1130,6 +1133,7 @@ model ArticleVersion {
   title      String
   body       String?  @db.Text
   editedById String
+  editedBy   User     @relation("VersionEditor", fields: [editedById], references: [id])
   changeNote String?
   createdAt  DateTime @default(now())
 
@@ -1245,4 +1249,150 @@ model GIMotivationProfile {
   updatedAt       DateTime @updatedAt
 
   @@map("gi_motivation_profiles")
+}
+
+// ─── GI: Adult (v4) — Predictive & Autonomous ──────────
+
+enum GIActionStatus {
+  PENDING     // Awaiting approval (Tier 2)
+  APPROVED    // Approved by user
+  EXECUTED    // Auto-executed (Tier 3/4)
+  REJECTED    // User rejected
+  UNDONE      // User undid the action
+  FAILED      // Execution failed
+}
+
+model GIAutonomousAction {
+  id           String         @id @default(cuid())
+  actionType   String         // task_reassignment, deadline_extension, workload_rebalance, scheduling, notification_batch
+  tier         Int            // 1=inform, 2=suggest, 3=act_notify, 4=act_silent
+  status       GIActionStatus @default(PENDING)
+  description  String         @db.Text
+  targetUserId String?        // user affected by the action
+  targetEntity String?        // e.g. "task:cuid123" or "dept:cuid456"
+  actionData   Json           // {type-specific payload for execution}
+  reasoning    String?        @db.Text // why the GI decided to take this action
+  result       Json?          // outcome data after execution
+  triggeredBy  String?        // prediction or pattern that triggered this
+  approvedById String?        // who approved (for Tier 2)
+  executedAt   DateTime?
+  undoneAt     DateTime?
+  expiresAt    DateTime?      // auto-expire pending actions
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([status, tier])
+  @@index([targetUserId, status])
+  @@index([actionType, createdAt])
+  @@map("gi_autonomous_actions")
+}
+
+model GIPrediction {
+  id           String   @id @default(cuid())
+  type         String   // deadline_risk, capacity_crunch, quality_decline, burnout_risk, bottleneck_forming, dependency_stall
+  confidence   Float    // 0-1 confidence score
+  severity     String   @default("medium") // low, medium, high, critical
+  title        String
+  description  String   @db.Text
+  data         Json     // {prediction-specific data, evidence, factors}
+  targetUserId String?
+  departmentId String?
+  entityRef    String?  // "task:id", "dept:id", etc.
+  isActive     Boolean  @default(true)
+  actionTaken  String?  // what was done about it
+  actionId     String?  // links to GIAutonomousAction
+  accuracy     Float?   // retrospective: was the prediction correct? 0-1
+  resolvedAt   DateTime?
+  predictsAt   DateTime // when the predicted event is expected to occur
+  createdAt    DateTime @default(now())
+
+  @@index([type, isActive])
+  @@index([targetUserId, isActive])
+  @@index([departmentId, isActive])
+  @@index([predictsAt])
+  @@map("gi_predictions")
+}
+
+model GILearningLog {
+  id            String   @id @default(cuid())
+  category      String   // rhythm, preference, pattern, correction, outcome
+  key           String   // e.g. "team_peak_hours", "approval_avg_time", "dept_velocity_baseline"
+  value         Json     // learned data
+  confidence    Float    @default(0.5) // how confident in this learning
+  observations  Int      @default(1) // number of data points
+  departmentId  String?
+  userId        String?
+  isActive      Boolean  @default(true)
+  lastObserved  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([category, key, departmentId, userId])
+  @@index([category, isActive])
+  @@map("gi_learning_logs")
+}
+
+// ─── Multi-Tenant SaaS Foundation ───────────────────────
+
+model Organization {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  domain        String?  @unique // custom domain
+  logo          String?
+  plan          String   @default("starter") // starter, professional, enterprise
+  planExpiresAt DateTime?
+  settings      Json?    // org-level settings (timezone, locale, branding)
+  features      Json?    // feature flags per plan
+  maxUsers      Int      @default(10)
+  isActive      Boolean  @default(true)
+  onboardingStep String  @default("created") // created, profile, departments, invite, complete
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subscriptions SaaSSubscription[]
+  products      SaaSProduct[]
+
+  @@map("organizations")
+}
+
+model SaaSProduct {
+  id             String   @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  product        String   // daftar, hoccr, relay, yantri, khabri
+  displayName    String
+  description    String?  @db.Text
+  isActive       Boolean  @default(true)
+  config         Json?    // product-specific configuration
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  subscriptions  SaaSSubscription[]
+
+  @@unique([organizationId, product])
+  @@map("saas_products")
+}
+
+model SaaSSubscription {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  productId      String
+  product        SaaSProduct  @relation(fields: [productId], references: [id])
+  plan           String       // starter, professional, enterprise
+  status         String       @default("active") // active, trial, past_due, cancelled, paused
+  trialEndsAt    DateTime?
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  amount         Float        @default(0)
+  currency       String       @default("INR")
+  metadata       Json?
+  cancelledAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, productId])
+  @@index([status])
+  @@map("saas_subscriptions")
 }
