@@ -797,7 +797,8 @@ async function main() {
             brandId: i < 4 ? breakingTube.id : squirrels.id,
             platform: ["youtube", "instagram", "x", "linkedin"][i % 4],
             title: `Planned content for ${entryDate.toLocaleDateString()}`,
-            notes: "Auto-generated calendar entry for demo",
+            description: "Auto-generated calendar entry for demo",
+            deliverableType: ["video", "carousel", "reel", "post"][i % 4],
             createdById: admin.id,
           },
         });
@@ -814,28 +815,28 @@ async function main() {
       content: "The quarterly performance review cycle starts next Monday. All department heads must submit their team evaluations by March 25th. Please ensure all task updates are current in PMS before the review begins.",
       priority: "HIGH" as const,
       isPinned: true,
-      createdById: admin.id,
+      authorId: admin.id,
     },
     {
       title: "New Office Wi-Fi Password",
       content: "The office Wi-Fi password has been updated for security. New credentials have been shared via email. Please reconnect your devices at your earliest convenience.",
       priority: "NORMAL" as const,
       isPinned: false,
-      createdById: admin.id,
+      authorId: admin.id,
     },
     {
       title: "Diwali Office Closure Notice",
       content: "The office will remain closed from October 31st to November 3rd for Diwali celebrations. Please plan your deliverables accordingly. Emergency contacts will be shared separately.",
       priority: "URGENT" as const,
       isPinned: true,
-      createdById: admin.id,
+      authorId: admin.id,
     },
     {
       title: "Team Lunch This Friday",
       content: "We're organizing a team lunch this Friday at 1 PM. Join us at the cafeteria for some good food and team bonding!",
       priority: "LOW" as const,
       isPinned: false,
-      createdById: admin.id,
+      authorId: admin.id,
     },
   ];
 
@@ -850,39 +851,255 @@ async function main() {
     {
       name: "General Suggestions",
       description: "Share ideas for improving workplace processes, tools, or culture",
-      isAnonymousAllowed: true,
-      createdById: admin.id,
+      isAnonymous: true,
     },
     {
       name: "Tech Tooling Requests",
       description: "Request new software, tools, or improvements to existing tech stack",
-      isAnonymousAllowed: false,
-      createdById: admin.id,
+      isAnonymous: false,
     },
     {
       name: "HR & Policy Feedback",
       description: "Provide feedback on HR policies, benefits, and workplace guidelines",
-      isAnonymousAllowed: true,
-      createdById: admin.id,
+      isAnonymous: true,
     },
   ];
 
   for (const channel of feedbackChannels) {
     const created = await prisma.feedbackChannel.create({ data: channel });
-    // Add a sample feedback entry to each channel
     await prisma.feedbackEntry.create({
       data: {
         channelId: created.id,
         content: `Sample feedback for ${channel.name}. This is a demo entry to showcase the feedback system.`,
-        isAnonymous: channel.isAnonymousAllowed,
-        submittedById: admin.id,
-        status: "OPEN",
+        userId: admin.id,
+        status: "open",
         upvotes: Math.floor(Math.random() * 10),
       },
     });
   }
 
   console.log(`Created ${feedbackChannels.length} feedback channels with sample entries`);
+
+  // ─── Vritti: Article Categories ───────────────────────
+  const categories = await Promise.all([
+    prisma.articleCategory.upsert({
+      where: { slug: "political-analysis" },
+      update: {},
+      create: { name: "Political Analysis", slug: "political-analysis", description: "Deep dives into political events and policy", color: "#2E86AB" },
+    }),
+    prisma.articleCategory.upsert({
+      where: { slug: "media-industry" },
+      update: {},
+      create: { name: "Media Industry", slug: "media-industry", description: "Trends and news from the media landscape", color: "#A23B72" },
+    }),
+    prisma.articleCategory.upsert({
+      where: { slug: "op-ed" },
+      update: {},
+      create: { name: "Op-Ed", slug: "op-ed", description: "Opinion and editorial pieces", color: "#F18F01" },
+    }),
+    prisma.articleCategory.upsert({
+      where: { slug: "tech-culture" },
+      update: {},
+      create: { name: "Tech & Culture", slug: "tech-culture", description: "Technology impact on society and culture", color: "#048A81" },
+    }),
+  ]);
+
+  console.log(`Created ${categories.length} article categories`);
+
+  // ─── Vritti: Demo Articles ─────────────────────────────
+  const articles = [
+    {
+      title: "The Evolution of Indian Political Journalism",
+      slug: "evolution-indian-political-journalism",
+      excerpt: "How digital media transformed political reporting in India over the last decade.",
+      body: "Political journalism in India has undergone a seismic shift. The rise of digital platforms, independent creators, and social media has democratized news consumption while creating new challenges for traditional outlets.\n\nIn this article, we explore the key inflection points that shaped today's media landscape, from the 2014 social media election to the current era of YouTube-first journalism.",
+      status: "PUBLISHED" as const,
+      categoryId: categories[1].id,
+      tags: ["journalism", "india", "digital-media"],
+      authorId: admin.id,
+      wordCount: 1850,
+      readTimeMin: 8,
+      publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    },
+    {
+      title: "Budget 2026: Winners and Losers",
+      slug: "budget-2026-winners-losers",
+      excerpt: "A comprehensive analysis of who benefits and who pays in the new Union Budget.",
+      body: "The Union Budget 2026 brought sweeping changes to tax policy, infrastructure spending, and social welfare programs. Let's break down the key announcements sector by sector.",
+      status: "REVIEW" as const,
+      categoryId: categories[0].id,
+      tags: ["budget", "economy", "policy"],
+      authorId: admin.id,
+      wordCount: 2400,
+      readTimeMin: 10,
+    },
+    {
+      title: "Why YouTube is the New Prime Time",
+      slug: "youtube-new-prime-time",
+      excerpt: "YouTube creators are outperforming traditional TV channels in reach and engagement.",
+      body: "",
+      status: "DRAFTING" as const,
+      categoryId: categories[1].id,
+      tags: ["youtube", "media", "creators"],
+      authorId: admin.id,
+      wordCount: 0,
+      readTimeMin: 0,
+    },
+    {
+      title: "AI in Newsrooms: Threat or Tool?",
+      slug: "ai-newsrooms-threat-or-tool",
+      excerpt: "Exploring how artificial intelligence is reshaping editorial workflows.",
+      body: "",
+      status: "IDEA" as const,
+      categoryId: categories[3].id,
+      tags: ["ai", "newsrooms", "technology"],
+      authorId: admin.id,
+      wordCount: 0,
+      readTimeMin: 0,
+    },
+    {
+      title: "State Elections 2026: Ground Report from Maharashtra",
+      slug: "state-elections-2026-maharashtra",
+      excerpt: "On-the-ground reporting from key constituencies ahead of Maharashtra state elections.",
+      body: "Our team spent three weeks in Maharashtra's key swing constituencies, speaking with voters, party workers, and local leaders. Here's what we found.",
+      status: "EDITING" as const,
+      categoryId: categories[0].id,
+      tags: ["elections", "maharashtra", "ground-report"],
+      authorId: admin.id,
+      wordCount: 3200,
+      readTimeMin: 14,
+    },
+  ];
+
+  for (const article of articles) {
+    await prisma.article.create({ data: article });
+  }
+
+  console.log(`Created ${articles.length} demo articles`);
+
+  // ─── Client Deliverables ──────────────────────────────
+  if (breakingTube && squirrels) {
+    const deliverables = [
+      {
+        clientId: client.id,
+        brandId: breakingTube.id,
+        title: "Bhupendra Chaubey Interview — Final Edit",
+        description: "Final edited version of the PM Modi interview analysis video, ready for client review.",
+        type: "video",
+        status: "ready_for_review",
+      },
+      {
+        clientId: client.id,
+        brandId: breakingTube.id,
+        title: "Monthly Performance Report — February 2026",
+        description: "Monthly analytics report covering views, engagement, and audience growth.",
+        type: "report",
+        status: "approved",
+        approvedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      },
+      {
+        clientId: client.id,
+        brandId: squirrels.id,
+        title: "Squirrels Episode 18 — Storyboard",
+        description: "Storyboard and script for the next satirical episode.",
+        type: "graphic",
+        status: "pending",
+      },
+      {
+        clientId: client.id,
+        brandId: breakingTube.id,
+        title: "Instagram Reel — Budget Highlights",
+        description: "60-second reel covering Union Budget highlights for Instagram.",
+        type: "social_post",
+        status: "final",
+        approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      },
+    ];
+
+    for (const d of deliverables) {
+      await prisma.clientDeliverable.create({ data: d });
+    }
+
+    // Client reports
+    await prisma.clientReport.create({
+      data: {
+        clientId: client.id,
+        brandId: breakingTube.id,
+        title: "Breaking Tube — February 2026 Report",
+        period: "2026-02",
+        type: "monthly",
+        metrics: {
+          totalViews: 245000,
+          totalEngagement: 18500,
+          postsPublished: 12,
+          avgEngagementRate: 4.2,
+          topContent: "PM Modi Interview Analysis",
+          subscriberGrowth: 3200,
+          impressions: 520000,
+        },
+        summary: "Strong month with the PM Modi interview driving significant viewership. Engagement rate improved by 0.8% over January. Subscriber growth steady at 3,200 new subscribers.",
+      },
+    });
+
+    console.log("Created client deliverables and reports");
+  }
+
+  // ─── Cross-Department Dependencies ─────────────────────
+  const mediaDeptRef = departments.find((d) => d.name === "Media");
+  const techDeptRef = departments.find((d) => d.name === "Tech");
+  const prodDept = departments.find((d) => d.name === "Production");
+  const mktDept = departments.find((d) => d.name === "Marketing");
+
+  if (mediaDeptRef && techDeptRef && prodDept && mktDept) {
+    const deps = [
+      {
+        fromDeptId: mediaDeptRef.id,
+        toDeptId: prodDept.id,
+        description: "Waiting for final video edit of Episode 45 before publishing",
+        status: "waiting",
+        priority: "high",
+        createdById: admin.id,
+      },
+      {
+        fromDeptId: mktDept.id,
+        toDeptId: techDeptRef.id,
+        description: "Need landing page deployment for campaign launch",
+        status: "acknowledged",
+        priority: "medium",
+        createdById: admin.id,
+      },
+      {
+        fromDeptId: techDeptRef.id,
+        toDeptId: mediaDeptRef.id,
+        description: "CMS integration testing requires sample content uploads",
+        status: "resolved",
+        priority: "low",
+        createdById: admin.id,
+        resolvedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+    ];
+
+    for (const dep of deps) {
+      await prisma.crossDeptDependency.create({ data: dep });
+    }
+
+    console.log(`Created ${deps.length} cross-department dependencies`);
+  }
+
+  // ─── GI Motivation Profiles ────────────────────────────
+  await prisma.gIMotivationProfile.upsert({
+    where: { userId: admin.id },
+    update: {},
+    create: {
+      userId: admin.id,
+      preferredTone: "direct",
+      nudgeFrequency: "normal",
+      motivators: ["achievement", "mastery"],
+      demotivators: ["micromanagement"],
+    },
+  });
+
+  console.log("Created GI motivation profiles");
 
   console.log("Seed complete!");
 }
