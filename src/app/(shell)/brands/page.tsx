@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Palette } from "lucide-react";
+import { Globe, Palette, ArrowRight } from "lucide-react";
 
 interface Brand {
   id: string;
@@ -37,15 +38,22 @@ export default function BrandsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {brands.map((brand) => (
-            <div key={brand.id} className="rounded-xl border border-[#E5E7EB] bg-white p-5 transition-shadow hover:shadow-md">
-              <div className="mb-3 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2E86AB]/10">
-                  <Palette className="h-5 w-5 text-[#2E86AB]" />
+            <Link
+              key={brand.id}
+              href={`/brands/${brand.id}`}
+              className="group rounded-xl border border-[#E5E7EB] bg-white p-5 transition-shadow hover:shadow-md"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2E86AB]/10">
+                    <Palette className="h-5 w-5 text-[#2E86AB]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-[#1A1A1A]">{brand.name}</h3>
+                    <p className="text-[10px] text-[#9CA3AF]">{brand.client.name}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[#1A1A1A]">{brand.name}</h3>
-                  <p className="text-[10px] text-[#9CA3AF]">{brand.client.name}</p>
-                </div>
+                <ArrowRight className="h-4 w-4 text-[#9CA3AF] opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {brand.platforms.map((p) => (
@@ -62,7 +70,7 @@ export default function BrandsPage() {
                   <span className="text-[10px] text-[#D1D5DB]">No platforms configured</span>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

@@ -12,6 +12,8 @@ import {
   Loader2,
   Zap,
   Users,
+  ArrowRight,
+  GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +60,24 @@ interface CapacityItem {
   status: string;
 }
 
+interface CrossDeptDependency {
+  id: string;
+  fromDeptName: string;
+  toDeptName: string;
+  description: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+}
+
+interface DependencyStats {
+  total: number;
+  waiting: number;
+  acknowledged: number;
+  escalated: number;
+  resolved: number;
+}
+
 const SEVERITY_STYLES: Record<string, string> = {
   critical: "bg-red-100 text-red-700 border-red-200",
   high: "bg-orange-100 text-orange-700 border-orange-200",
@@ -77,16 +97,19 @@ export default function OperationsPage() {
   const [departments, setDepartments] = useState<DeptBreakdown[]>([]);
   const [bottlenecks, setBottlenecks] = useState<BottleneckItem[]>([]);
   const [capacity, setCapacity] = useState<CapacityItem[]>([]);
+  const [crossDeps, setCrossDeps] = useState<CrossDeptDependency[]>([]);
+  const [depStats, setDepStats] = useState<DependencyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [detecting, setDetecting] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [opsRes, capRes, bnRes] = await Promise.all([
+      const [opsRes, capRes, bnRes, depsRes] = await Promise.all([
         fetch("/api/hoccr/operations"),
         fetch("/api/hoccr/operations/capacity"),
         fetch("/api/hoccr/operations/bottlenecks?status=active"),
+        fetch("/api/hoccr/operations/dependencies"),
       ]);
 
       if (opsRes.ok) {
@@ -103,6 +126,12 @@ export default function OperationsPage() {
       if (bnRes.ok) {
         const data = await bnRes.json();
         setBottlenecks(Array.isArray(data) ? data : []);
+      }
+
+      if (depsRes.ok) {
+        const data = await depsRes.json();
+        setCrossDeps(data.dependencies || []);
+        setDepStats(data.stats || null);
       }
     } finally {
       setLoading(false);
@@ -285,6 +314,85 @@ export default function OperationsPage() {
                     })}
                   </span>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Cross-Department Dependencies */}
+      <div className="mb-6">
+        <div className="mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-[#1A1A1A]">Cross-Department Dependencies</h3>
+          <GitBranch className="h-4 w-4 text-[#9CA3AF]" />
+          {depStats && depStats.total > 0 && (
+            <div className="ml-auto flex items-center gap-2 text-xs">
+              {depStats.waiting > 0 && (
+                <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-700">
+                  {depStats.waiting} waiting
+                </span>
+              )}
+              {depStats.escalated > 0 && (
+                <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-700">
+                  {depStats.escalated} escalated
+                </span>
+              )}
+              {depStats.resolved > 0 && (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">
+                  {depStats.resolved} resolved
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        {crossDeps.length === 0 ? (
+          <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-8 text-center text-sm text-[#9CA3AF]">
+            No cross-department dependencies tracked
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {crossDeps.filter((d) => d.status !== "resolved").slice(0, 8).map((dep) => (
+              <div
+                key={dep.id}
+                className="flex items-center gap-3 rounded-lg border border-[#E5E7EB] bg-white px-4 py-3"
+              >
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium text-[#2E86AB]">{dep.fromDeptName}</span>
+                  <ArrowRight className="h-3 w-3 text-[#9CA3AF]" />
+                  <span className="font-medium text-[#A23B72]">{dep.toDeptName}</span>
+                </div>
+                <p className="flex-1 truncate text-sm text-[#6B7280]">{dep.description}</p>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-[10px]",
+                    dep.status === "escalated"
+                      ? "bg-red-100 text-red-700"
+                      : dep.status === "waiting"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : dep.status === "acknowledged"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-600"
+                  )}
+                >
+                  {dep.status}
+                </Badge>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-[10px]",
+                    dep.priority === "critical"
+                      ? "bg-red-100 text-red-700"
+                      : dep.priority === "high"
+                      ? "bg-orange-100 text-orange-700"
+                      : "bg-gray-100 text-gray-600"
+                  )}
+                >
+                  {dep.priority}
+                </Badge>
+                <span className="text-[10px] text-[#9CA3AF]">
+                  {new Date(dep.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                </span>
               </div>
             ))}
           </div>

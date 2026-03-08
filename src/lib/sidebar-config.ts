@@ -82,6 +82,12 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: "FileText",
     href: "/m/vritti",
     roles: ["ADMIN", "DEPT_HEAD", "MEMBER", "CLIENT"],
+    children: [
+      { id: "vritti-pipeline", label: "Pipeline", icon: "Kanban", href: "/m/vritti/pipeline", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "vritti-articles", label: "Articles", icon: "FileText", href: "/m/vritti/articles", roles: ["ADMIN", "DEPT_HEAD", "MEMBER", "CLIENT"] },
+      { id: "vritti-media", label: "Media", icon: "Image", href: "/m/vritti/media", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "vritti-categories", label: "Categories", icon: "Tag", href: "/m/vritti/categories", roles: ["ADMIN", "DEPT_HEAD"] },
+    ],
   },
   {
     id: "finance",
@@ -113,10 +119,29 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
   },
   {
     id: "gi-config",
-    label: "GI Config",
+    label: "GI Intelligence",
     icon: "Sparkles",
     href: "/admin/gi",
     roles: ["ADMIN"],
+    children: [
+      { id: "gi-overview", label: "Overview", icon: "LayoutDashboard", href: "/admin/gi", roles: ["ADMIN"] },
+      { id: "gi-actions", label: "Actions", icon: "Zap", href: "/admin/gi/actions", roles: ["ADMIN"] },
+      { id: "gi-predictions", label: "Predictions", icon: "TrendingUp", href: "/admin/gi/predictions", roles: ["ADMIN"] },
+      { id: "gi-learning", label: "Learning", icon: "Brain", href: "/admin/gi/learning", roles: ["ADMIN"] },
+      { id: "gi-autonomy", label: "Config", icon: "Settings", href: "/admin/gi/config", roles: ["ADMIN"] },
+    ],
+  },
+  {
+    id: "saas-admin",
+    label: "SaaS Platform",
+    icon: "Cloud",
+    href: "/admin/saas",
+    roles: ["ADMIN"],
+    children: [
+      { id: "saas-dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/admin/saas", roles: ["ADMIN"] },
+      { id: "saas-onboarding", label: "Onboarding", icon: "UserPlus", href: "/admin/saas/onboarding", roles: ["ADMIN"] },
+      { id: "saas-products", label: "Products", icon: "Package", href: "/admin/products", roles: ["ADMIN"] },
+    ],
   },
   {
     id: "leaderboard",

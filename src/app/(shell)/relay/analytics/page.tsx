@@ -1,34 +1,37 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Eye,
   Heart,
   Share2,
-  MousePointerClick,
   TrendingUp,
   BarChart3,
   Loader2,
   RefreshCw,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────
 
-interface AnalyticsOverview {
+interface AnalyticsData {
   totalPosts: number;
   totalViews: number;
+  totalEngagement: number;
+  avgEngagementRate: number;
   totalLikes: number;
   totalShares: number;
+  totalComments: number;
   totalClicks: number;
-  avgEngagement: number;
+  totalReach: number;
+  totalImpressions: number;
   platformBreakdown: {
     platform: string;
-    postCount: number;
-    totalViews: number;
-    avgEngagement: number;
+    posts: number;
+    views: number;
+    engagementRate: number;
   }[];
   topPosts: {
     id: string;
@@ -36,43 +39,62 @@ interface AnalyticsOverview {
     platform: string;
     brandName: string;
     views: number;
-    engagement: number;
-    publishedAt: string;
+    engagementRate: number;
+    publishedAt: string | null;
   }[];
 }
 
 // ─── Constants ──────────────────────────────────────────
 
 const PLATFORM_COLORS: Record<string, string> = {
-  youtube: "bg-red-500",
-  x: "bg-gray-800",
-  instagram: "bg-pink-500",
-  linkedin: "bg-blue-600",
-  facebook: "bg-indigo-500",
+  youtube: "bg-[#FF0000]",
+  x: "bg-[#000000]",
+  instagram: "bg-[#E4405F]",
+  linkedin: "bg-[#0A66C2]",
+  facebook: "bg-[#1877F2]",
+};
+
+const PLATFORM_LABELS: Record<string, string> = {
+  youtube: "YouTube",
+  x: "X",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  facebook: "Facebook",
 };
 
 // ─── Component ──────────────────────────────────────────
 
-export default function AnalyticsPage() {
-  const [data, setData] = useState<AnalyticsOverview | null>(null);
+export default function RelayAnalyticsPage() {
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("30");
+  const [brandId, setBrandId] = useState("");
+  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/relay/analytics?period=${period}`);
+      const params = new URLSearchParams({ period });
+      if (brandId) params.set("brandId", brandId);
+      const res = await fetch(`/api/relay/analytics?${params}`);
       if (res.ok) {
         setData(await res.json());
       }
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, [period, brandId]);
 
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
+
+  useEffect(() => {
+    fetch("/api/brands")
+      .then((r) => r.json())
+      .then((d) => setBrands(Array.isArray(d) ? d : d.data || []))
+      .catch(() => {});
+  }, []);
 
   if (loading) {
     return (
@@ -101,6 +123,16 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <select
+            value={brandId}
+            onChange={(e) => setBrandId(e.target.value)}
+            className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs text-[#6B7280]"
+          >
+            <option value="">All Brands</option>
+            {brands.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
           <div className="flex gap-1 rounded-lg border border-[#E5E7EB] bg-white p-0.5">
             {[
               { label: "7d", value: "7" },
@@ -125,13 +157,28 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Overview cards */}
-      <div className="mb-6 grid grid-cols-5 gap-4">
-        <MetricCard icon={<BarChart3 className="h-5 w-5 text-[#2E86AB]" />} label="Total Posts" value={String(data.totalPosts)} />
-        <MetricCard icon={<Eye className="h-5 w-5 text-purple-500" />} label="Total Views" value={formatNumber(data.totalViews)} />
-        <MetricCard icon={<Heart className="h-5 w-5 text-pink-500" />} label="Total Likes" value={formatNumber(data.totalLikes)} />
-        <MetricCard icon={<Share2 className="h-5 w-5 text-emerald-500" />} label="Total Shares" value={formatNumber(data.totalShares)} />
-        <MetricCard icon={<TrendingUp className="h-5 w-5 text-[#A23B72]" />} label="Avg Engagement" value={`${data.avgEngagement}%`} />
+      {/* KPI cards */}
+      <div className="mb-6 grid grid-cols-4 gap-4">
+        <MetricCard
+          icon={<BarChart3 className="h-5 w-5 text-[#2E86AB]" />}
+          label="Total Posts"
+          value={String(data.totalPosts)}
+        />
+        <MetricCard
+          icon={<Eye className="h-5 w-5 text-purple-500" />}
+          label="Total Views"
+          value={formatNumber(data.totalViews)}
+        />
+        <MetricCard
+          icon={<Heart className="h-5 w-5 text-pink-500" />}
+          label="Total Engagement"
+          value={formatNumber(data.totalEngagement)}
+        />
+        <MetricCard
+          icon={<TrendingUp className="h-5 w-5 text-[#A23B72]" />}
+          label="Avg Engagement Rate"
+          value={`${data.avgEngagementRate}%`}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-6">
@@ -147,17 +194,19 @@ export default function AnalyticsPage() {
                   <div className={cn("h-3 w-3 rounded-full", PLATFORM_COLORS[p.platform] || "bg-gray-400")} />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium capitalize text-[#1A1A1A]">{p.platform}</span>
-                      <span className="text-xs text-[#6B7280]">{p.postCount} posts</span>
+                      <span className="text-sm font-medium text-[#1A1A1A]">
+                        {PLATFORM_LABELS[p.platform] || p.platform}
+                      </span>
+                      <span className="text-xs text-[#6B7280]">{p.posts} posts</span>
                     </div>
                     <div className="mt-1 flex items-center justify-between text-[10px] text-[#9CA3AF]">
-                      <span>{formatNumber(p.totalViews)} views</span>
-                      <span>{p.avgEngagement}% eng.</span>
+                      <span>{formatNumber(p.views)} views</span>
+                      <span>{p.engagementRate}% eng.</span>
                     </div>
                     <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#F3F4F6]">
                       <div
                         className={cn("h-full rounded-full", PLATFORM_COLORS[p.platform] || "bg-gray-400")}
-                        style={{ width: `${Math.min(p.avgEngagement * 10, 100)}%`, opacity: 0.7 }}
+                        style={{ width: `${Math.min(p.engagementRate * 10, 100)}%`, opacity: 0.7 }}
                       />
                     </div>
                   </div>
@@ -188,7 +237,10 @@ export default function AnalyticsPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-[#1A1A1A]">{post.title}</p>
                       <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF]">
-                        <span className="capitalize">{post.platform}</span>
+                        <span className="flex items-center gap-1">
+                          <div className={cn("h-1.5 w-1.5 rounded-full", PLATFORM_COLORS[post.platform] || "bg-gray-400")} />
+                          {PLATFORM_LABELS[post.platform] || post.platform}
+                        </span>
                         <span>{post.brandName}</span>
                         {post.publishedAt && (
                           <span>
@@ -206,7 +258,7 @@ export default function AnalyticsPage() {
                       </div>
                       <div className="flex items-center gap-1 text-emerald-600">
                         <TrendingUp className="h-3 w-3" />
-                        {post.engagement}%
+                        {post.engagementRate}%
                       </div>
                     </div>
                   </div>

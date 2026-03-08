@@ -1101,6 +1101,187 @@ async function main() {
 
   console.log("Created GI motivation profiles");
 
+  // ─── Phase 5: GI Adult Data ──────────────────────────────
+
+  // GI Tier Assignments (default autonomy levels)
+  const tierAssignments = [
+    { actionType: "task_reassignment", tier: 3 },     // Act & notify
+    { actionType: "deadline_extension", tier: 2 },     // Suggest only
+    { actionType: "workload_rebalance", tier: 2 },     // Suggest only
+    { actionType: "leaderboard_update", tier: 4 },     // Fully automatic
+    { actionType: "performance_warning", tier: 1 },    // Inform only
+    { actionType: "budget_allocation", tier: 1 },      // Inform only
+    { actionType: "notification_batch", tier: 4 },     // Fully automatic
+    { actionType: "scheduling", tier: 3 },             // Act & notify
+    { actionType: "broll_sourcing", tier: 4 },         // Fully automatic
+    { actionType: "social_posting", tier: 2 },         // Require approval
+  ];
+
+  for (const ta of tierAssignments) {
+    await prisma.gITierAssignment.upsert({
+      where: { actionType: ta.actionType },
+      update: { tier: ta.tier, updatedBy: admin.id },
+      create: { ...ta, updatedBy: admin.id },
+    });
+  }
+  console.log(`Created ${tierAssignments.length} GI tier assignments`);
+
+  // GI Predictions (sample)
+  const predictions = [
+    {
+      type: "deadline_risk",
+      confidence: 0.82,
+      severity: "high",
+      title: "Deadline risk: YouTube Thumbnail Redesign",
+      description: "Based on historical pace (6h per unit), this 3-weight task needs ~18h but only 12h remain before the deadline.",
+      data: { estimatedHours: 18, hoursRemaining: 12, riskRatio: 1.5 },
+      targetUserId: admin.id,
+      predictsAt: new Date(Date.now() + 12 * 60 * 60 * 1000),
+    },
+    {
+      type: "capacity_crunch",
+      confidence: 0.71,
+      severity: "medium",
+      title: "Capacity crunch for Media team next week",
+      description: "Media department has 15 tasks due next week vs weekly average of 8.",
+      data: { upcomingDue: 15, weeklyAvg: 8, overloadPct: 87 },
+      departmentId: departments[0].id,
+      predictsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+    {
+      type: "burnout_risk",
+      confidence: 0.65,
+      severity: "critical",
+      title: "Potential burnout risk detected",
+      description: "High workload (12 tasks), declining sentiment (2.1/5), quality score dropping.",
+      data: { taskCount: 12, avgSentiment: 2.1, qualityScore: 35 },
+      targetUserId: admin.id,
+      predictsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+    },
+  ];
+
+  for (const pred of predictions) {
+    await prisma.gIPrediction.create({ data: pred });
+  }
+  console.log(`Created ${predictions.length} GI predictions`);
+
+  // GI Learning Logs (sample organizational learnings)
+  const learnings = [
+    {
+      category: "rhythm",
+      key: "user_peak_hours",
+      value: { peakStart: 10, peakEnd: 14, peakHours: [10, 11, 13], confidence: 0.72 },
+      confidence: 0.72,
+      observations: 45,
+      userId: admin.id,
+    },
+    {
+      category: "pattern",
+      key: "avg_approval_time",
+      value: { avgHours: 8.3, dataPoints: 28 },
+      confidence: 0.68,
+      observations: 28,
+      userId: admin.id,
+    },
+    {
+      category: "rhythm",
+      key: "dept_velocity_baseline",
+      value: { weeklyAvg: 12, stdDev: 3.2, peakDay: "Wednesday" },
+      confidence: 0.61,
+      observations: 16,
+      departmentId: departments[0].id,
+    },
+    {
+      category: "pattern",
+      key: "review_bottleneck_time",
+      value: { avgStaleHours: 36, threshold: 48, escalationRate: 0.15 },
+      confidence: 0.55,
+      observations: 20,
+      departmentId: departments[1].id,
+    },
+  ];
+
+  for (const l of learnings) {
+    await prisma.gILearningLog.create({ data: l });
+  }
+  console.log(`Created ${learnings.length} GI learning logs`);
+
+  // GI Autonomous Actions (sample)
+  const autoActions = [
+    {
+      actionType: "task_reassignment",
+      tier: 3,
+      status: "EXECUTED" as const,
+      description: 'Reassigned review of "API Documentation Update" — stuck for 52 hours',
+      targetEntity: "task:sample1",
+      actionData: { taskId: "sample1", action: "escalate_review" },
+      reasoning: "Task has been in REVIEW status for over 48 hours without progress.",
+      result: { action: "escalated_review", taskId: "sample1" },
+      executedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
+    },
+    {
+      actionType: "deadline_extension",
+      tier: 2,
+      status: "PENDING" as const,
+      description: 'Extend deadline for "Brand Guidelines V2" by 2 days — capacity crunch detected',
+      targetUserId: admin.id,
+      targetEntity: "task:sample2",
+      actionData: { taskId: "sample2", newDueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString() },
+      reasoning: "User has 8 tasks due this week vs 5-task average. Extending this low-priority task reduces burnout risk.",
+      expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
+    },
+    {
+      actionType: "notification_batch",
+      tier: 4,
+      status: "EXECUTED" as const,
+      description: "Batched 7 low-priority notifications into daily digest",
+      actionData: { notificationIds: ["n1", "n2", "n3", "n4", "n5", "n6", "n7"], batchType: "daily_digest" },
+      reasoning: "User preference for minimal notifications. 7 low-priority notifications batched to reduce cognitive load.",
+      result: { action: "notifications_batched", count: 7 },
+      executedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    },
+  ];
+
+  for (const action of autoActions) {
+    await prisma.gIAutonomousAction.create({ data: action });
+  }
+  console.log(`Created ${autoActions.length} GI autonomous actions`);
+
+  // ─── Phase 5: Multi-Tenant SaaS Foundation ─────────────
+
+  // Create ShowNoMore as the primary organization
+  const org = await prisma.organization.upsert({
+    where: { slug: "shownomore" },
+    update: {},
+    create: {
+      name: "ShowNoMore",
+      slug: "shownomore",
+      plan: "enterprise",
+      maxUsers: 50,
+      settings: { timezone: "Asia/Kolkata", locale: "en-IN", brandColor: "#2E86AB" },
+      features: { gi_adult: true, vritti: true, relay: true, hoccr: true, saas_admin: true },
+      onboardingStep: "complete",
+    },
+  });
+
+  // Create SaaS products
+  const products = [
+    { product: "daftar", displayName: "Daftar OS", description: "Organizational operating system with SSO, role management, and unified dashboards" },
+    { product: "hoccr", displayName: "HOCCR", description: "Hiring, Operations, Culture, Communication & Reporting — standalone HR/Ops intelligence" },
+    { product: "relay", displayName: "Relay", description: "Content distribution platform with scheduling, posting, and cross-platform analytics" },
+    { product: "yantri", displayName: "Yantri", description: "AI narrative intelligence orchestrator — autonomous content assembly pipeline" },
+    { product: "khabri", displayName: "Khabri", description: "Signal detection engine for news, trends, and social media monitoring" },
+  ];
+
+  for (const p of products) {
+    await prisma.saaSProduct.upsert({
+      where: { organizationId_product: { organizationId: org.id, product: p.product } },
+      update: {},
+      create: { ...p, organizationId: org.id },
+    });
+  }
+  console.log(`Created organization "${org.name}" with ${products.length} SaaS products`);
+
   console.log("Seed complete!");
 }
 

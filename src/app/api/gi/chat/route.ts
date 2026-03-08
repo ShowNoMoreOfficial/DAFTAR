@@ -127,6 +127,71 @@ export async function POST(req: NextRequest) {
       },
     });
     contextData.unreadAnnouncements = unreadAnnouncements;
+
+    // Adult: Predictions, autonomous actions, learnings
+    const [activePredictions, pendingActions, recentExecutions, learningCount] = await Promise.all([
+      prisma.gIPrediction.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { targetUserId: userId },
+            ...(primaryDepartmentId ? [{ departmentId: primaryDepartmentId }] : []),
+          ],
+        },
+        select: { type: true, title: true, severity: true, confidence: true, predictsAt: true },
+        orderBy: { severity: "desc" },
+        take: 5,
+      }),
+      prisma.gIAutonomousAction.count({
+        where: { status: "PENDING" },
+      }),
+      prisma.gIAutonomousAction.findMany({
+        where: {
+          status: "EXECUTED",
+          executedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        },
+        select: { actionType: true, description: true, executedAt: true },
+        orderBy: { executedAt: "desc" },
+        take: 3,
+      }),
+      prisma.gILearningLog.count({ where: { isActive: true } }),
+    ]);
+
+    if (activePredictions.length > 0) contextData.activePredictions = activePredictions;
+    contextData.pendingActions = pendingActions;
+    if (recentExecutions.length > 0) contextData.recentAutoActions = recentExecutions;
+    contextData.totalLearnings = learningCount;
+
+    // Adolescent: Pattern history and motivation profile
+    const recentPatterns = await prisma.gIPatternLog.findMany({
+      where: {
+        OR: [
+          { userId },
+          ...(primaryDepartmentId ? [{ departmentId: primaryDepartmentId }] : []),
+        ],
+        isActive: true,
+        detectedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+      select: { patternType: true, description: true, severity: true },
+      orderBy: { detectedAt: "desc" },
+      take: 5,
+    });
+    if (recentPatterns.length > 0) contextData.recentPatterns = recentPatterns;
+
+    const motivationProfile = await prisma.gIMotivationProfile.findUnique({
+      where: { userId },
+      select: { preferredTone: true, motivators: true, nudgeFrequency: true },
+    });
+    if (motivationProfile) contextData.motivationProfile = motivationProfile;
+
+    // Vritti/article stats
+    const [totalArticles, draftArticles, publishedArticles, reviewArticles] = await Promise.all([
+      prisma.article.count(),
+      prisma.article.count({ where: { status: "DRAFTING" } }),
+      prisma.article.count({ where: { status: "PUBLISHED" } }),
+      prisma.article.count({ where: { status: "REVIEW" } }),
+    ]);
+    contextData.articleStats = { totalArticles, draftArticles, publishedArticles, reviewArticles };
   } catch {
     // Non-critical: continue without context data
   }
@@ -361,6 +426,92 @@ function generateReactiveResponse(
     };
   }
 
+  // Article / Vritti queries
+  if (lowerMsg.includes("article") || lowerMsg.includes("vritti") || lowerMsg.includes("cms") || lowerMsg.includes("editorial") || lowerMsg.includes("blog")) {
+    const articleStats = data.articleStats as { totalArticles: number; draftArticles: number; publishedArticles: number; reviewArticles: number } | undefined;
+    if (articleStats) {
+      let msg = `Vritti CMS: ${articleStats.totalArticles} total articles. ${articleStats.publishedArticles} published, ${articleStats.draftArticles} drafting, ${articleStats.reviewArticles} in review.`;
+      if (articleStats.reviewArticles > 0) {
+        msg += ` ${articleStats.reviewArticles} article${articleStats.reviewArticles !== 1 ? "s" : ""} awaiting review.`;
+      }
+      return {
+        message: msg,
+        suggestions: ["View editorial pipeline", "View articles", "Content calendar"],
+      };
+    }
+    return {
+      message: "Vritti is your CMS for managing articles, editorial workflows, and media. Head to the Vritti module to get started.",
+      suggestions: ["Open Vritti", "Content status"],
+    };
+  }
+
+  // Prediction queries (Adult)
+  if (lowerMsg.includes("predict") || lowerMsg.includes("risk") || lowerMsg.includes("forecast") || lowerMsg.includes("anticipat")) {
+    const predictions = data.activePredictions as { type: string; title: string; severity: string; confidence: number; predictsAt: string }[] | undefined;
+    if (predictions && predictions.length > 0) {
+      const lines = predictions.map((p) => {
+        const conf = Math.round(p.confidence * 100);
+        return `• [${p.severity.toUpperCase()}] ${p.title} (${conf}% confidence)`;
+      });
+      return {
+        message: `Active predictions:\n${lines.join("\n")}\n\nI analyze historical patterns, workload data, and team dynamics to predict issues before they happen.`,
+        suggestions: ["View all predictions", "Pending actions", "Show risks"],
+      };
+    }
+    return {
+      message: "No active predictions right now. I continuously analyze patterns to predict deadline risks, capacity crunches, and burnout signals.",
+      suggestions: ["How are my tasks?", "Team status", "Show patterns"],
+    };
+  }
+
+  // Autonomous action queries (Adult)
+  if (lowerMsg.includes("action") || lowerMsg.includes("automat") || lowerMsg.includes("autonomous") || lowerMsg.includes("gi did")) {
+    const pending = data.pendingActions as number | undefined;
+    const recent = data.recentAutoActions as { actionType: string; description: string; executedAt: string }[] | undefined;
+    let msg = "";
+    if (pending && pending > 0) {
+      msg += `${pending} pending action${pending !== 1 ? "s" : ""} awaiting your approval.\n`;
+    }
+    if (recent && recent.length > 0) {
+      msg += `\nRecent auto-actions:\n`;
+      msg += recent.map((a) => `• ${a.description}`).join("\n");
+    }
+    if (!msg) {
+      msg = "No pending or recent autonomous actions. I take actions based on configured autonomy tiers — Tier 2 needs your approval, Tier 3 auto-executes and notifies you.";
+    }
+    return {
+      message: msg,
+      suggestions: ["Review pending actions", "View action history", "Configure autonomy tiers"],
+    };
+  }
+
+  // Learning queries (Adult)
+  if (lowerMsg.includes("learn") || lowerMsg.includes("rhythm") || lowerMsg.includes("optimize") || lowerMsg.includes("self-improv")) {
+    const learnings = data.totalLearnings as number | undefined;
+    return {
+      message: learnings && learnings > 0
+        ? `I've accumulated ${learnings} learning${learnings !== 1 ? "s" : ""} about organizational rhythms, preferences, and patterns. These include peak productivity hours, approval times, collaboration patterns, and team dynamics. I use these to continuously improve my suggestions and predictions.`
+        : "I'm still building my knowledge base. As I observe more data, I'll learn peak productivity hours, approval patterns, and team rhythms to give you better, more personalized guidance.",
+      suggestions: ["View GI learnings", "Show predictions", "What can you do?"],
+    };
+  }
+
+  // Pattern / trend queries (Adolescent)
+  if (lowerMsg.includes("pattern") || lowerMsg.includes("trend") || lowerMsg.includes("insight") || lowerMsg.includes("analysis")) {
+    const patterns = data.recentPatterns as { patternType: string; description: string; severity: string }[] | undefined;
+    if (patterns && patterns.length > 0) {
+      const lines = patterns.map((p) => `• ${p.description} (${p.severity})`);
+      return {
+        message: `Recent patterns detected:\n${lines.join("\n")}\n\nI track velocity trends, quality shifts, team dynamics, and cross-department dependencies over time.`,
+        suggestions: ["Team status", "My velocity", "Cross-department blockers"],
+      };
+    }
+    return {
+      message: "No significant patterns detected recently. I continuously monitor velocity trends, quality shifts, and team dynamics to surface insights proactively.",
+      suggestions: ["How are my tasks?", "Team status", "Department overview"],
+    };
+  }
+
   // Leaderboard
   if (lowerMsg.includes("leaderboard") || lowerMsg.includes("ranking") || lowerMsg.includes("rank") || lowerMsg.includes("standing")) {
     return {
@@ -372,8 +523,8 @@ function generateReactiveResponse(
   // Help / what can you do
   if (lowerMsg.includes("help") || lowerMsg.includes("what can you") || lowerMsg.includes("capabilities")) {
     return {
-      message: "I'm GI v2 (Toddler), your organizational copilot. I can help with:\n• Task status, deadlines & overdue alerts\n• Smart task sequencing suggestions\n• Credibility score breakdown\n• Content scheduling & publishing status\n• Department & team performance\n• Workload balancing suggestions\n• Bottleneck detection\n• Organization overview\n• Leaderboard standings\n• Announcements & communication\n• Notification summary\n\nI also proactively surface insights about content gaps, workload imbalances, and priority sequencing.",
-      suggestions: ["How are my tasks?", "Content status", "Upcoming deadlines", "Team status"],
+      message: "I'm GI v4 (Adult), your autonomous organizational copilot. I can help with:\n\n**Core Intelligence:**\n• Task status, deadlines & overdue alerts\n• Smart task sequencing suggestions\n• Credibility score breakdown\n• Content scheduling & publishing status\n\n**Predictive Analytics:**\n• Deadline risk predictions based on historical pace\n• Capacity crunch forecasting\n• Burnout risk detection for team members\n• Pattern-based issue prediction before they happen\n\n**Autonomous Actions:**\n• Tier-based action system (inform → suggest → act & notify → act silently)\n• Auto-escalation of stalled reviews\n• Workload rebalancing suggestions\n• One-tap approve/reject for my suggestions\n\n**Self-Optimization:**\n• Learns your peak productivity hours\n• Tracks approval time patterns\n• Adapts coaching style to your preferences\n• Prediction accuracy self-monitoring\n\n**Team & Cross-Dept Intelligence:**\n• Department performance trends & velocity tracking\n• Cross-department dependency management\n• Team member risk & burnout detection\n• Personalized motivational calibration\n\n**Content & Communication:**\n• Vritti CMS editorial pipeline\n• Relay content analytics & scheduling\n• Announcements & feedback channels",
+      suggestions: ["Show predictions", "Pending actions", "What has GI learned?", "Team status"],
     };
   }
 
@@ -431,6 +582,30 @@ function generateProactiveInsight(data: Record<string, unknown>, role: string): 
 
   if (stats?.recentlyCompleted && stats.recentlyCompleted >= 5) {
     return `Great week! You've completed ${stats.recentlyCompleted} tasks. Keep the momentum going!`;
+  }
+
+  // Adult: Surface active predictions
+  const predictions = data.activePredictions as { type: string; title: string; severity: string; confidence: number }[] | undefined;
+  if (predictions && predictions.length > 0) {
+    const critical = predictions.find((p) => p.severity === "critical" || p.severity === "high");
+    if (critical) {
+      return `Prediction: ${critical.title} (${Math.round(critical.confidence * 100)}% confidence). Review GI predictions for details.`;
+    }
+  }
+
+  // Adult: Surface pending actions
+  const pendingActs = data.pendingActions as number | undefined;
+  if (pendingActs && pendingActs > 0) {
+    return `${pendingActs} GI action${pendingActs !== 1 ? "s" : ""} awaiting your approval. Review in Admin > GI > Actions.`;
+  }
+
+  // Adolescent: Surface recent patterns
+  const patterns = data.recentPatterns as { patternType: string; description: string; severity: string }[] | undefined;
+  if (patterns && patterns.length > 0) {
+    const warning = patterns.find((p) => p.severity === "warning" || p.severity === "critical");
+    if (warning) {
+      return `Pattern detected: ${warning.description}`;
+    }
   }
 
   return null;
