@@ -116,7 +116,7 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
   if (!taskId) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 flex w-[420px] flex-col border-l border-[#E5E7EB] bg-white shadow-xl">
+    <div className="fixed inset-y-0 right-0 z-20 flex w-[420px] flex-col border-l border-[#E5E7EB] bg-white shadow-xl">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 py-3">
         <h3 className="text-sm font-semibold text-[#1A1A1A]">Task Detail</h3>

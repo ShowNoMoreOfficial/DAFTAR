@@ -27,15 +27,10 @@ export function ShellLayout({ user, children }: ShellLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="relative flex h-screen overflow-hidden bg-white">
       <Sidebar user={user} onSignOut={handleSignOut} />
 
-      <div
-        className={cn(
-          "flex flex-1 flex-col overflow-hidden transition-all duration-300",
-          isCollapsed ? "ml-0" : "ml-0"
-        )}
-      >
+      <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar user={user} onSignOut={handleSignOut} />
 
         <main className="flex-1 overflow-y-auto p-6">

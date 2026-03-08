@@ -20,23 +20,18 @@ export function RightPanel() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isRightPanelOpen, closeRightPanel]);
 
+  if (!isRightPanelOpen) return null;
+
   return (
     <>
       {/* Overlay */}
-      {isRightPanelOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/20"
-          onClick={closeRightPanel}
-        />
-      )}
+      <div
+        className="fixed inset-0 z-40 bg-black/20"
+        onClick={closeRightPanel}
+      />
 
       {/* Panel */}
-      <aside
-        className={cn(
-          "fixed right-0 top-0 z-50 h-screen w-[360px] border-l border-[#E5E7EB] bg-white shadow-lg transition-transform duration-300",
-          isRightPanelOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
+      <aside className="fixed right-0 top-0 z-50 h-screen w-[360px] border-l border-[#E5E7EB] bg-white shadow-lg">
         <div className="flex items-center justify-between border-b border-[#E5E7EB] p-4">
           <h3 className="text-sm font-medium text-[#1A1A1A]">Details</h3>
           <Button variant="ghost" size="icon" onClick={closeRightPanel}>

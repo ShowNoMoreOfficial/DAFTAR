@@ -77,7 +77,7 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col border-r border-[#E5E7EB] bg-[#F8F9FA] transition-all duration-300",
+        "relative z-30 flex h-screen shrink-0 flex-col border-r border-[#E5E7EB] bg-[#F8F9FA] transition-[width] duration-200",
         isCollapsed ? "w-16" : "w-[260px]"
       )}
     >
