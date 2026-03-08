@@ -109,6 +109,24 @@ export async function POST(req: NextRequest) {
       where: { userId, isRead: false },
     });
     contextData.unreadNotifications = unreadNotifs;
+
+    // Relay/content stats
+    const [scheduledPosts, draftPosts, publishedPosts, failedPosts] = await Promise.all([
+      prisma.contentPost.count({ where: { status: "SCHEDULED" } }),
+      prisma.contentPost.count({ where: { status: "DRAFT" } }),
+      prisma.contentPost.count({ where: { status: "PUBLISHED" } }),
+      prisma.contentPost.count({ where: { status: "FAILED" } }),
+    ]);
+    contextData.contentStats = { scheduledPosts, draftPosts, publishedPosts, failedPosts };
+
+    // Unread announcements
+    const unreadAnnouncements = await prisma.announcement.count({
+      where: {
+        OR: [{ departmentId: null }, ...(primaryDepartmentId ? [{ departmentId: primaryDepartmentId }] : [])],
+        readBy: { none: { userId } },
+      },
+    });
+    contextData.unreadAnnouncements = unreadAnnouncements;
   } catch {
     // Non-critical: continue without context data
   }
@@ -317,6 +335,32 @@ function generateReactiveResponse(
     }
   }
 
+  // Content / Relay queries
+  if (lowerMsg.includes("content") || lowerMsg.includes("post") || lowerMsg.includes("relay") || lowerMsg.includes("schedule") || lowerMsg.includes("publish")) {
+    const contentStats = data.contentStats as { scheduledPosts: number; draftPosts: number; publishedPosts: number; failedPosts: number } | undefined;
+    if (contentStats) {
+      let msg = `Content overview: ${contentStats.publishedPosts} published, ${contentStats.scheduledPosts} scheduled, ${contentStats.draftPosts} drafts.`;
+      if (contentStats.failedPosts > 0) {
+        msg += ` ⚠ ${contentStats.failedPosts} failed — needs attention.`;
+      }
+      return {
+        message: msg,
+        suggestions: ["View content queue", "Content calendar", "Content analytics"],
+      };
+    }
+  }
+
+  // Announcements queries
+  if (lowerMsg.includes("announcement") || lowerMsg.includes("comms") || lowerMsg.includes("communication")) {
+    const unreadAnn = data.unreadAnnouncements as number | undefined;
+    return {
+      message: unreadAnn && unreadAnn > 0
+        ? `You have ${unreadAnn} unread announcement${unreadAnn !== 1 ? "s" : ""}. Check the Communication page to stay updated.`
+        : "No unread announcements. You're up to date!",
+      suggestions: ["View announcements", "Give feedback", "How are my tasks?"],
+    };
+  }
+
   // Leaderboard
   if (lowerMsg.includes("leaderboard") || lowerMsg.includes("ranking") || lowerMsg.includes("rank") || lowerMsg.includes("standing")) {
     return {
@@ -328,8 +372,8 @@ function generateReactiveResponse(
   // Help / what can you do
   if (lowerMsg.includes("help") || lowerMsg.includes("what can you") || lowerMsg.includes("capabilities")) {
     return {
-      message: "I'm GI v2, your organizational copilot. I can help with:\n• Task status, deadlines & overdue alerts\n• Credibility score breakdown\n• Upcoming deadlines\n• Department & team performance\n• Bottleneck detection\n• Organization overview\n• Leaderboard standings\n• Notification summary\n\nJust ask me anything!",
-      suggestions: ["How are my tasks?", "My credibility score", "Upcoming deadlines", "Team status"],
+      message: "I'm GI v2 (Toddler), your organizational copilot. I can help with:\n• Task status, deadlines & overdue alerts\n• Smart task sequencing suggestions\n• Credibility score breakdown\n• Content scheduling & publishing status\n• Department & team performance\n• Workload balancing suggestions\n• Bottleneck detection\n• Organization overview\n• Leaderboard standings\n• Announcements & communication\n• Notification summary\n\nI also proactively surface insights about content gaps, workload imbalances, and priority sequencing.",
+      suggestions: ["How are my tasks?", "Content status", "Upcoming deadlines", "Team status"],
     };
   }
 

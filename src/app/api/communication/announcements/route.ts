@@ -48,7 +48,8 @@ export async function GET(req: NextRequest) {
     prisma.announcement.count({ where }),
   ]);
 
-  const data = announcements.map((a) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = announcements.map((a: any) => ({
     ...a,
     readCount: a._count.readBy,
     isRead: a.readBy.length > 0,

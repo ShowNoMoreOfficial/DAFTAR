@@ -41,8 +41,13 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     id: "relay",
     label: "Relay",
     icon: "Send",
-    href: "/m/relay",
+    href: "/relay",
     roles: ["ADMIN", "DEPT_HEAD", "MEMBER", "CLIENT"],
+    children: [
+      { id: "relay-queue", label: "Queue", icon: "ListOrdered", href: "/relay/queue", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "relay-calendar", label: "Calendar", icon: "Calendar", href: "/relay/calendar", roles: ["ADMIN", "DEPT_HEAD", "MEMBER", "CLIENT"] },
+      { id: "relay-analytics", label: "Analytics", icon: "BarChart3", href: "/relay/analytics", roles: ["ADMIN", "DEPT_HEAD", "MEMBER", "CLIENT"] },
+    ],
   },
   {
     id: "pms",
@@ -63,6 +68,13 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       { id: "hoccr-hiring", label: "Hiring", icon: "UserPlus", href: "/hoccr/hiring", roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD"] },
       { id: "hoccr-reports", label: "Reports", icon: "BarChart3", href: "/hoccr/reports", roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD"] },
     ],
+  },
+  {
+    id: "communication",
+    label: "Communication",
+    icon: "MessageCircle",
+    href: "/communication",
+    roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER"],
   },
   {
     id: "vritti",
@@ -107,11 +119,11 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     roles: ["ADMIN"],
   },
   {
-    id: "gamification",
-    label: "Achievements",
+    id: "leaderboard",
+    label: "Leaderboard",
     icon: "Trophy",
-    href: "/pms/gamification",
-    roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER", "CONTRACTOR"],
+    href: "/leaderboard",
+    roles: ["ADMIN", "DEPT_HEAD", "MEMBER"],
   },
   {
     id: "credibility",

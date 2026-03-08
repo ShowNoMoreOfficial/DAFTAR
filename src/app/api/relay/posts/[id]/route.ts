@@ -62,7 +62,7 @@ export async function PATCH(
   }
 
   const body = await req.json();
-  const { title, content, platform, status, scheduledAt, metadata } = body;
+  const { title, content, platform, status, scheduledAt, mediaUrls, metadata } = body;
 
   const data: Record<string, unknown> = {};
   if (title !== undefined) data.title = title;
@@ -70,6 +70,7 @@ export async function PATCH(
   if (platform !== undefined) data.platform = platform;
   if (status !== undefined) data.status = status;
   if (scheduledAt !== undefined) data.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
+  if (mediaUrls !== undefined) data.mediaUrls = mediaUrls;
   if (metadata !== undefined) data.metadata = metadata;
 
   const post = await prisma.contentPost.update({
@@ -84,7 +85,7 @@ export async function PATCH(
   return NextResponse.json(post);
 }
 
-// DELETE /api/relay/posts/[id] — Delete a draft or cancelled post
+// DELETE /api/relay/posts/[id] — Delete a draft or scheduled post
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -106,9 +107,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Can only delete DRAFT or CANCELLED posts
-  if (!["DRAFT", "CANCELLED"].includes(existing.status)) {
-    return badRequest("Only draft or cancelled posts can be deleted");
+  // Can only delete DRAFT or SCHEDULED posts
+  if (!["DRAFT", "SCHEDULED"].includes(existing.status)) {
+    return badRequest("Only draft or scheduled posts can be deleted");
   }
 
   await prisma.contentPost.delete({ where: { id } });

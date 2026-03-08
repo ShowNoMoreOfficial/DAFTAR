@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
 
-// GET /api/relay/calendar — Get calendar entries for a date range
+// GET /api/relay/calendar — Get scheduled and published posts for calendar display
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
   if (!session) return unauthorized();
@@ -14,9 +14,8 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = req.nextUrl;
   const brandId = searchParams.get("brandId");
-  const platform = searchParams.get("platform");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+  const month = searchParams.get("month");
+  const year = searchParams.get("year");
 
   const where: Record<string, unknown> = {};
 
@@ -25,64 +24,57 @@ export async function GET(req: NextRequest) {
   if (role === "CLIENT") {
     where.brandId = { in: accessibleBrandIds };
   } else if (role === "MEMBER" || role === "CONTRACTOR") {
-    where.OR = [{ assigneeId: userId }, { createdById: userId }];
-  }
-
-  if (brandId) where.brandId = brandId;
-  if (platform) where.platform = platform;
-  if (from || to) {
-    where.date = {
-      ...(from ? { gte: new Date(from) } : {}),
-      ...(to ? { lte: new Date(to) } : {}),
-    };
-  }
-
-  const entries = await prisma.contentCalendarEntry.findMany({
-    where,
-    orderBy: { date: "asc" },
-  });
-
-  return NextResponse.json(entries);
-}
-
-// POST /api/relay/calendar — Create a calendar entry
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const body = await req.json();
-  const { title, description, brandId, platform, deliverableType, date, assigneeId, metadata } = body;
-
-  if (!title) return badRequest("Title is required");
-  if (!brandId) return badRequest("Brand ID is required");
-  if (!platform) return badRequest("Platform is required");
-  if (!deliverableType) return badRequest("Deliverable type is required");
-  if (!date) return badRequest("Date is required");
-
-  // CLIENT users can only create entries for their brands
-  if (session.user.role === "CLIENT") {
-    if (!session.user.accessibleBrandIds.includes(brandId)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    where.createdById = userId;
+  } else if (role === "DEPT_HEAD") {
+    if (accessibleBrandIds.length > 0) {
+      where.brandId = { in: accessibleBrandIds };
     }
   }
 
-  const entry = await prisma.contentCalendarEntry.create({
-    data: {
-      title,
-      description,
-      brandId,
-      platform,
-      deliverableType,
-      date: new Date(date),
-      assigneeId: assigneeId || null,
-      metadata: metadata || undefined,
-      createdById: session.user.id,
+  if (brandId) where.brandId = brandId;
+
+  // Only show posts that are scheduled or published
+  where.status = { in: ["SCHEDULED", "PUBLISHED", "PUBLISHING", "DRAFT"] };
+
+  // Date range based on month/year
+  const targetYear = year ? parseInt(year) : new Date().getFullYear();
+  const targetMonth = month ? parseInt(month) - 1 : new Date().getMonth();
+  const startDate = new Date(targetYear, targetMonth, 1);
+  const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+
+  where.OR = [
+    { scheduledAt: { gte: startDate, lte: endDate } },
+    { publishedAt: { gte: startDate, lte: endDate } },
+    { createdAt: { gte: startDate, lte: endDate }, scheduledAt: null, publishedAt: null },
+  ];
+
+  const posts = await prisma.contentPost.findMany({
+    where,
+    select: {
+      id: true,
+      title: true,
+      platform: true,
+      status: true,
+      scheduledAt: true,
+      publishedAt: true,
+      createdAt: true,
+      brandId: true,
+      brand: { select: { id: true, name: true } },
     },
+    orderBy: [{ scheduledAt: "asc" }, { createdAt: "asc" }],
   });
 
-  return NextResponse.json(entry, { status: 201 });
+  // Format for calendar display
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const calendarEntries = (posts as any[]).map((post: any) => ({
+    id: post.id,
+    title: post.title,
+    platform: post.platform,
+    status: post.status,
+    date: post.scheduledAt || post.publishedAt || post.createdAt,
+    brandId: post.brandId,
+    brandName: post.brand?.name ?? "",
+  }));
+
+  return NextResponse.json(calendarEntries);
 }

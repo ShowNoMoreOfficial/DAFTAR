@@ -653,7 +653,7 @@ async function main() {
         brandId: brandId || undefined,
         clientId: client.id,
         createdById: admin.id,
-        items: null,
+        items: undefined,
       },
     });
   }
@@ -668,7 +668,7 @@ async function main() {
     { title: "Office supplies — Q1", category: "OFFICE" as const, amount: 12000, dept: "HR & Operations", date: daysAgo(20) },
     { title: "Facebook Ads spend — February", category: "MARKETING" as const, amount: 95000, dept: "PPC", date: daysAgo(5) },
     { title: "Freelance editor payment — Ep 42-44", category: "PRODUCTION" as const, amount: 60000, dept: "Production", date: daysAgo(3) },
-    { title: "Server hosting — AWS February", category: "SOFTWARE" as const, amount: 28000, dept: "Tech", date: daysAgo(2), approved: true },
+    { title: "Server hosting — AWS February", category: "SOFTWARE" as const, amount: 28000, dept: "Tech", date: daysAgo(2) },
     { title: "Team lunch — department outing", category: "MISCELLANEOUS" as const, amount: 8500, dept: "Media", date: daysAgo(7) },
   ];
 
@@ -681,7 +681,6 @@ async function main() {
         amount: exp.amount,
         departmentId: dept?.id,
         date: exp.date,
-        approved: (exp as Record<string, unknown>).approved as boolean | undefined,
         createdById: admin.id,
       },
     });
@@ -703,6 +702,188 @@ async function main() {
   }
 
   console.log(`Created ${notifData.length} demo notifications`);
+
+  // ─── Relay: Content Posts ─────────────────────────────
+  const breakingTube = await prisma.brand.findUnique({ where: { slug: "breaking-tube" } });
+  const squirrels = await prisma.brand.findUnique({ where: { slug: "the-squirrels" } });
+
+  if (breakingTube && squirrels) {
+    const now = new Date();
+    const contentPosts = [
+      {
+        title: "Bhupendra Chaubey Exclusive — PM Modi Interview Analysis",
+        content: "Deep-dive analysis of the PM Modi interview. Key takeaways, body language cues, and political implications discussed.",
+        platform: "youtube",
+        brandId: breakingTube.id,
+        status: "PUBLISHED" as const,
+        scheduledAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+        publishedAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+        publishedUrl: "https://youtube.com/watch?v=demo1",
+        createdById: admin.id,
+      },
+      {
+        title: "Weekend Political Roundup — Episode 52",
+        content: "Weekly roundup covering parliament sessions, opposition strategy, and upcoming state elections.",
+        platform: "youtube",
+        brandId: breakingTube.id,
+        status: "SCHEDULED" as const,
+        scheduledAt: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+        createdById: admin.id,
+      },
+      {
+        title: "Breaking: Budget Session Highlights Reel",
+        content: "Quick 60-second reel covering the Union Budget highlights for Instagram.",
+        platform: "instagram",
+        brandId: breakingTube.id,
+        status: "QUEUED" as const,
+        createdById: admin.id,
+      },
+      {
+        title: "The Squirrels — Political Satire Ep 18",
+        content: "Satirical take on the latest political developments with animated squirrel characters.",
+        platform: "youtube",
+        brandId: squirrels.id,
+        status: "DRAFT" as const,
+        createdById: admin.id,
+      },
+      {
+        title: "Squirrels Quick Take — LinkedIn Carousel",
+        content: "5-slide carousel summarizing this week's political landscape for professional audience.",
+        platform: "linkedin",
+        brandId: squirrels.id,
+        status: "PUBLISHED" as const,
+        scheduledAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+        publishedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+        publishedUrl: "https://linkedin.com/posts/demo1",
+        createdById: admin.id,
+      },
+      {
+        title: "Twitter Thread — Election Analysis",
+        content: "10-tweet thread analyzing the upcoming state elections with polling data and ground reports.",
+        platform: "x",
+        brandId: breakingTube.id,
+        status: "FAILED" as const,
+        scheduledAt: new Date(now.getTime() - 12 * 60 * 60 * 1000),
+        errorMessage: "API rate limit exceeded. Retry after 15 minutes.",
+        createdById: admin.id,
+      },
+    ];
+
+    for (const post of contentPosts) {
+      const created = await prisma.contentPost.create({ data: post });
+      // Add analytics for published posts
+      if (post.status === "PUBLISHED") {
+        await prisma.postAnalytics.create({
+          data: {
+            postId: created.id,
+            views: Math.floor(Math.random() * 50000) + 5000,
+            likes: Math.floor(Math.random() * 3000) + 500,
+            shares: Math.floor(Math.random() * 500) + 50,
+            comments: Math.floor(Math.random() * 200) + 20,
+            clicks: Math.floor(Math.random() * 1000) + 100,
+            engagementRate: parseFloat((Math.random() * 8 + 2).toFixed(2)),
+          },
+        });
+      }
+    }
+
+    // Calendar entries
+    for (let i = 0; i < 7; i++) {
+      const entryDate = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
+      if (i % 2 === 0) {
+        await prisma.contentCalendarEntry.create({
+          data: {
+            date: entryDate,
+            brandId: i < 4 ? breakingTube.id : squirrels.id,
+            platform: ["youtube", "instagram", "x", "linkedin"][i % 4],
+            title: `Planned content for ${entryDate.toLocaleDateString()}`,
+            notes: "Auto-generated calendar entry for demo",
+            createdById: admin.id,
+          },
+        });
+      }
+    }
+
+    console.log(`Created ${contentPosts.length} content posts with analytics and calendar entries`);
+  }
+
+  // ─── Communication: Announcements ────────────────────
+  const announcements = [
+    {
+      title: "Q1 Performance Review Cycle Begins",
+      content: "The quarterly performance review cycle starts next Monday. All department heads must submit their team evaluations by March 25th. Please ensure all task updates are current in PMS before the review begins.",
+      priority: "HIGH" as const,
+      isPinned: true,
+      createdById: admin.id,
+    },
+    {
+      title: "New Office Wi-Fi Password",
+      content: "The office Wi-Fi password has been updated for security. New credentials have been shared via email. Please reconnect your devices at your earliest convenience.",
+      priority: "NORMAL" as const,
+      isPinned: false,
+      createdById: admin.id,
+    },
+    {
+      title: "Diwali Office Closure Notice",
+      content: "The office will remain closed from October 31st to November 3rd for Diwali celebrations. Please plan your deliverables accordingly. Emergency contacts will be shared separately.",
+      priority: "URGENT" as const,
+      isPinned: true,
+      createdById: admin.id,
+    },
+    {
+      title: "Team Lunch This Friday",
+      content: "We're organizing a team lunch this Friday at 1 PM. Join us at the cafeteria for some good food and team bonding!",
+      priority: "LOW" as const,
+      isPinned: false,
+      createdById: admin.id,
+    },
+  ];
+
+  for (const ann of announcements) {
+    await prisma.announcement.create({ data: ann });
+  }
+
+  console.log(`Created ${announcements.length} announcements`);
+
+  // ─── Communication: Feedback Channels ────────────────
+  const feedbackChannels = [
+    {
+      name: "General Suggestions",
+      description: "Share ideas for improving workplace processes, tools, or culture",
+      isAnonymousAllowed: true,
+      createdById: admin.id,
+    },
+    {
+      name: "Tech Tooling Requests",
+      description: "Request new software, tools, or improvements to existing tech stack",
+      isAnonymousAllowed: false,
+      createdById: admin.id,
+    },
+    {
+      name: "HR & Policy Feedback",
+      description: "Provide feedback on HR policies, benefits, and workplace guidelines",
+      isAnonymousAllowed: true,
+      createdById: admin.id,
+    },
+  ];
+
+  for (const channel of feedbackChannels) {
+    const created = await prisma.feedbackChannel.create({ data: channel });
+    // Add a sample feedback entry to each channel
+    await prisma.feedbackEntry.create({
+      data: {
+        channelId: created.id,
+        content: `Sample feedback for ${channel.name}. This is a demo entry to showcase the feedback system.`,
+        isAnonymous: channel.isAnonymousAllowed,
+        submittedById: admin.id,
+        status: "OPEN",
+        upvotes: Math.floor(Math.random() * 10),
+      },
+    });
+  }
+
+  console.log(`Created ${feedbackChannels.length} feedback channels with sample entries`);
+
   console.log("Seed complete!");
 }
 

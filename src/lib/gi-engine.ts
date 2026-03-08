@@ -83,6 +83,12 @@ export async function generateInsights(
     generators.push(generateBoardContext(userId, context));
   }
 
+  // Toddler: Task sequencing and content scheduling
+  generators.push(generateTaskSequencing(userId, context));
+  if (context.module === "relay") {
+    generators.push(generateContentSchedulingInsight(userId, context));
+  }
+
   const results = await Promise.all(generators);
   const insights = results
     .flat()
@@ -695,6 +701,168 @@ async function generateBottleneckDetection(
         title: "Stalled Tasks",
         message: `${stuckInProgress} task${stuckInProgress !== 1 ? "s have" : " has"} been in progress for 5+ days without updates.`,
         action: { label: "Investigate", href: "/pms" },
+        context: context.module,
+      });
+    }
+  } catch {
+    // Non-critical
+  }
+
+  return insights;
+}
+
+// ─── Generator: Task Sequencing (Toddler) ───────────────
+
+async function generateTaskSequencing(
+  userId: string,
+  context: GIEngineContext
+): Promise<GIInsight[]> {
+  const insights: GIInsight[] = [];
+
+  try {
+    const activeTasks = await prisma.task.findMany({
+      where: {
+        assigneeId: userId,
+        status: { in: ["ASSIGNED", "IN_PROGRESS"] },
+      },
+      select: {
+        id: true,
+        title: true,
+        priority: true,
+        dueDate: true,
+        status: true,
+        difficultyWeight: true,
+      },
+      orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
+      take: 10,
+    });
+
+    if (activeTasks.length < 2) return insights;
+
+    const now = new Date();
+    const urgentNotStarted = activeTasks.find(
+      (t) =>
+        t.status === "ASSIGNED" &&
+        (t.priority === "URGENT" ||
+          t.priority === "HIGH" ||
+          (t.dueDate && t.dueDate < now))
+    );
+
+    const inProgressCount = activeTasks.filter((t) => t.status === "IN_PROGRESS").length;
+
+    if (urgentNotStarted && inProgressCount > 0) {
+      const dueLabel = urgentNotStarted.dueDate
+        ? urgentNotStarted.dueDate < now
+          ? " (overdue)"
+          : ` (due ${urgentNotStarted.dueDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })})`
+        : "";
+
+      insights.push({
+        id: `sequencing-urgent-${userId}`,
+        type: "suggestion",
+        priority: "high",
+        title: "Priority Sequencing",
+        message: `"${urgentNotStarted.title}" is ${urgentNotStarted.priority}${dueLabel} but hasn't been started. Consider switching to this task.`,
+        action: { label: "View task", href: `/pms?task=${urgentNotStarted.id}` },
+        context: context.module,
+      });
+    }
+
+    if (inProgressCount >= 4) {
+      insights.push({
+        id: `sequencing-wip-${userId}`,
+        type: "nudge",
+        priority: "medium",
+        title: "Focus Mode",
+        message: `You have ${inProgressCount} tasks in progress. Try finishing 1-2 before starting more — multitasking reduces quality.`,
+        action: { label: "View board", href: "/pms/board" },
+        context: context.module,
+      });
+    }
+  } catch {
+    // Non-critical
+  }
+
+  return insights;
+}
+
+// ─── Generator: Content Scheduling Insight (Toddler) ────
+
+async function generateContentSchedulingInsight(
+  userId: string,
+  context: GIEngineContext
+): Promise<GIInsight[]> {
+  const insights: GIInsight[] = [];
+
+  try {
+    const now = new Date();
+    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const scheduledPosts = await prisma.contentPost.count({
+      where: {
+        status: "SCHEDULED",
+        scheduledAt: { gte: now, lte: nextWeek },
+      },
+    });
+
+    const allScheduled = await prisma.contentPost.findMany({
+      where: {
+        status: { in: ["SCHEDULED", "QUEUED"] },
+        scheduledAt: { gte: now, lte: nextWeek },
+      },
+      select: { scheduledAt: true },
+    });
+
+    const scheduledDays = new Set(
+      allScheduled
+        .filter((p: { scheduledAt: Date | null }) => p.scheduledAt)
+        .map((p: { scheduledAt: Date | null }) => p.scheduledAt!.toISOString().slice(0, 10))
+    );
+
+    let gapDays = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
+      if (d.getDay() !== 0 && !scheduledDays.has(d.toISOString().slice(0, 10))) {
+        gapDays++;
+      }
+    }
+
+    if (gapDays >= 3) {
+      insights.push({
+        id: `content-gaps-${userId}`,
+        type: "alert",
+        priority: "medium",
+        title: "Content Gaps",
+        message: `${gapDays} weekdays in the next 7 days have no scheduled content. Consider filling the queue.`,
+        action: { label: "Content calendar", href: "/relay/calendar" },
+        context: context.module,
+      });
+    }
+
+    if (scheduledPosts > 0) {
+      insights.push({
+        id: `content-scheduled-${userId}`,
+        type: "info",
+        priority: "low",
+        title: "Upcoming Posts",
+        message: `${scheduledPosts} post${scheduledPosts !== 1 ? "s" : ""} scheduled for this week.`,
+        action: { label: "View queue", href: "/relay/queue" },
+        context: context.module,
+      });
+    }
+
+    const failedPosts = await prisma.contentPost.count({
+      where: { status: "FAILED" },
+    });
+
+    if (failedPosts > 0) {
+      insights.push({
+        id: `content-failed-${userId}`,
+        type: "alert",
+        priority: "high",
+        title: "Failed Posts",
+        message: `${failedPosts} post${failedPosts !== 1 ? "s" : ""} failed to publish. Review and retry.`,
+        action: { label: "View failed", href: "/relay/queue?status=FAILED" },
         context: context.module,
       });
     }

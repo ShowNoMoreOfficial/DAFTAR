@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,17 +13,14 @@ import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────
 
-interface CalendarEntry {
+interface CalendarPost {
   id: string;
   title: string;
-  description: string | null;
-  brandId: string;
   platform: string;
-  deliverableType: string;
-  date: string;
-  assigneeId: string | null;
   status: string;
-  postId: string | null;
+  date: string;
+  brandId: string;
+  brandName: string;
 }
 
 // ─── Constants ──────────────────────────────────────────
@@ -36,52 +31,46 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-const PLATFORMS = [
-  { value: "youtube", label: "YouTube", color: "bg-red-100 text-red-700" },
-  { value: "x", label: "X", color: "bg-gray-100 text-gray-700" },
-  { value: "instagram", label: "IG", color: "bg-pink-100 text-pink-700" },
-  { value: "linkedin", label: "LI", color: "bg-blue-100 text-blue-700" },
-  { value: "facebook", label: "FB", color: "bg-indigo-100 text-indigo-700" },
-];
+const PLATFORM_DOTS: Record<string, string> = {
+  youtube: "bg-[#FF0000]",
+  x: "bg-[#000000]",
+  instagram: "bg-[#E4405F]",
+  linkedin: "bg-[#0A66C2]",
+  facebook: "bg-[#1877F2]",
+};
 
-const DELIVERABLE_TYPES = [
-  "video", "carousel", "reel", "thread", "post", "story", "short", "blog",
-];
+const PLATFORM_LABELS: Record<string, string> = {
+  youtube: "YouTube",
+  x: "X",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  facebook: "Facebook",
+};
 
 const STATUS_COLORS: Record<string, string> = {
-  planned: "border-l-gray-400",
-  in_progress: "border-l-blue-500",
-  ready: "border-l-emerald-500",
-  posted: "border-l-purple-500",
+  DRAFT: "border-l-gray-400",
+  SCHEDULED: "border-l-blue-500",
+  PUBLISHING: "border-l-yellow-500",
+  PUBLISHED: "border-l-emerald-500",
+  FAILED: "border-l-red-500",
+  CANCELLED: "border-l-gray-300",
 };
 
 // ─── Component ──────────────────────────────────────────
 
-export default function ContentCalendarPage() {
+export default function RelayCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [entries, setEntries] = useState<CalendarEntry[]>([]);
-  const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
+  const [entries, setEntries] = useState<CalendarPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createDate, setCreateDate] = useState<string>("");
-
-  // Create form
-  const [formTitle, setFormTitle] = useState("");
-  const [formBrandId, setFormBrandId] = useState("");
-  const [formPlatform, setFormPlatform] = useState("youtube");
-  const [formType, setFormType] = useState("video");
-  const [formDate, setFormDate] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
-    const start = new Date(year, month, 1).toISOString();
-    const end = new Date(year, month + 1, 0).toISOString();
     try {
-      const res = await fetch(`/api/relay/calendar?start=${start}&end=${end}`);
+      const res = await fetch(`/api/relay/calendar?month=${month + 1}&year=${year}`);
       if (res.ok) {
         const data = await res.json();
         setEntries(Array.isArray(data) ? data : data.data || []);
@@ -93,10 +82,6 @@ export default function ContentCalendarPage() {
 
   useEffect(() => {
     fetchEntries();
-    fetch("/api/brands")
-      .then((r) => r.json())
-      .then((d) => setBrands(Array.isArray(d) ? d : d.data || []))
-      .catch(() => {});
   }, [fetchEntries]);
 
   const calendarDays = useMemo(() => {
@@ -119,193 +104,181 @@ export default function ContentCalendarPage() {
   const isToday = (day: number) =>
     day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
 
-  const handleCreate = async () => {
-    if (!formTitle || !formBrandId || !formDate) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/relay/calendar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: formTitle,
-          brandId: formBrandId,
-          platform: formPlatform,
-          deliverableType: formType,
-          date: new Date(formDate).toISOString(),
-        }),
-      });
-      if (res.ok) {
-        setFormTitle("");
-        setFormBrandId("");
-        setFormPlatform("youtube");
-        setFormType("video");
-        setFormDate("");
-        setCreateOpen(false);
-        fetchEntries();
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const openCreateForDate = (day: number) => {
-    const d = new Date(year, month, day);
-    setFormDate(d.toISOString().slice(0, 10));
-    setCreateOpen(true);
-  };
+  const selectedDayEntries = selectedDay ? getEntriesForDay(selectedDay) : [];
 
   return (
-    <div className="h-full overflow-y-auto p-6">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="min-w-[160px] text-center text-sm font-semibold text-[#1A1A1A]">
-            {MONTHS[month]} {year}
-          </span>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-            Today
+    <div className="flex h-full">
+      {/* Calendar grid */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[160px] text-center text-sm font-semibold text-[#1A1A1A]">
+              {MONTHS[month]} {year}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+              Today
+            </Button>
+          </div>
+          <Button size="sm" onClick={() => window.location.href = "/relay/posts"}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Schedule Post
           </Button>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Add Entry
-        </Button>
-      </div>
 
-      {/* Calendar grid */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white">
-        <div className="grid grid-cols-7 border-b border-[#E5E7EB]">
-          {DAYS.map((d) => (
-            <div key={d} className="py-2 text-center text-xs font-medium text-[#9CA3AF]">{d}</div>
+        {/* Platform legend */}
+        <div className="mb-3 flex items-center gap-4">
+          {Object.entries(PLATFORM_DOTS).map(([platform, color]) => (
+            <div key={platform} className="flex items-center gap-1.5">
+              <div className={cn("h-2.5 w-2.5 rounded-full", color)} />
+              <span className="text-xs text-[#6B7280]">{PLATFORM_LABELS[platform]}</span>
+            </div>
           ))}
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        {/* Calendar */}
+        <div className="rounded-xl border border-[#E5E7EB] bg-white">
+          <div className="grid grid-cols-7 border-b border-[#E5E7EB]">
+            {DAYS.map((d) => (
+              <div key={d} className="py-2 text-center text-xs font-medium text-[#9CA3AF]">{d}</div>
+            ))}
           </div>
-        ) : (
-          <div className="grid grid-cols-7">
-            {calendarDays.map((day, i) => {
-              const dayEntries = day ? getEntriesForDay(day) : [];
-              return (
-                <div
-                  key={i}
-                  className={cn(
-                    "min-h-[110px] border-b border-r border-[#F0F2F5] p-1.5",
-                    !day && "bg-[#FAFAFA]",
-                    day && "cursor-pointer hover:bg-[#F8FBFD]"
-                  )}
-                  onDoubleClick={() => day && openCreateForDate(day)}
-                >
-                  {day && (
-                    <>
-                      <span
-                        className={cn(
-                          "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs",
-                          isToday(day) ? "bg-[#2E86AB] font-bold text-white" : "text-[#6B7280]"
+
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-7">
+              {calendarDays.map((day, i) => {
+                const dayEntries = day ? getEntriesForDay(day) : [];
+                const isSelected = selectedDay === day;
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "min-h-[110px] border-b border-r border-[#F0F2F5] p-1.5",
+                      !day && "bg-[#FAFAFA]",
+                      day && "cursor-pointer hover:bg-[#F8FBFD]",
+                      isSelected && "bg-[#F0F8FF] ring-1 ring-inset ring-[#2E86AB]/30"
+                    )}
+                    onClick={() => day && setSelectedDay(day === selectedDay ? null : day)}
+                  >
+                    {day && (
+                      <>
+                        <span
+                          className={cn(
+                            "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs",
+                            isToday(day) ? "bg-[#2E86AB] font-bold text-white" : "text-[#6B7280]"
+                          )}
+                        >
+                          {day}
+                        </span>
+                        {/* Platform dots */}
+                        {dayEntries.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {dayEntries.slice(0, 6).map((entry) => (
+                              <div
+                                key={entry.id}
+                                className={cn(
+                                  "h-2 w-2 rounded-full",
+                                  PLATFORM_DOTS[entry.platform] || "bg-gray-400"
+                                )}
+                                title={`${entry.title} (${PLATFORM_LABELS[entry.platform] || entry.platform})`}
+                              />
+                            ))}
+                            {dayEntries.length > 6 && (
+                              <span className="text-[9px] text-[#9CA3AF]">+{dayEntries.length - 6}</span>
+                            )}
+                          </div>
                         )}
-                      >
-                        {day}
-                      </span>
-                      <div className="mt-1 space-y-0.5">
-                        {dayEntries.slice(0, 3).map((entry) => {
-                          const platformCfg = PLATFORMS.find((p) => p.value === entry.platform);
-                          return (
+                        {/* Entry titles */}
+                        <div className="mt-0.5 space-y-0.5">
+                          {dayEntries.slice(0, 2).map((entry) => (
                             <div
                               key={entry.id}
                               className={cn(
-                                "flex items-center gap-1 rounded border-l-2 px-1 py-0.5 text-[10px] text-[#6B7280] hover:bg-[#F0F2F5]",
+                                "truncate rounded border-l-2 px-1 py-0.5 text-[10px] text-[#6B7280]",
                                 STATUS_COLORS[entry.status] || "border-l-gray-300"
                               )}
                             >
-                              {platformCfg && (
-                                <span className={cn("rounded px-1 py-0 text-[8px] font-bold", platformCfg.color)}>
-                                  {platformCfg.label}
-                                </span>
-                              )}
-                              <span className="truncate">{entry.title}</span>
+                              {entry.title}
                             </div>
-                          );
-                        })}
-                        {dayEntries.length > 3 && (
-                          <span className="pl-1 text-[10px] text-[#2E86AB]">
-                            +{dayEntries.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                          ))}
+                          {dayEntries.length > 2 && (
+                            <span className="pl-1 text-[10px] text-[#2E86AB]">
+                              +{dayEntries.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Create dialog */}
-      {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">Add Calendar Entry</h3>
-              <button onClick={() => setCreateOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <Input placeholder="Title *" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={formBrandId}
-                  onChange={(e) => setFormBrandId(e.target.value)}
-                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
-                >
-                  <option value="">Select brand *</option>
-                  {brands.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={formPlatform}
-                  onChange={(e) => setFormPlatform(e.target.value)}
-                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
-                >
-                  {PLATFORMS.map((p) => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={formType}
-                  onChange={(e) => setFormType(e.target.value)}
-                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
-                >
-                  {DELIVERABLE_TYPES.map((t) => (
-                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                  ))}
-                </select>
-                <Input
-                  type="date"
-                  value={formDate}
-                  onChange={(e) => setFormDate(e.target.value)}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={submitting || !formTitle || !formBrandId || !formDate}>
-                  {submitting ? "Adding..." : "Add Entry"}
-                </Button>
-              </div>
-            </div>
+      {/* Side panel for selected day */}
+      {selectedDay !== null && (
+        <div className="w-80 border-l border-[#E5E7EB] bg-white p-4 overflow-y-auto">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[#1A1A1A]">
+              {MONTHS[month]} {selectedDay}, {year}
+            </h3>
+            <button onClick={() => setSelectedDay(null)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <X className="h-4 w-4" />
+            </button>
           </div>
+
+          {selectedDayEntries.length === 0 ? (
+            <p className="text-xs text-[#9CA3AF]">No posts for this day.</p>
+          ) : (
+            <div className="space-y-3">
+              {selectedDayEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className={cn(
+                    "rounded-lg border border-[#E5E7EB] p-3 border-l-4",
+                    STATUS_COLORS[entry.status] || "border-l-gray-300"
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={cn("h-2.5 w-2.5 rounded-full", PLATFORM_DOTS[entry.platform] || "bg-gray-400")} />
+                    <span className="text-[10px] font-medium text-[#6B7280] uppercase">
+                      {PLATFORM_LABELS[entry.platform] || entry.platform}
+                    </span>
+                    <span className={cn(
+                      "ml-auto rounded px-1.5 py-0.5 text-[9px] font-medium",
+                      entry.status === "PUBLISHED" ? "bg-emerald-100 text-emerald-700" :
+                      entry.status === "SCHEDULED" ? "bg-blue-100 text-blue-700" :
+                      entry.status === "DRAFT" ? "bg-gray-100 text-gray-600" :
+                      entry.status === "FAILED" ? "bg-red-100 text-red-700" :
+                      "bg-gray-100 text-gray-600"
+                    )}>
+                      {entry.status}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-[#1A1A1A]">{entry.title}</p>
+                  <p className="mt-0.5 text-[10px] text-[#9CA3AF]">{entry.brandName}</p>
+                  <p className="mt-0.5 text-[10px] text-[#9CA3AF]">
+                    {new Date(entry.date).toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

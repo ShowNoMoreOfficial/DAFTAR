@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
 
-// GET /api/relay/analytics — Aggregate analytics overview
+// GET /api/relay/analytics — Aggregated analytics across posts
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
   if (!session) return unauthorized();
@@ -15,8 +15,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const brandId = searchParams.get("brandId");
   const platform = searchParams.get("platform");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+  const period = searchParams.get("period") || "30"; // 7, 30, 90 days
 
   const postWhere: Record<string, unknown> = {};
 
@@ -30,12 +29,12 @@ export async function GET(req: NextRequest) {
 
   if (brandId) postWhere.brandId = brandId;
   if (platform) postWhere.platform = platform;
-  if (from || to) {
-    postWhere.createdAt = {
-      ...(from ? { gte: new Date(from) } : {}),
-      ...(to ? { lte: new Date(to) } : {}),
-    };
-  }
+
+  // Apply period filter
+  const periodDays = parseInt(period) || 30;
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - periodDays);
+  postWhere.createdAt = { gte: fromDate };
 
   // Get all posts matching filters
   const posts = await prisma.contentPost.findMany({
@@ -46,6 +45,7 @@ export async function GET(req: NextRequest) {
       platform: true,
       status: true,
       publishedAt: true,
+      brand: { select: { id: true, name: true } },
       analytics: {
         select: {
           views: true,
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
           clicks: true,
           reach: true,
           impressions: true,
-          engagement: true,
+          engagementRate: true,
         },
       },
     },
@@ -69,8 +69,10 @@ export async function GET(req: NextRequest) {
   let totalClicks = 0;
   let totalReach = 0;
   let totalImpressions = 0;
+  let totalEngagementSum = 0;
+  let postsWithAnalytics = 0;
 
-  const platformMap: Record<string, { posts: number; views: number; engagement: number }> = {};
+  const platformMap: Record<string, { posts: number; views: number; engagementSum: number; analyticsCount: number }> = {};
 
   for (const post of posts) {
     const a = post.analytics;
@@ -82,46 +84,57 @@ export async function GET(req: NextRequest) {
       totalClicks += a.clicks;
       totalReach += a.reach;
       totalImpressions += a.impressions;
+      totalEngagementSum += a.engagementRate;
+      postsWithAnalytics++;
     }
 
     if (!platformMap[post.platform]) {
-      platformMap[post.platform] = { posts: 0, views: 0, engagement: 0 };
+      platformMap[post.platform] = { posts: 0, views: 0, engagementSum: 0, analyticsCount: 0 };
     }
     platformMap[post.platform].posts++;
     if (a) {
       platformMap[post.platform].views += a.views;
-      platformMap[post.platform].engagement += a.engagement;
+      platformMap[post.platform].engagementSum += a.engagementRate;
+      platformMap[post.platform].analyticsCount++;
     }
   }
 
-  const totalEngagement = totalImpressions > 0
-    ? ((totalLikes + totalComments + totalShares + totalClicks) / totalImpressions) * 100
+  const avgEngagementRate = postsWithAnalytics > 0
+    ? Math.round((totalEngagementSum / postsWithAnalytics) * 100) / 100
     : 0;
+
+  const totalEngagement = totalLikes + totalComments + totalShares + totalClicks;
 
   const platformBreakdown = Object.entries(platformMap).map(([name, data]) => ({
     platform: name,
     posts: data.posts,
     views: data.views,
-    avgEngagement: data.posts > 0 ? data.engagement / data.posts : 0,
+    engagementRate: data.analyticsCount > 0
+      ? Math.round((data.engagementSum / data.analyticsCount) * 100) / 100
+      : 0,
   }));
 
-  // Top 5 posts by views
-  const topPosts = posts
-    .filter((p) => p.analytics)
-    .sort((a, b) => (b.analytics?.views ?? 0) - (a.analytics?.views ?? 0))
+  // Top 5 posts by engagement
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const topPosts = (posts as any[])
+    .filter((p: any) => p.analytics)
+    .sort((a: any, b: any) => (b.analytics?.engagementRate ?? 0) - (a.analytics?.engagementRate ?? 0))
     .slice(0, 5)
-    .map((p) => ({
+    .map((p: any) => ({
       id: p.id,
       title: p.title,
       platform: p.platform,
+      brandName: p.brand?.name ?? "",
       views: p.analytics?.views ?? 0,
-      engagement: p.analytics?.engagement ?? 0,
+      engagementRate: p.analytics?.engagementRate ?? 0,
+      publishedAt: p.publishedAt,
     }));
 
   return NextResponse.json({
     totalPosts: posts.length,
     totalViews,
-    totalEngagement: Math.round(totalEngagement * 100) / 100,
+    totalEngagement,
+    avgEngagementRate,
     totalLikes,
     totalShares,
     totalComments,

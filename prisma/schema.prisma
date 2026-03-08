@@ -200,7 +200,8 @@ model Brand {
   userAccess UserBrandAccess[]
   tasks      Task[]
   invoices   Invoice[]
-  posts      ContentPost[]
+  posts               ContentPost[]
+  platformConnections PlatformConnection[]
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
@@ -585,6 +586,27 @@ model CapacitySnapshot {
   @@map("capacity_snapshots")
 }
 
+// ─── HOCCR: Cross-Department Dependencies ───────────────
+
+model CrossDeptDependency {
+  id              String   @id @default(cuid())
+  fromDeptId      String
+  toDeptId        String
+  taskId          String?
+  description     String
+  status          String   @default("waiting") // waiting, acknowledged, resolved, escalated
+  priority        String   @default("medium") // low, medium, high, critical
+  createdById     String
+  acknowledgedById String?
+  resolvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([fromDeptId, status])
+  @@index([toDeptId, status])
+  @@map("cross_dept_dependencies")
+}
+
 // ─── Notifications ──────────────────────────────────────
 
 enum NotificationType {
@@ -871,47 +893,69 @@ enum PostStatus {
 }
 
 model ContentPost {
-  id            String     @id @default(cuid())
-  title         String
-  content       String?    @db.Text
-  platform      String     // youtube, x, instagram, linkedin, facebook
-  brandId       String
-  brand         Brand      @relation(fields: [brandId], references: [id])
-  status        PostStatus @default(DRAFT)
-  scheduledAt   DateTime?
-  publishedAt   DateTime?
-  publishedUrl  String?
-  metadata      Json?      // platform-specific data (hashtags, thumbnails, etc.)
-  taskId        String?    // link to originating PMS task
-  createdById   String
-  errorMessage  String?
-  analytics     PostAnalytics?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  title          String
+  content        String?    @db.Text
+  platform       String     // youtube, x, instagram, linkedin, facebook
+  brandId        String
+  brand          Brand      @relation(fields: [brandId], references: [id])
+  status         PostStatus @default(DRAFT)
+  scheduledAt    DateTime?
+  publishedAt    DateTime?
+  publishedUrl   String?
+  platformPostId String?    // ID from the platform after publishing
+  mediaUrls      Json?      // array of media URLs
+  metadata       Json?      // platform-specific data (hashtags, thumbnails, etc.)
+  taskId         String?    // link to originating PMS task
+  createdById    String
+  errorMessage   String?
+  analytics      PostAnalytics?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  @@index([brandId, status])
+  @@index([brandId, platform])
+  @@index([status, scheduledAt])
   @@index([platform, status])
-  @@index([scheduledAt])
   @@map("content_posts")
 }
 
 model PostAnalytics {
-  id            String      @id @default(cuid())
-  post          ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId        String      @unique
-  views         Int         @default(0)
-  likes         Int         @default(0)
-  shares        Int         @default(0)
-  comments      Int         @default(0)
-  clicks        Int         @default(0)
-  reach         Int         @default(0)
-  impressions   Int         @default(0)
-  engagement    Float       @default(0) // engagement rate %
-  rawData       Json?       // full platform analytics payload
-  lastSyncedAt  DateTime    @default(now())
-  createdAt     DateTime    @default(now())
+  id             String      @id @default(cuid())
+  post           ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId         String      @unique
+  views          Int         @default(0)
+  likes          Int         @default(0)
+  comments       Int         @default(0)
+  shares         Int         @default(0)
+  clicks         Int         @default(0)
+  reach          Int         @default(0)
+  impressions    Int         @default(0)
+  engagementRate Float       @default(0)
+  rawData        Json?       // full platform analytics response
+  lastSyncedAt   DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@map("post_analytics")
+}
+
+model PlatformConnection {
+  id             String   @id @default(cuid())
+  brandId        String
+  brand          Brand    @relation(fields: [brandId], references: [id])
+  platform       String   // youtube, x, instagram, linkedin, facebook
+  accessToken    String?  @db.Text
+  refreshToken   String?  @db.Text
+  accountId      String?  // platform account/page ID
+  accountName    String?
+  tokenExpiresAt DateTime?
+  isActive       Boolean  @default(true)
+  config         Json?    // platform-specific config
+  connectedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([brandId, platform])
+  @@map("platform_connections")
 }
 
 model ContentCalendarEntry {
@@ -948,7 +992,10 @@ model Announcement {
   id           String               @id @default(cuid())
   title        String
   content      String               @db.Text
+  type         String               @default("general") // general, urgent, policy, celebration
   priority     AnnouncementPriority @default(NORMAL)
+  scope        String               @default("org") // org, department, brand
+  scopeId      String?              // departmentId or brandId if scoped
   authorId     String
   departmentId String?              // null = org-wide
   isPinned     Boolean              @default(false)
@@ -958,6 +1005,7 @@ model Announcement {
   updatedAt    DateTime             @updatedAt
 
   @@index([departmentId, createdAt])
+  @@index([scope, scopeId])
   @@map("announcements")
 }
 

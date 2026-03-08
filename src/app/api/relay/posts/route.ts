@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
   const brandId = searchParams.get("brandId");
   const platform = searchParams.get("platform");
   const status = searchParams.get("status");
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
   const search = searchParams.get("search");
 
   const where: Record<string, unknown> = {};
@@ -29,7 +31,6 @@ export async function GET(req: NextRequest) {
   } else if (role === "MEMBER" || role === "CONTRACTOR") {
     where.createdById = userId;
   } else if (role === "DEPT_HEAD" && primaryDepartmentId) {
-    // DEPT_HEAD sees all posts for brands they can access
     if (accessibleBrandIds.length > 0) {
       where.brandId = { in: accessibleBrandIds };
     }
@@ -40,6 +41,12 @@ export async function GET(req: NextRequest) {
   if (platform) where.platform = platform;
   if (status) where.status = status;
   if (search) where.title = { contains: search, mode: "insensitive" };
+  if (dateFrom || dateTo) {
+    where.createdAt = {
+      ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
+      ...(dateTo ? { lte: new Date(dateTo) } : {}),
+    };
+  }
 
   const pg = parsePagination(req, 25);
 
@@ -54,7 +61,7 @@ export async function GET(req: NextRequest) {
             likes: true,
             shares: true,
             comments: true,
-            engagement: true,
+            engagementRate: true,
           },
         },
       },
@@ -78,11 +85,16 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { title, content, platform, brandId, scheduledAt, metadata, taskId } = body;
+  const { title, content, platform, brandId, scheduledAt, mediaUrls, metadata, taskId } = body;
 
   if (!title) return badRequest("Title is required");
   if (!platform) return badRequest("Platform is required");
   if (!brandId) return badRequest("Brand ID is required");
+
+  const validPlatforms = ["youtube", "x", "instagram", "linkedin", "facebook"];
+  if (!validPlatforms.includes(platform)) {
+    return badRequest("Invalid platform. Must be one of: " + validPlatforms.join(", "));
+  }
 
   // CLIENT users can only create posts for their brands
   if (session.user.role === "CLIENT") {
@@ -94,10 +106,11 @@ export async function POST(req: NextRequest) {
   const post = await prisma.contentPost.create({
     data: {
       title,
-      content,
+      content: content || null,
       platform,
       brandId,
       scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+      mediaUrls: mediaUrls || undefined,
       metadata: metadata || undefined,
       taskId: taskId || null,
       status: scheduledAt ? "SCHEDULED" : "DRAFT",

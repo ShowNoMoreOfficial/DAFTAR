@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Plus, Mail, XCircle, Clock, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ROLE_COLORS } from "@/lib/constants";
 import type { Role } from "@prisma/client";
 
 interface UserRecord {
@@ -51,16 +52,6 @@ const ROLES: Role[] = [
   "FINANCE",
   "CONTRACTOR",
 ];
-
-const ROLE_COLORS: Record<Role, string> = {
-  ADMIN: "bg-purple-100 text-purple-700",
-  HEAD_HR: "bg-blue-100 text-blue-700",
-  DEPT_HEAD: "bg-teal-100 text-teal-700",
-  MEMBER: "bg-gray-100 text-gray-700",
-  CLIENT: "bg-amber-100 text-amber-700",
-  FINANCE: "bg-green-100 text-green-700",
-  CONTRACTOR: "bg-orange-100 text-orange-700",
-};
 
 const INVITE_STATUS_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
   PENDING: { bg: "bg-amber-100 text-amber-700", icon: <Clock className="h-3 w-3" /> },

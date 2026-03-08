@@ -8,6 +8,7 @@ import { CreateTaskDialog } from "@/components/pms/create-task-dialog";
 import { TaskDetailPanel } from "@/components/pms/task-detail-panel";
 import { Plus, Flag, Calendar, ArrowUpDown, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TASK_STATUS_COLORS } from "@/lib/constants";
 
 interface Task {
   id: string;
@@ -25,15 +26,7 @@ interface Task {
   _count: { comments: number };
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  CREATED: "bg-gray-100 text-gray-700",
-  ASSIGNED: "bg-blue-100 text-blue-700",
-  IN_PROGRESS: "bg-yellow-100 text-yellow-700",
-  REVIEW: "bg-purple-100 text-purple-700",
-  APPROVED: "bg-green-100 text-green-700",
-  DONE: "bg-emerald-100 text-emerald-700",
-  CANCELLED: "bg-red-100 text-red-700",
-};
+const STATUS_COLORS = TASK_STATUS_COLORS;
 
 const PRIORITY_COLORS: Record<string, string> = {
   URGENT: "text-red-500",

@@ -4,9 +4,9 @@ import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-ut
 import { hasPermission } from "@/lib/permissions";
 import { daftarEvents } from "@/lib/event-bus";
 
-// POST /api/relay/posts/[id]/publish — Publish a post (simulated)
+// POST /api/relay/posts/[id]/publish — Publish or schedule a post
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getAuthSession();
@@ -32,12 +32,39 @@ export async function POST(
   }
 
   const now = new Date();
+  let body: Record<string, unknown> = {};
+  try {
+    body = await req.json();
+  } catch {
+    // No body is fine - publish immediately
+  }
 
+  const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt as string) : existing.scheduledAt;
+
+  // If scheduledAt is in the future, set to SCHEDULED
+  if (scheduledAt && scheduledAt > now) {
+    const post = await prisma.contentPost.update({
+      where: { id },
+      data: {
+        status: "SCHEDULED",
+        scheduledAt,
+      },
+      include: {
+        brand: { select: { id: true, name: true } },
+        analytics: true,
+      },
+    });
+
+    return NextResponse.json(post);
+  }
+
+  // Otherwise, publish now (simulated)
   const post = await prisma.contentPost.update({
     where: { id },
     data: {
       status: "PUBLISHED",
       publishedAt: now,
+      platformPostId: `sim_${id}_${Date.now()}`, // simulated platform post ID
     },
     include: {
       brand: { select: { id: true, name: true } },

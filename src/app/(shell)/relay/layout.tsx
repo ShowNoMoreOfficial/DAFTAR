@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Send, Calendar, BarChart3 } from "lucide-react";
+import { Calendar, FileText, BarChart3, Link2 } from "lucide-react";
 
 const tabs = [
-  { label: "Queue", href: "/relay/queue", icon: Send },
   { label: "Calendar", href: "/relay/calendar", icon: Calendar },
+  { label: "Posts", href: "/relay/posts", icon: FileText },
   { label: "Analytics", href: "/relay/analytics", icon: BarChart3 },
+  { label: "Connections", href: "/relay/connections", icon: Link2 },
 ];
 
 export default function RelayLayout({ children }: { children: React.ReactNode }) {
