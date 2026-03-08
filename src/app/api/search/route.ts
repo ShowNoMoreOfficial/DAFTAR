@@ -11,14 +11,15 @@ export async function GET(req: Request) {
   const q = searchParams.get("q");
 
   if (!q || q.length < 2) {
-    return NextResponse.json({ users: [], brands: [], modules: [] });
+    return NextResponse.json({ users: [], brands: [], modules: [], tasks: [] });
   }
 
-  const query = `%${q}%`;
+  const role = session.user.role;
+  const userId = session.user.id;
 
-  const [users, brands, modules] = await Promise.all([
+  const [users, brands, modules, tasks] = await Promise.all([
     // Only Admin/HEAD_HR can search users
-    ["ADMIN", "HEAD_HR"].includes(session.user.role)
+    ["ADMIN", "HEAD_HR"].includes(role)
       ? prisma.user.findMany({
           where: {
             OR: [
@@ -35,8 +36,8 @@ export async function GET(req: Request) {
       where: {
         AND: [
           { name: { contains: q, mode: "insensitive" } },
-          session.user.role !== "ADMIN"
-            ? { userAccess: { some: { userId: session.user.id } } }
+          role !== "ADMIN"
+            ? { userAccess: { some: { userId } } }
             : {},
         ],
       },
@@ -55,7 +56,28 @@ export async function GET(req: Request) {
       select: { id: true, name: true, displayName: true, icon: true },
       take: 5,
     }),
+
+    // Tasks — scoped by role
+    prisma.task.findMany({
+      where: {
+        title: { contains: q, mode: "insensitive" },
+        ...(role === "ADMIN"
+          ? {}
+          : role === "DEPT_HEAD"
+          ? { department: { headId: userId } }
+          : { OR: [{ assigneeId: userId }, { creatorId: userId }] }),
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        priority: true,
+        assignee: { select: { name: true } },
+      },
+      take: 5,
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
 
-  return NextResponse.json({ users, brands, modules });
+  return NextResponse.json({ users, brands, modules, tasks });
 }

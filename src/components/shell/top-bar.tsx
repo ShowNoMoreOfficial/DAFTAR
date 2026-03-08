@@ -10,8 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Search, Settings, LogOut, User } from "lucide-react";
+import { Search, Settings, LogOut, User } from "lucide-react";
 import { CommandSearch } from "./command-search";
+import { NotificationBell } from "./notification-bell";
 
 interface TopBarProps {
   user: {
@@ -114,12 +115,7 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
 
         {/* Right: Notifications + Avatar */}
         <div className="flex items-center gap-3">
-          <button className="relative rounded-lg p-2 text-[#6B7280] transition-colors hover:bg-[#F0F2F5]">
-            <Bell className="h-[18px] w-[18px]" />
-            <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#A23B72] text-[9px] font-bold text-white">
-              3
-            </span>
-          </button>
+          <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger className="rounded-full outline-none">
