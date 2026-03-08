@@ -4,6 +4,7 @@ import { signOut } from "next-auth/react";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./top-bar";
 import { RightPanel } from "./right-panel";
+import { GIAssistant } from "@/components/gi/gi-assistant";
 import { useSidebarStore } from "@/store/sidebar-store";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
@@ -43,6 +44,7 @@ export function ShellLayout({ user, children }: ShellLayoutProps) {
       </div>
 
       <RightPanel />
+      <GIAssistant />
     </div>
   );
 }

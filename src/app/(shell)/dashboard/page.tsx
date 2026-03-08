@@ -12,7 +12,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-[#1A1A1A]">
-          Welcome back, {name.split(" ")[0]}
+          Welcome back, {name?.split(" ")[0] || "there"}
         </h1>
         <p className="mt-1 text-sm text-[#6B7280]">
           Here&apos;s your overview for today.

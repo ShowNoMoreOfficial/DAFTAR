@@ -28,8 +28,8 @@ const QUICK_LINKS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Yantri", href: "/m/yantri", icon: Brain },
   { label: "Khabri", href: "/m/khabri", icon: Newspaper },
-  { label: "PMS", href: "/m/pms", icon: Kanban },
-  { label: "HOCCR", href: "/m/hoccr", icon: Users },
+  { label: "PMS", href: "/pms", icon: Kanban },
+  { label: "HOCCR", href: "/hoccr", icon: Users },
   { label: "Vritti", href: "/m/vritti", icon: FileText },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
