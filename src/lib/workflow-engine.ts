@@ -75,7 +75,7 @@ export async function processAutoAdvance() {
   let advancedCount = 0;
 
   for (const wf of workflows) {
-    const stages = wf.stages as WorkflowStage[];
+    const stages = wf.stages as unknown as WorkflowStage[];
     const autoStages = stages.filter((s) => s.autoAdvanceAfterHours);
 
     for (const stage of autoStages) {
@@ -138,7 +138,7 @@ export async function processAutoAdvance() {
  */
 export async function processEscalations() {
   const workflows = await prisma.workflowTemplate.findMany({
-    where: { isActive: true, escalation: { not: null } },
+    where: { isActive: true, NOT: { escalation: { equals: undefined } } },
     select: { id: true, escalation: true, departmentId: true, stages: true },
   });
 
