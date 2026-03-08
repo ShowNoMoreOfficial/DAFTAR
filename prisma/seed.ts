@@ -49,11 +49,11 @@ async function main() {
   // ─── Admin User ────────────────────────────────────────
   // Replace this email with the actual admin's Google/Microsoft email
   const admin = await prisma.user.upsert({
-    where: { email: "admin@shownomore.com" },
+    where: { email: "shownomoreofficial@gmail.com" },
     update: {},
     create: {
-      email: "admin@shownomore.com",
-      name: "Admin",
+      email: "shownomoreofficial@gmail.com",
+      name: "Stallone2K",
       role: "ADMIN",
       isActive: false, // Will activate on first OAuth login
     },

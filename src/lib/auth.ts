@@ -1,12 +1,10 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -45,26 +43,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user }) {
-      if (user?.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: user.email },
-          include: {
-            brandAccess: { select: { brandId: true } },
-            permissionOverrides: {
-              where: { granted: true },
-              select: { permission: true },
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in or when session is updated, load user data from DB
+      if (user?.email || trigger === "update") {
+        const email = user?.email || (token.email as string);
+        if (email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email },
+            include: {
+              brandAccess: { select: { brandId: true } },
+              permissionOverrides: {
+                where: { granted: true },
+                select: { permission: true },
+              },
             },
-          },
-        });
-        if (dbUser) {
-          token.userId = dbUser.id;
-          token.role = dbUser.role;
-          token.primaryDepartmentId = dbUser.primaryDeptId;
-          token.accessibleBrandIds = dbUser.brandAccess.map((b) => b.brandId);
-          token.permissions = dbUser.permissionOverrides.map(
-            (p) => p.permission
-          );
+          });
+          if (dbUser) {
+            token.userId = dbUser.id;
+            token.email = dbUser.email;
+            token.name = dbUser.name;
+            token.picture = dbUser.avatar;
+            token.role = dbUser.role;
+            token.primaryDepartmentId = dbUser.primaryDeptId;
+            token.accessibleBrandIds = dbUser.brandAccess.map((b) => b.brandId);
+            token.permissions = dbUser.permissionOverrides.map(
+              (p) => p.permission
+            );
+          }
         }
       }
       return token;
