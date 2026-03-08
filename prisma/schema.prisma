@@ -56,6 +56,14 @@ model User {
   client              Client?
   accounts            Account[]
   sessions            Session[]
+  // PMS relations
+  createdTasks        Task[]              @relation("TaskCreator")
+  assignedTasks       Task[]              @relation("TaskAssignee")
+  taskComments        TaskComment[]       @relation("CommentAuthor")
+  taskActivities      TaskActivity[]      @relation("ActivityActor")
+  credibilityScore    CredibilityScore?
+  // HOCCR relations
+  createdReports      Report[]            @relation("ReportCreator")
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -113,6 +121,9 @@ model Department {
   members      DepartmentMember[]
   primaryUsers User[]             @relation("PrimaryDept")
   projects     Project[]
+  tasks        Task[]             @relation("DeptTasks")
+  positions    HiringPosition[]   @relation("DeptPositions")
+  reports      Report[]           @relation("DeptReports")
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -157,6 +168,7 @@ model Brand {
   config     Json?
   platforms  BrandPlatform[]
   userAccess UserBrandAccess[]
+  tasks      Task[]
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
@@ -196,6 +208,7 @@ model Project {
   department  Department      @relation(fields: [deptId], references: [id])
   deptId      String
   members     ProjectMember[]
+  tasks       Task[]
   status      String          @default("active")
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
@@ -256,6 +269,191 @@ model Module {
   order       Int     @default(0)
 
   @@map("modules")
+}
+
+// ─── PMS: Tasks ─────────────────────────────────────────
+
+enum TaskStatus {
+  CREATED
+  ASSIGNED
+  IN_PROGRESS
+  REVIEW
+  APPROVED
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?      @db.Text
+  status        TaskStatus   @default(CREATED)
+  priority      TaskPriority @default(MEDIUM)
+  difficultyWeight Int       @default(1)
+
+  // Relations
+  creator       User         @relation("TaskCreator", fields: [creatorId], references: [id])
+  creatorId     String
+  assignee      User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assigneeId    String?
+  department    Department?  @relation("DeptTasks", fields: [departmentId], references: [id])
+  departmentId  String?
+  brand         Brand?       @relation(fields: [brandId], references: [id])
+  brandId       String?
+  project       Project?     @relation(fields: [projectId], references: [id])
+  projectId     String?
+
+  // Dates
+  dueDate       DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Sub-relations
+  comments      TaskComment[]
+  activities    TaskActivity[]
+  tags          TaskTag[]
+
+  @@index([assigneeId, status])
+  @@index([departmentId, status])
+  @@index([status])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  author    User     @relation("CommentAuthor", fields: [authorId], references: [id])
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("task_comments")
+}
+
+model TaskActivity {
+  id        String   @id @default(cuid())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  actor     User     @relation("ActivityActor", fields: [actorId], references: [id])
+  actorId   String
+  action    String
+  field     String?
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+
+  @@map("task_activities")
+}
+
+model TaskTag {
+  id     String @id @default(cuid())
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+  name   String
+
+  @@unique([taskId, name])
+  @@map("task_tags")
+}
+
+// ─── PMS: Credibility Scoring ───────────────────────────
+
+model CredibilityScore {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String   @unique
+  reliability    Float    @default(50)
+  quality        Float    @default(50)
+  consistency    Float    @default(50)
+  overallScore   Float    @default(50)
+  tasksCompleted Int      @default(0)
+  tasksOnTime    Int      @default(0)
+  tasksLate      Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@map("credibility_scores")
+}
+
+// ─── HOCCR: Hiring Pipeline ─────────────────────────────
+
+enum CandidateStatus {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+  WITHDRAWN
+}
+
+model HiringPosition {
+  id           String      @id @default(cuid())
+  title        String
+  department   Department  @relation("DeptPositions", fields: [departmentId], references: [id])
+  departmentId String
+  description  String?     @db.Text
+  requirements Json?
+  isOpen       Boolean     @default(true)
+  candidates   HiringCandidate[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("hiring_positions")
+}
+
+model HiringCandidate {
+  id           String          @id @default(cuid())
+  name         String
+  email        String
+  phone        String?
+  resumeUrl    String?
+  status       CandidateStatus @default(APPLIED)
+  position     HiringPosition  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  positionId   String
+  notes        String?         @db.Text
+  rating       Int?
+  interviewDate DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("hiring_candidates")
+}
+
+// ─── HOCCR: Reports ─────────────────────────────────────
+
+enum ReportType {
+  DEPARTMENT_PERFORMANCE
+  TEAM_WORKLOAD
+  TASK_COMPLETION
+  HIRING_PIPELINE
+  CUSTOM
+}
+
+model Report {
+  id           String     @id @default(cuid())
+  title        String
+  type         ReportType
+  description  String?
+  config       Json?
+  generatedData Json?
+  createdBy    User       @relation("ReportCreator", fields: [createdById], references: [id])
+  createdById  String
+  department   Department? @relation("DeptReports", fields: [departmentId], references: [id])
+  departmentId String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("reports")
 }
 
 // ─── GI Configuration ───────────────────────────────────

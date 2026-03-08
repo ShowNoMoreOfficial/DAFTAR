@@ -48,14 +48,14 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     id: "pms",
     label: "PMS",
     icon: "Kanban",
-    href: "/m/pms",
+    href: "/pms",
     roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER", "CONTRACTOR"],
   },
   {
     id: "hoccr",
     label: "HOCCR",
     icon: "Users",
-    href: "/m/hoccr",
+    href: "/hoccr",
     roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD"],
   },
   {
