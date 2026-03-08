@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  HEAD_HR
+  DEPT_HEAD
+  MEMBER
+  CLIENT
+  FINANCE
+  CONTRACTOR
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+enum DepartmentType {
+  MEDIA
+  TECH
+  MARKETING
+  PRODUCTION
+  PPC
+  PHOTOGRAPHY
+  HR_OPS
+  FINANCE_DEPT
+  CUSTOM
+}
+
+// ─── Core Models ─────────────────────────────────────────
+
+model User {
+  id                  String              @id @default(cuid())
+  email               String              @unique
+  name                String
+  avatar              String?
+  role                Role                @default(MEMBER)
+  isActive            Boolean             @default(false)
+  primaryDepartment   Department?         @relation("PrimaryDept", fields: [primaryDeptId], references: [id])
+  primaryDeptId       String?
+  departments         DepartmentMember[]
+  brandAccess         UserBrandAccess[]
+  permissionOverrides UserPermission[]
+  projectTags         ProjectMember[]
+  sidebarPreference   SidebarPreference?
+  client              Client?
+  accounts            Account[]
+  sessions            Session[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── Department ──────────────────────────────────────────
+
+model Department {
+  id           String             @id @default(cuid())
+  name         String             @unique
+  type         DepartmentType
+  description  String?
+  config       Json?
+  headId       String?
+  members      DepartmentMember[]
+  primaryUsers User[]             @relation("PrimaryDept")
+  projects     Project[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@map("departments")
+}
+
+model DepartmentMember {
+  id           String     @id @default(cuid())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId String
+  isPrimary    Boolean    @default(false)
+  joinedAt     DateTime   @default(now())
+
+  @@unique([userId, departmentId])
+  @@map("department_members")
+}
+
+// ─── Client & Brand ──────────────────────────────────────
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  company   String?
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id])
+  brands    Brand[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("clients")
+}
+
+model Brand {
+  id         String            @id @default(cuid())
+  name       String
+  slug       String            @unique
+  client     Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId   String
+  config     Json?
+  platforms  BrandPlatform[]
+  userAccess UserBrandAccess[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@map("brands")
+}
+
+model UserBrandAccess {
+  id      String  @id @default(cuid())
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brandId String
+  role    String?
+
+  @@unique([userId, brandId])
+  @@map("user_brand_access")
+}
+
+model BrandPlatform {
+  id       String  @id @default(cuid())
+  brand    Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brandId  String
+  platform String
+  config   Json?
+  isActive Boolean @default(true)
+
+  @@unique([brandId, platform])
+  @@map("brand_platforms")
+}
+
+// ─── Projects ────────────────────────────────────────────
+
+model Project {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  department  Department      @relation(fields: [deptId], references: [id])
+  deptId      String
+  members     ProjectMember[]
+  status      String          @default("active")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String  @id @default(cuid())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  role      String?
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+// ─── Permissions ─────────────────────────────────────────
+
+model UserPermission {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  permission String
+  granted    Boolean  @default(true)
+  grantedBy  String
+  createdAt  DateTime @default(now())
+
+  @@map("user_permissions")
+}
+
+// ─── Sidebar ─────────────────────────────────────────────
+
+model SidebarPreference {
+  id        String @id @default(cuid())
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String @unique
+  pinned    Json   @default("[]")
+  collapsed Json   @default("[]")
+  order     Json   @default("[]")
+
+  @@map("sidebar_preferences")
+}
+
+// ─── Module Registry ─────────────────────────────────────
+
+model Module {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  displayName String
+  description String?
+  icon        String?
+  baseUrl     String
+  isActive    Boolean @default(true)
+  config      Json?
+  order       Int     @default(0)
+
+  @@map("modules")
+}
+
+// ─── GI Configuration ───────────────────────────────────
+
+model GIConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  updatedBy   String
+  updatedAt   DateTime @updatedAt
+
+  @@map("gi_configs")
+}
+
+model GITierAssignment {
+  id         String   @id @default(cuid())
+  actionType String   @unique
+  tier       Int
+  updatedBy  String
+  updatedAt  DateTime @updatedAt
+
+  @@map("gi_tier_assignments")
+}
