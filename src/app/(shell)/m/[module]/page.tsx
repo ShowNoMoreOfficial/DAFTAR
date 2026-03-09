@@ -2,7 +2,14 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canAccessModule } from "@/lib/permissions";
-import { ModuleEmbed } from "@/components/shell/module-embed";
+
+// Icons for module placeholders
+const MODULE_ICONS: Record<string, string> = {
+  khabri: "📡",
+  relay: "📤",
+  pms: "📋",
+  hoccr: "👥",
+};
 
 export default async function ModulePage({
   params,
@@ -40,12 +47,20 @@ export default async function ModulePage({
     );
   }
 
+  // Show coming soon page for modules without native integration
+  const icon = MODULE_ICONS[moduleName] || "🧩";
   return (
-    <div className="h-full">
-      <ModuleEmbed
-        moduleName={mod.displayName}
-        baseUrl={mod.baseUrl}
-      />
+    <div className="flex flex-col items-center justify-center py-24">
+      <div className="text-6xl mb-6">{icon}</div>
+      <h2 className="text-2xl font-bold text-[#1A1A1A] mb-2">{mod.displayName}</h2>
+      <p className="text-sm text-[#6B7280] mb-1">{mod.description}</p>
+      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#2E86AB]/10 px-4 py-2 text-sm font-medium text-[#2E86AB]">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2E86AB] opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2E86AB]" />
+        </span>
+        Coming Soon
+      </div>
     </div>
   );
 }
