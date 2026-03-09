@@ -70,7 +70,7 @@ async function main() {
         displayName: "Yantri",
         description: "AI Narrative Intelligence Orchestrator",
         icon: "Brain",
-        baseUrl: "http://localhost:3001",
+        baseUrl: "https://yantri-nine.vercel.app",
         order: 1,
       },
     }),
@@ -1104,7 +1104,7 @@ async function main() {
   // ─── Phase 5: GI Adult Data ──────────────────────────────
 
   // GI Tier Assignments (default autonomy levels)
-  const tierAssignments = [
+  const adultTierAssignments = [
     { actionType: "task_reassignment", tier: 3 },     // Act & notify
     { actionType: "deadline_extension", tier: 2 },     // Suggest only
     { actionType: "workload_rebalance", tier: 2 },     // Suggest only
@@ -1117,14 +1117,14 @@ async function main() {
     { actionType: "social_posting", tier: 2 },         // Require approval
   ];
 
-  for (const ta of tierAssignments) {
+  for (const ta of adultTierAssignments) {
     await prisma.gITierAssignment.upsert({
       where: { actionType: ta.actionType },
       update: { tier: ta.tier, updatedBy: admin.id },
       create: { ...ta, updatedBy: admin.id },
     });
   }
-  console.log(`Created ${tierAssignments.length} GI tier assignments`);
+  console.log(`Created ${adultTierAssignments.length} GI tier assignments`);
 
   // GI Predictions (sample)
   const predictions = [

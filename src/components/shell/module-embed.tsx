@@ -26,7 +26,8 @@ export function ModuleEmbed({ moduleName, baseUrl }: ModuleEmbedProps) {
         className="h-full w-full border-0 rounded-lg"
         onLoad={() => setLoading(false)}
         title={moduleName}
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        allow="clipboard-write"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
       />
     </div>
   );
