@@ -50,6 +50,11 @@ function buildBreadcrumb(pathname: string): { label: string; href: string }[] {
     reports: "Reports",
     calendar: "Calendar",
     leaderboard: "Leaderboard",
+    trends: "Trends",
+    signals: "Signals",
+    narratives: "Narratives",
+    geo: "Geo Intel",
+    analytics: "Analytics",
   };
 
   let href = "";

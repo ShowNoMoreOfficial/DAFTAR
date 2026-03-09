@@ -36,6 +36,14 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: "Newspaper",
     href: "/m/khabri",
     roles: ["ADMIN", "DEPT_HEAD", "MEMBER"],
+    children: [
+      { id: "khabri-dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/m/khabri", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "khabri-trends", label: "Trends", icon: "TrendingUp", href: "/m/khabri/trends", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "khabri-signals", label: "Signals", icon: "Radio", href: "/m/khabri/signals", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "khabri-narratives", label: "Narratives", icon: "GitBranch", href: "/m/khabri/narratives", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "khabri-geo", label: "Geo Intel", icon: "Globe2", href: "/m/khabri/geo", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "khabri-analytics", label: "Analytics", icon: "BarChart3", href: "/m/khabri/analytics", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+    ],
   },
   {
     id: "relay",
