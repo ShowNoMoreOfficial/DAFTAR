@@ -33,10 +33,13 @@ const SENTIMENT_CONFIG: Record<string, { label: string; color: string; icon: Rea
 
 const ENTITY_ICONS: Record<string, React.ReactNode> = {
   person: <User className="h-3 w-3" />,
+  PERSON: <User className="h-3 w-3" />,
   organization: <Building2 className="h-3 w-3" />,
+  ORG: <Building2 className="h-3 w-3" />,
   company: <Building2 className="h-3 w-3" />,
   country: <MapPin className="h-3 w-3" />,
   location: <MapPin className="h-3 w-3" />,
+  LOCATION: <MapPin className="h-3 w-3" />,
 };
 
 // ─── Component ──────────────────────────────────────────
@@ -131,8 +134,12 @@ export default function KhabriSignalsPage() {
             ) : (
               signals.map((signal) => {
                 const isExpanded = expandedId === signal.id;
-                const sentimentCfg = signal.sentiment
-                  ? SENTIMENT_CONFIG[signal.sentiment.label] || SENTIMENT_CONFIG.NEUTRAL
+                // API returns sentiment as string or as {label, score} object
+                const sentimentLabel = typeof signal.sentiment === "string"
+                  ? signal.sentiment
+                  : signal.sentiment?.label;
+                const sentimentCfg = sentimentLabel
+                  ? SENTIMENT_CONFIG[sentimentLabel] || SENTIMENT_CONFIG.NEUTRAL
                   : null;
 
                 return (
@@ -168,9 +175,9 @@ export default function KhabriSignalsPage() {
                           )}
                         </div>
                       </div>
-                      {signal.sourceUrl && (
+                      {(signal.sourceUrl || signal.url) && (
                         <a
-                          href={signal.sourceUrl}
+                          href={signal.sourceUrl || signal.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
@@ -231,7 +238,13 @@ export default function KhabriSignalsPage() {
 
                         {signal.sentiment && (
                           <div className="flex items-center gap-2 text-xs text-[#6B7280]">
-                            Sentiment score: <strong className="text-[#1A1A1A]">{signal.sentiment.score.toFixed(2)}</strong>
+                            Sentiment score: <strong className="text-[#1A1A1A]">
+                              {typeof signal.sentiment === "object" && signal.sentiment.score !== undefined
+                                ? signal.sentiment.score.toFixed(2)
+                                : signal.sentimentScore !== undefined
+                                  ? signal.sentimentScore.toFixed(2)
+                                  : "N/A"}
+                            </strong>
                           </div>
                         )}
                       </div>

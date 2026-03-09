@@ -36,15 +36,27 @@ export default function KhabriAnalyticsPage() {
 
       if (volRes.ok) {
         const v = await volRes.json();
-        setVolume(v.data || []);
+        // API returns {data: {interval, dataPoints: [...], total}}
+        setVolume(v.data?.dataPoints || v.data || []);
       }
       if (catRes.ok) {
         const c = await catRes.json();
-        setCategories(c.data || []);
+        // API returns {data: {categories: [...], total, uncategorized}}
+        const rawCats = c.data?.categories || c.data || [];
+        setCategories(
+          Array.isArray(rawCats)
+            ? rawCats.map((cat: Record<string, unknown>) => ({
+                category: (cat.name as string) || (cat.category as string) || "",
+                count: (cat.count as number) || 0,
+                percentage: (cat.percentage as number) || 0,
+              }))
+            : []
+        );
       }
       if (sentRes.ok) {
         const s = await sentRes.json();
-        setSentiment(s.data || []);
+        // API returns {data: {interval, dataPoints: [...], overall}}
+        setSentiment(s.data?.dataPoints || s.data || []);
       }
     } catch {
       // ignore

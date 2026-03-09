@@ -62,7 +62,17 @@ export default function KhabriDashboardPage() {
       }
       if (categoriesRes.ok) {
         const c = await categoriesRes.json();
-        setCategories(c.data || []);
+        // API returns {data: {categories: [...], total, uncategorized}}
+        const rawCats = c.data?.categories || c.data || [];
+        setCategories(
+          Array.isArray(rawCats)
+            ? rawCats.map((cat: Record<string, unknown>) => ({
+                category: (cat.name as string) || (cat.category as string) || "",
+                count: (cat.count as number) || 0,
+                percentage: (cat.percentage as number) || 0,
+              }))
+            : []
+        );
       }
     } catch {
       setError("Failed to connect to Khabri Intelligence API");

@@ -18,6 +18,24 @@ import {
 import { cn } from "@/lib/utils";
 import type { KhabriGeoHotspot, KhabriCountryIntel } from "@/types/khabri";
 
+// ─── Country Code to Name ───────────────────────────────
+
+const COUNTRY_NAMES: Record<string, string> = {
+  IN: "India", US: "United States", GB: "United Kingdom", AU: "Australia", CA: "Canada",
+  DE: "Germany", FR: "France", JP: "Japan", CN: "China", BR: "Brazil", MX: "Mexico",
+  RU: "Russia", KR: "South Korea", SG: "Singapore", AE: "UAE", SA: "Saudi Arabia",
+  ZA: "South Africa", NG: "Nigeria", EG: "Egypt", IL: "Israel", IR: "Iran",
+  PK: "Pakistan", BD: "Bangladesh", ID: "Indonesia", TR: "Turkey", IT: "Italy",
+  ES: "Spain", NL: "Netherlands", SE: "Sweden", NO: "Norway", CH: "Switzerland",
+  PL: "Poland", UA: "Ukraine", TH: "Thailand", VN: "Vietnam", PH: "Philippines",
+  MY: "Malaysia", NZ: "New Zealand", AR: "Argentina", CO: "Colombia", CL: "Chile",
+  QA: "Qatar", KW: "Kuwait", OM: "Oman", BH: "Bahrain", LB: "Lebanon", JO: "Jordan",
+};
+
+function getCountryName(code: string): string {
+  return COUNTRY_NAMES[code] || code;
+}
+
 // ─── Component ──────────────────────────────────────────
 
 export default function KhabriGeoPage() {
@@ -138,16 +156,21 @@ export default function KhabriGeoPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span className="text-sm font-medium text-[#1A1A1A]">{hotspot.country}</span>
+                        <span className="text-sm font-medium text-[#1A1A1A]">{hotspot.country || getCountryName(hotspot.countryCode)}</span>
                         <span className="text-xs text-[#9CA3AF]">({hotspot.countryCode})</span>
                       </div>
-                      {hotspot.topCategories && hotspot.topCategories.length > 0 && (
+                      {/* Handle both topCategory (string) and topCategories (array) from API */}
+                      {(hotspot.topCategories && hotspot.topCategories.length > 0) ? (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {hotspot.topCategories.slice(0, 3).map((cat) => (
                             <Badge key={cat} variant="outline" className="text-[10px]">{cat}</Badge>
                           ))}
                         </div>
-                      )}
+                      ) : hotspot.topCategory ? (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <Badge variant="outline" className="text-[10px]">{hotspot.topCategory}</Badge>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="hidden sm:flex items-center gap-2 w-32">

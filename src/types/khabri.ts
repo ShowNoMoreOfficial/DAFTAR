@@ -65,14 +65,18 @@ export interface KhabriSignal {
   id: string;
   title: string;
   content?: string;
+  url?: string;
   source?: string;
   sourceUrl?: string;
   publishedAt?: string;
   category?: string;
+  isEnriched?: boolean;
   entities?: KhabriSignalEntity[];
   keywords?: KhabriSignalKeyword[];
   locations?: KhabriSignalLocation[];
-  sentiment?: KhabriSignalSentiment;
+  // API returns sentiment as string or nested object depending on endpoint
+  sentiment?: KhabriSignalSentiment | string;
+  sentimentScore?: number;
   createdAt?: string;
 }
 
@@ -113,7 +117,10 @@ export interface KhabriNarrative {
   summary: string;
   keywords: string[];
   signalCount: number;
-  arcPhase: NarrativeArcPhase;
+  arcPhase: NarrativeArcPhase | null;
+  status?: string;
+  childCount?: number;
+  eventCount?: number;
   stakeholderCount?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -140,9 +147,12 @@ export interface KhabriTimelineEvent {
 
 export interface KhabriGeoHotspot {
   countryCode: string;
-  country: string;
+  country?: string;
+  name?: string; // API returns country code in name field
   signalCount: number;
+  topCategory?: string;
   topCategories?: string[];
+  dominantSentiment?: string;
   briefing?: string;
 }
 

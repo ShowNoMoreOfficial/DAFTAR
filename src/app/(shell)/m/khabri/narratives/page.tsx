@@ -127,7 +127,7 @@ export default function KhabriNarrativesPage() {
               </div>
             ) : (
               narratives.map((narrative) => {
-                const arc = ARC_CONFIG[narrative.arcPhase] || ARC_CONFIG.EMERGENCE;
+                const arc = (narrative.arcPhase && ARC_CONFIG[narrative.arcPhase]) || ARC_CONFIG.EMERGENCE;
                 const isExpanded = expandedId === narrative.id;
 
                 return (
@@ -153,7 +153,12 @@ export default function KhabriNarrativesPage() {
                           <span className="flex items-center gap-1">
                             <Radio className="h-3 w-3" /> {narrative.signalCount} signals
                           </span>
-                          {narrative.stakeholderCount !== undefined && (
+                          {(narrative.childCount ?? 0) > 0 && (
+                            <span className="flex items-center gap-1">
+                              <GitBranch className="h-3 w-3" /> {narrative.childCount} branches
+                            </span>
+                          )}
+                          {(narrative.stakeholderCount ?? 0) > 0 && (
                             <span className="flex items-center gap-1">
                               <Users className="h-3 w-3" /> {narrative.stakeholderCount} stakeholders
                             </span>
