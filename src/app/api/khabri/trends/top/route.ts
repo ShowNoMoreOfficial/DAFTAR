@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const result = await getTopTrends(limit);
     return NextResponse.json(result);
   } catch (err) {
+    console.error("[Khabri] trends/top error:", err);
     const message = err instanceof Error ? err.message : "Failed to fetch top trends";
     return NextResponse.json({ error: message }, { status: 502 });
   }

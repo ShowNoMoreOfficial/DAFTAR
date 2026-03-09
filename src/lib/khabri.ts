@@ -45,18 +45,20 @@ async function khabriRequest<T>(
     }
   }
 
+  console.log(`[Khabri] Fetching ${url.toString()}`);
   const res = await fetch(url.toString(), {
     headers: {
       Authorization: `Bearer ${getApiKey()}`,
       "Content-Type": "application/json",
     },
-    next: { revalidate: 60 }, // Cache for 60 seconds
+    cache: "no-store",
   });
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => null);
     const code = errorBody?.error?.code || `HTTP_${res.status}`;
     const message = errorBody?.error?.message || res.statusText;
+    console.error(`[Khabri] ${path} failed: ${res.status} ${message}`);
     throw new KhabriApiError(code, message, res.status);
   }
 

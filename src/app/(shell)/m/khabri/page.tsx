@@ -52,13 +52,19 @@ export default function KhabriDashboardPage() {
         fetch("/api/khabri/analytics/categories?hours=24"),
       ]);
 
+      const errors: string[] = [];
+
       if (trendsRes.ok) {
         const t = await trendsRes.json();
         setTopTrends(t.data || []);
+      } else {
+        errors.push(`Trends: ${trendsRes.status}`);
       }
       if (anomaliesRes.ok) {
         const a = await anomaliesRes.json();
         setAnomalies(a.data || []);
+      } else {
+        errors.push(`Anomalies: ${anomaliesRes.status}`);
       }
       if (categoriesRes.ok) {
         const c = await categoriesRes.json();
@@ -73,6 +79,12 @@ export default function KhabriDashboardPage() {
               }))
             : []
         );
+      } else {
+        errors.push(`Categories: ${categoriesRes.status}`);
+      }
+
+      if (errors.length === 3) {
+        setError(`All Khabri API calls failed (${errors.join(", ")})`);
       }
     } catch {
       setError("Failed to connect to Khabri Intelligence API");

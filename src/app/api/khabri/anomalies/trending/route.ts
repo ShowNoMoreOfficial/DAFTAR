@@ -10,6 +10,7 @@ export async function GET() {
     const result = await getTrendingAnomalies();
     return NextResponse.json(result);
   } catch (err) {
+    console.error("[Khabri] anomalies/trending error:", err);
     const message = err instanceof Error ? err.message : "Failed to fetch trending anomalies";
     return NextResponse.json({ error: message }, { status: 502 });
   }
