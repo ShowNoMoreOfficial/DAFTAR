@@ -45,7 +45,6 @@ async function khabriRequest<T>(
     }
   }
 
-  console.log(`[Khabri] Fetching ${url.toString()}`);
   const res = await fetch(url.toString(), {
     headers: {
       Authorization: `Bearer ${getApiKey()}`,
