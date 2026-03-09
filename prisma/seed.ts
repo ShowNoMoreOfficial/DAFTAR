@@ -64,7 +64,7 @@ async function main() {
   const modules = await Promise.all([
     prisma.module.upsert({
       where: { name: "yantri" },
-      update: {},
+      update: { baseUrl: "https://yantri-nine.vercel.app" },
       create: {
         name: "yantri",
         displayName: "Yantri",
