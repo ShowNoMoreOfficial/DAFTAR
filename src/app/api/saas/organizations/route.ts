@@ -13,8 +13,8 @@ export async function GET() {
       include: {
         _count: {
           select: {
-            users: true,
             subscriptions: true,
+            products: true,
           },
         },
       },
@@ -29,7 +29,7 @@ export async function GET() {
       plan: org.plan,
       maxUsers: org.maxUsers,
       isActive: org.isActive,
-      userCount: org._count.users,
+      productCount: org._count.products,
       subscriptionCount: org._count.subscriptions,
       createdAt: org.createdAt,
       updatedAt: org.updatedAt,

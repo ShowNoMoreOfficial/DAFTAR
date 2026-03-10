@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, badRequest, forbidden } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
+import type { ArticleStatus } from "@prisma/client";
 
 function slugify(text: string): string {
   return text
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
   }
   // ADMIN and DEPT_HEAD see all
 
-  if (status) where.status = status;
+  if (status) where.status = status as ArticleStatus;
   if (categoryId) where.categoryId = categoryId;
   if (authorId) where.authorId = authorId;
   if (brandId) where.brandId = brandId;
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
     const statuses = ["IDEA", "DRAFTING", "EDITING", "REVIEW", "APPROVED", "PUBLISHED", "ARCHIVED"];
     const pipeline = await Promise.all(
       statuses.map(async (s) => {
-        const statusWhere = { ...where, status: s };
+        const statusWhere = { ...where, status: s as ArticleStatus };
         const articles = await prisma.article.findMany({
           where: statusWhere,
           include: {

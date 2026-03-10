@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Role } from "@prisma/client";
+import type { Role, Prisma } from "@prisma/client";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -1891,7 +1891,7 @@ async function createPrediction(
           severity,
           title,
           description,
-          data,
+          data: data as Prisma.InputJsonValue,
           targetUserId,
           departmentId,
           entityRef,
@@ -1924,7 +1924,7 @@ async function recordLearning(
       await prisma.gILearningLog.update({
         where: { id: existing.id },
         data: {
-          value,
+          value: value as Prisma.InputJsonValue,
           confidence: Math.min(confidence, 1),
           observations,
           lastObserved: new Date(),
@@ -1933,7 +1933,7 @@ async function recordLearning(
     } else {
       await prisma.gILearningLog.create({
         data: {
-          category, key, value,
+          category, key, value: value as Prisma.InputJsonValue,
           confidence: Math.min(confidence, 1),
           observations, departmentId, userId,
         },
@@ -1973,7 +1973,7 @@ async function logPattern(
           departmentId,
           patternType,
           description,
-          data,
+          data: data as Prisma.InputJsonValue,
           severity,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 day TTL
         },
