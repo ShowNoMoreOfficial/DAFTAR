@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -16,19 +16,14 @@ import {
   Package,
   Sparkles,
   Info,
+  Search as SearchIcon,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNotifications } from "@/components/providers/notification-provider";
+import type { LiveNotification } from "@/components/providers/notification-provider";
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string | null;
-  link: string | null;
-  isRead: boolean;
-  metadata: Record<string, unknown> | null;
-  createdAt: string;
-}
+// ─── Type Styling ───────────────────────────────────────
 
 const TYPE_STYLES: Record<string, string> = {
   TASK_ASSIGNED: "bg-blue-100 text-blue-600",
@@ -39,6 +34,7 @@ const TYPE_STYLES: Record<string, string> = {
   APPROVAL_COMPLETED: "bg-emerald-100 text-emerald-600",
   DELIVERABLE_READY: "bg-teal-100 text-teal-600",
   GI_SUGGESTION: "bg-[#2E86AB]/10 text-[#2E86AB]",
+  GI_REVIEW: "bg-violet-100 text-violet-600",
   SYSTEM: "bg-gray-100 text-gray-600",
 };
 
@@ -51,8 +47,24 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   APPROVAL_COMPLETED: <CheckCircle2 className="h-3.5 w-3.5" />,
   DELIVERABLE_READY: <Package className="h-3.5 w-3.5" />,
   GI_SUGGESTION: <Sparkles className="h-3.5 w-3.5" />,
+  GI_REVIEW: <Eye className="h-3.5 w-3.5" />,
   SYSTEM: <Info className="h-3.5 w-3.5" />,
 };
+
+const TYPE_LABELS: Record<string, string> = {
+  TASK_ASSIGNED: "Task",
+  TASK_STATUS_CHANGED: "Status",
+  TASK_COMMENT: "Comment",
+  TASK_OVERDUE: "Overdue",
+  APPROVAL_PENDING: "Approval",
+  APPROVAL_COMPLETED: "Approved",
+  DELIVERABLE_READY: "Deliverable",
+  GI_SUGGESTION: "GI",
+  GI_REVIEW: "GI Review",
+  SYSTEM: "System",
+};
+
+// ─── Helpers ────────────────────────────────────────────
 
 function isToday(dateStr: string): boolean {
   const date = new Date(dateStr);
@@ -67,7 +79,7 @@ function isToday(dateStr: string): boolean {
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "now";
+  if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
@@ -76,32 +88,48 @@ function timeAgo(dateStr: string) {
   return `${days}d ago`;
 }
 
+// ─── Filter Tabs ────────────────────────────────────────
+
+type FilterTab = "all" | "unread" | "mentions" | "ai";
+
+const FILTER_TABS: { key: FilterTab; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "unread", label: "Unread" },
+  { key: "mentions", label: "Tasks" },
+  { key: "ai", label: "AI" },
+];
+
+function filterNotifications(
+  items: LiveNotification[],
+  tab: FilterTab
+): LiveNotification[] {
+  switch (tab) {
+    case "unread":
+      return items.filter((n) => !n.isRead);
+    case "mentions":
+      return items.filter((n) =>
+        ["TASK_ASSIGNED", "TASK_COMMENT", "TASK_STATUS_CHANGED", "TASK_OVERDUE"].includes(n.type)
+      );
+    case "ai":
+      return items.filter((n) =>
+        ["GI_SUGGESTION", "GI_REVIEW", "APPROVAL_COMPLETED", "DELIVERABLE_READY"].includes(n.type)
+      );
+    default:
+      return items;
+  }
+}
+
+// ─── Main Component ─────────────────────────────────────
+
 export function NotificationBell() {
   const router = useRouter();
+  const { unreadCount, notifications, markAsRead, markAllRead } =
+    useNotifications();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications?limit=20");
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.unreadCount || 0);
-      }
-    } catch {
-      // Silently fail
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
-
+  // Click outside to close
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -112,60 +140,54 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  async function markAsRead(ids: string[]) {
-    await fetch("/api/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
-    });
-    setNotifications((prev) =>
-      prev.map((n) => (ids.includes(n.id) ? { ...n, isRead: true } : n))
-    );
-    setUnreadCount((prev) => Math.max(0, prev - ids.length));
-  }
-
-  async function markAllRead() {
-    await fetch("/api/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ markAllRead: true }),
-    });
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    setUnreadCount(0);
-  }
-
-  function handleNotificationClick(n: Notification) {
-    if (!n.isRead) {
-      markAsRead([n.id]);
-    }
+  function handleNotificationClick(n: LiveNotification) {
+    if (!n.isRead) markAsRead([n.id]);
     if (n.link) {
       router.push(n.link);
       setOpen(false);
     }
   }
 
-  const todayNotifications = notifications.filter((n) => isToday(n.createdAt));
-  const earlierNotifications = notifications.filter((n) => !isToday(n.createdAt));
+  const filtered = filterNotifications(notifications, activeTab);
+  const todayNotifications = filtered.filter((n) => isToday(n.createdAt));
+  const earlierNotifications = filtered.filter((n) => !isToday(n.createdAt));
 
   return (
     <div className="relative" ref={panelRef}>
+      {/* Bell Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="relative rounded-lg p-2 text-[#6B7280] transition-colors hover:bg-[#F0F2F5]"
+        className={cn(
+          "relative rounded-lg p-2 transition-colors",
+          open
+            ? "bg-[#2E86AB]/10 text-[#2E86AB]"
+            : "text-[#6B7280] hover:bg-[#F0F2F5]"
+        )}
       >
         <Bell className="h-[18px] w-[18px]" />
         {unreadCount > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#A23B72] text-[9px] font-bold text-white">
-            {unreadCount > 9 ? "9+" : unreadCount}
+          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#A23B72] px-1 text-[9px] font-bold text-white">
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
+      {/* Popover Panel */}
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[380px] rounded-xl border border-[#E5E7EB] bg-white shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[400px] rounded-xl border border-[#E5E7EB] bg-white shadow-xl">
+          {/* Header */}
           <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 py-3">
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">Notifications</h3>
             <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-[#1A1A1A]">
+                Notifications
+              </h3>
+              {unreadCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#A23B72] px-1.5 text-[10px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
@@ -184,17 +206,52 @@ export function NotificationBell() {
             </div>
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto">
-            {notifications.length === 0 ? (
+          {/* Filter Tabs */}
+          <div className="flex border-b border-[#E5E7EB] px-2">
+            {FILTER_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "relative px-3 py-2 text-xs font-medium transition-colors",
+                  activeTab === tab.key
+                    ? "text-[#2E86AB]"
+                    : "text-[#9CA3AF] hover:text-[#6B7280]"
+                )}
+              >
+                {tab.label}
+                {activeTab === tab.key && (
+                  <span className="absolute bottom-0 left-1/2 h-0.5 w-4/5 -translate-x-1/2 rounded-full bg-[#2E86AB]" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Notification List */}
+          <div className="max-h-[420px] overflow-y-auto">
+            {filtered.length === 0 ? (
               <div className="py-12 text-center">
-                <Bell className="mx-auto h-8 w-8 text-[#D1D5DB]" />
-                <p className="mt-2 text-xs text-[#9CA3AF]">No notifications yet</p>
+                {activeTab === "all" ? (
+                  <>
+                    <Bell className="mx-auto h-8 w-8 text-[#D1D5DB]" />
+                    <p className="mt-2 text-xs text-[#9CA3AF]">
+                      No notifications yet
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <SearchIcon className="mx-auto h-8 w-8 text-[#D1D5DB]" />
+                    <p className="mt-2 text-xs text-[#9CA3AF]">
+                      No {activeTab === "unread" ? "unread" : activeTab === "mentions" ? "task" : "AI"} notifications
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <>
                 {todayNotifications.length > 0 && (
                   <div>
-                    <div className="px-4 py-2">
+                    <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-4 py-2 z-10">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
                         Today
                       </span>
@@ -212,7 +269,7 @@ export function NotificationBell() {
 
                 {earlierNotifications.length > 0 && (
                   <div>
-                    <div className="px-4 py-2">
+                    <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-4 py-2 z-10">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
                         Earlier
                       </span>
@@ -231,6 +288,7 @@ export function NotificationBell() {
             )}
           </div>
 
+          {/* Footer */}
           <div className="border-t border-[#E5E7EB] px-4 py-2.5">
             <button
               onClick={() => {
@@ -248,12 +306,14 @@ export function NotificationBell() {
   );
 }
 
+// ─── Notification Item ──────────────────────────────────
+
 function NotificationItem({
   notification: n,
   onClick,
   onMarkRead,
 }: {
-  notification: Notification;
+  notification: LiveNotification;
   onClick: () => void;
   onMarkRead: () => void;
 }) {
@@ -261,7 +321,7 @@ function NotificationItem({
     <div
       onClick={onClick}
       className={cn(
-        "flex cursor-pointer gap-3 border-b border-[#F0F2F5] px-4 py-3 transition-colors hover:bg-[#F8F9FA]",
+        "flex cursor-pointer gap-3 border-b border-[#F0F2F5] px-4 py-3 transition-colors hover:bg-[#F8F9FA] group",
         !n.isRead && "bg-[#2E86AB]/[0.03]"
       )}
     >
@@ -284,32 +344,40 @@ function NotificationItem({
 
       {/* Content */}
       <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "text-xs",
-            n.isRead ? "text-[#6B7280]" : "font-medium text-[#1A1A1A]"
-          )}
-        >
-          {n.title}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className={cn(
+              "text-xs leading-snug",
+              n.isRead ? "text-[#6B7280]" : "font-medium text-[#1A1A1A]"
+            )}
+          >
+            {n.title}
+          </p>
+          <span className={cn(
+            "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium",
+            TYPE_STYLES[n.type] || TYPE_STYLES.SYSTEM
+          )}>
+            {TYPE_LABELS[n.type] || "System"}
+          </span>
+        </div>
         {n.message && (
           <p className="mt-0.5 text-[10px] leading-relaxed text-[#9CA3AF] line-clamp-2">
             {n.message}
           </p>
         )}
-        <span className="mt-1 text-[10px] text-[#D1D5DB]">
+        <span className="mt-1 inline-block text-[10px] text-[#D1D5DB]">
           {timeAgo(n.createdAt)}
         </span>
       </div>
 
-      {/* Mark read button */}
+      {/* Mark read button — shows on hover */}
       {!n.isRead && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onMarkRead();
           }}
-          className="mt-0.5 shrink-0 rounded-md p-1 text-[#9CA3AF] transition-colors hover:bg-[#F0F2F5] hover:text-[#2E86AB]"
+          className="mt-0.5 shrink-0 rounded-md p-1 text-[#9CA3AF] opacity-0 transition-all group-hover:opacity-100 hover:bg-[#F0F2F5] hover:text-[#2E86AB]"
           title="Mark as read"
         >
           <Check className="h-3 w-3" />
