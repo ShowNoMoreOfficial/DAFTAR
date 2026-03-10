@@ -1,201 +1,332 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, XCircle, Eye, Package, FileText } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Signal,
+  FileText,
+  Package,
+  ExternalLink,
+  Clock,
+  ChevronRight,
+  Sparkles,
+  Save,
+} from "lucide-react";
 
-interface Deliverable {
+// ─── Mock Data ────────────────────────────────────────────
+
+const MOCK_SIGNALS = [
+  {
+    id: "sig-1",
+    title: "Iran launches retaliatory drone strike on Israeli military base in Negev",
+    source: "Reuters",
+    credibility: 0.95,
+    detectedAt: "2026-03-10T06:30:00Z",
+    sentiment: "negative",
+  },
+  {
+    id: "sig-2",
+    title: "US State Department issues emergency travel advisory for Lebanon",
+    source: "AP News",
+    credibility: 0.92,
+    detectedAt: "2026-03-10T05:15:00Z",
+    sentiment: "negative",
+  },
+  {
+    id: "sig-3",
+    title: "Brent crude surges past $98 on Middle East escalation fears",
+    source: "Bloomberg",
+    credibility: 0.9,
+    detectedAt: "2026-03-10T04:45:00Z",
+    sentiment: "negative",
+  },
+  {
+    id: "sig-4",
+    title: "India evacuates 2,400 nationals from Lebanon under Operation Sukoon II",
+    source: "ANI",
+    credibility: 0.85,
+    detectedAt: "2026-03-09T22:00:00Z",
+    sentiment: "neutral",
+  },
+  {
+    id: "sig-5",
+    title: "Saudi Arabia condemns escalation, calls for UNSC emergency session",
+    source: "Al Jazeera",
+    credibility: 0.88,
+    detectedAt: "2026-03-09T20:30:00Z",
+    sentiment: "neutral",
+  },
+  {
+    id: "sig-6",
+    title: "Indian defence stocks rally 4% as regional tension boosts sector",
+    source: "Economic Times",
+    credibility: 0.82,
+    detectedAt: "2026-03-09T18:00:00Z",
+    sentiment: "positive",
+  },
+  {
+    id: "sig-7",
+    title: "Houthi militants claim second Red Sea shipping lane attack this week",
+    source: "BBC News",
+    credibility: 0.91,
+    detectedAt: "2026-03-09T15:00:00Z",
+    sentiment: "negative",
+  },
+];
+
+interface DeliverableFormat {
   id: string;
+  label: string;
   platform: string;
-  pipelineType: string;
-  status: string;
-  copyMarkdown: string;
-  createdAt: string;
-  brand: { id: string; name: string } | null;
-  tree: { id: string; rootTrend: string } | null;
-  assets: { id: string; type: string; url: string | null }[];
+  checked: boolean;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PLANNED: "bg-gray-100 text-gray-600 border-gray-200",
-  RESEARCHING: "bg-blue-50 text-blue-700 border-blue-200",
-  SCRIPTING: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  GENERATING_ASSETS: "bg-purple-50 text-purple-700 border-purple-200",
-  STORYBOARDING: "bg-amber-50 text-amber-700 border-amber-200",
-  REVIEW: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  APPROVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  RELAYED: "bg-cyan-50 text-cyan-700 border-cyan-200",
-  PUBLISHED: "bg-green-50 text-green-700 border-green-200",
-  KILLED: "bg-red-50 text-red-700 border-red-200",
-};
-
-const PLATFORM_LABELS: Record<string, string> = {
-  YOUTUBE: "YouTube",
-  X_THREAD: "X Thread",
-  X_SINGLE: "X Post",
-  BLOG: "Blog",
-  LINKEDIN: "LinkedIn",
-  META_REEL: "Meta Reel",
-  META_CAROUSEL: "Meta Carousel",
-  META_POST: "Meta Post",
+const SENTIMENT_COLORS: Record<string, string> = {
+  positive: "bg-emerald-50 text-emerald-700",
+  negative: "bg-red-50 text-red-700",
+  neutral: "bg-gray-100 text-gray-600",
 };
 
 export default function WorkspacePage() {
-  const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("ALL");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedSignal, setSelectedSignal] = useState<string | null>(
+    MOCK_SIGNALS[0].id
+  );
+  const [canvasContent, setCanvasContent] = useState(
+    `# Iran-Israel Escalation: What India Needs to Know
 
-  useEffect(() => {
-    async function load() {
-      const url = filter === "ALL"
-        ? "/api/m/yantri/deliverables"
-        : `/api/m/yantri/deliverables?status=${filter}`;
-      const res = await fetch(url);
-      if (res.ok) setDeliverables(await res.json());
-      setLoading(false);
-    }
-    load();
-  }, [filter]);
+## Hook
+"While the world watches missiles fly over the Middle East, India's $4.2 billion oil import bill just got a lot more complicated."
 
-  async function updateStatus(id: string, status: string) {
-    const res = await fetch(`/api/m/yantri/deliverables/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (res.ok) {
-      setDeliverables((prev) =>
-        prev.map((d) => (d.id === id ? { ...d, status } : d))
-      );
-    }
-  }
+## Context
+The latest escalation between Iran and Israel has moved beyond proxy warfare into direct confrontation. Here's why this matters for every Indian watching.
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#6B7280]" />
-      </div>
+## Key Points
+
+### 1. Oil Price Impact
+- Brent crude past $98 — direct impact on India's import bill
+- RBI may need to intervene on INR if crude sustains above $100
+- Petrol price revision likely within 2 weeks
+
+### 2. Indian Diaspora at Risk
+- 2,400 nationals evacuated from Lebanon (Operation Sukoon II)
+- ~8 million Indians in Gulf states — contingency planning underway
+- MEA has activated emergency helplines
+
+### 3. Defence & Strategic Angle
+- India walking diplomatic tightrope — maintains ties with both Iran and Israel
+- Defence stocks rallying — market pricing in extended regional instability
+- S-400 supply chain implications if Russia gets pulled deeper into Iran axis
+
+## Closing
+"This isn't just a Middle East story. It's an India story. And the next 72 hours will determine whether this stays a crisis or becomes a catastrophe."
+
+## Sources to cite
+- Reuters (drone strike confirmation)
+- Bloomberg (oil prices)
+- ANI (Operation Sukoon II)
+`
+  );
+
+  const [deliverables, setDeliverables] = useState<DeliverableFormat[]>([
+    { id: "d-1", label: "YouTube Long-form", platform: "YouTube", checked: true },
+    { id: "d-2", label: "YouTube Short", platform: "YouTube", checked: true },
+    { id: "d-3", label: "X Thread (8-10 tweets)", platform: "X/Twitter", checked: true },
+    { id: "d-4", label: "X Single Post", platform: "X/Twitter", checked: false },
+    { id: "d-5", label: "LinkedIn Article", platform: "LinkedIn", checked: false },
+    { id: "d-6", label: "Instagram Reel Script", platform: "Meta", checked: true },
+    { id: "d-7", label: "Instagram Carousel", platform: "Meta", checked: false },
+    { id: "d-8", label: "Blog Post (Vritti)", platform: "Web", checked: false },
+  ]);
+
+  const toggleDeliverable = (id: string) => {
+    setDeliverables((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, checked: !d.checked } : d))
     );
-  }
+  };
+
+  const selectedCount = deliverables.filter((d) => d.checked).length;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#1A1A1A]">Workspace</h1>
-        <p className="text-sm text-[#6B7280] mt-1">Review and approve deliverables from the pipeline</p>
-      </div>
+    <div className="flex h-[calc(100vh-140px)] gap-4 -m-6">
+      {/* ─── Left: Signals Panel ─── */}
+      <div className="w-[300px] min-w-[300px] border-r border-[#E5E7EB] bg-white flex flex-col">
+        <div className="px-4 py-3 border-b border-[#E5E7EB]">
+          <div className="flex items-center gap-2">
+            <Signal className="h-4 w-4 text-[#2E86AB]" />
+            <h3 className="text-sm font-semibold text-[#1A1A1A]">Signals</h3>
+            <Badge variant="outline" className="ml-auto text-[10px]">
+              {MOCK_SIGNALS.length}
+            </Badge>
+          </div>
+          <p className="text-[10px] text-[#9CA3AF] mt-1">
+            Scraped intelligence for this narrative
+          </p>
+        </div>
 
-      <div className="flex items-center gap-2 mb-6 flex-wrap">
-        {["ALL", "REVIEW", "APPROVED", "RESEARCHING", "SCRIPTING", "PUBLISHED", "KILLED"].map((s) => (
-          <Button
-            key={s}
-            size="sm"
-            variant={filter === s ? "default" : "outline"}
-            onClick={() => { setFilter(s); setLoading(true); }}
-            className="text-xs"
-          >
-            {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase().replace("_", " ")}
-          </Button>
-        ))}
-      </div>
-
-      {deliverables.length === 0 ? (
-        <Card className="border-[#E5E7EB]">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Package className="h-10 w-10 text-[#D1D5DB] mb-3" />
-            <p className="text-sm text-[#6B7280]">No deliverables found.</p>
-            <p className="text-xs text-[#9CA3AF] mt-1">Deliverables will appear as the pipeline processes narratives.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {deliverables.map((d) => (
-            <Card key={d.id} className="border-[#E5E7EB]">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className={`text-[10px] font-semibold border ${STATUS_COLORS[d.status] || STATUS_COLORS.PLANNED}`}>
-                        {d.status}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px]">
-                        {PLATFORM_LABELS[d.platform] || d.platform}
-                      </Badge>
-                      <span className="text-[10px] text-[#9CA3AF]">{d.pipelineType}</span>
-                    </div>
-
-                    {d.brand && (
-                      <p className="text-sm font-semibold text-[#1A1A1A]">{d.brand.name}</p>
-                    )}
-                    {d.tree && (
-                      <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-1">{d.tree.rootTrend}</p>
-                    )}
-
-                    {d.copyMarkdown && (
-                      <p className="text-xs text-[#6B7280] mt-2 line-clamp-2 leading-relaxed">
-                        {d.copyMarkdown.slice(0, 200)}{d.copyMarkdown.length > 200 ? "..." : ""}
-                      </p>
-                    )}
-
-                    {d.assets.length > 0 && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-[#9CA3AF]">
-                        <FileText className="h-3 w-3" />
-                        {d.assets.length} asset{d.assets.length !== 1 ? "s" : ""}
-                      </div>
-                    )}
-
-                    {expandedId === d.id && d.copyMarkdown && (
-                      <div className="mt-3 p-3 bg-[#F8F9FA] rounded-lg border border-[#E5E7EB]">
-                        <p className="text-xs text-[#1A1A1A] whitespace-pre-wrap leading-relaxed">{d.copyMarkdown}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setExpandedId(expandedId === d.id ? null : d.id)}
-                      title="Preview"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    {d.status === "REVIEW" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={() => updateStatus(d.id, "APPROVED")}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => updateStatus(d.id, "KILLED")}
-                        >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Reject
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-[10px] text-[#9CA3AF] mt-2">
-                  Created {new Date(d.createdAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
-                </div>
-              </CardContent>
-            </Card>
+        <div className="flex-1 overflow-y-auto">
+          {MOCK_SIGNALS.map((signal) => (
+            <button
+              key={signal.id}
+              onClick={() => setSelectedSignal(signal.id)}
+              className={`w-full text-left px-4 py-3 border-b border-[#F3F4F6] transition-colors ${
+                selectedSignal === signal.id
+                  ? "bg-[#2E86AB]/5 border-l-2 border-l-[#2E86AB]"
+                  : "hover:bg-[#F8F9FA]"
+              }`}
+            >
+              <p className="text-xs font-medium text-[#1A1A1A] line-clamp-2 leading-relaxed">
+                {signal.title}
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[10px] text-[#6B7280]">{signal.source}</span>
+                <span className="text-[10px] text-[#9CA3AF]">
+                  {(signal.credibility * 100).toFixed(0)}%
+                </span>
+                <Badge
+                  className={`text-[9px] px-1.5 py-0 font-medium border-0 ${
+                    SENTIMENT_COLORS[signal.sentiment]
+                  }`}
+                >
+                  {signal.sentiment}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-1 mt-1.5 text-[10px] text-[#9CA3AF]">
+                <Clock className="h-2.5 w-2.5" />
+                {new Date(signal.detectedAt).toLocaleString([], {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            </button>
           ))}
         </div>
-      )}
+
+        <div className="px-4 py-3 border-t border-[#E5E7EB]">
+          <Button variant="outline" size="sm" className="w-full text-xs">
+            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+            Import from Khabri
+          </Button>
+        </div>
+      </div>
+
+      {/* ─── Center: Narrative Canvas ─── */}
+      <div className="flex-1 flex flex-col bg-white min-w-0">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-[#E5E7EB]">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-[#2E86AB]" />
+            <h3 className="text-sm font-semibold text-[#1A1A1A]">
+              Narrative Canvas
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="text-xs">
+              <Sparkles className="h-3.5 w-3.5 mr-1.5 text-[#A23B72]" />
+              AI Enhance
+            </Button>
+            <Button size="sm" className="text-xs bg-[#2E86AB] hover:bg-[#256d8a]">
+              <Save className="h-3.5 w-3.5 mr-1.5" />
+              Save Draft
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <textarea
+            value={canvasContent}
+            onChange={(e) => setCanvasContent(e.target.value)}
+            className="w-full h-full min-h-[600px] resize-none border-0 outline-none text-sm text-[#1A1A1A] leading-relaxed font-mono bg-transparent placeholder:text-[#D1D5DB]"
+            placeholder="Start writing your narrative here, or click AI Enhance to generate from signals..."
+          />
+        </div>
+
+        <div className="px-6 py-2 border-t border-[#E5E7EB] flex items-center justify-between text-[10px] text-[#9CA3AF]">
+          <span>{canvasContent.length} characters</span>
+          <span>
+            {canvasContent.split(/\s+/).filter(Boolean).length} words
+          </span>
+        </div>
+      </div>
+
+      {/* ─── Right: Deliverables Panel ─── */}
+      <div className="w-[280px] min-w-[280px] border-l border-[#E5E7EB] bg-white flex flex-col">
+        <div className="px-4 py-3 border-b border-[#E5E7EB]">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-[#A23B72]" />
+            <h3 className="text-sm font-semibold text-[#1A1A1A]">
+              Deliverables
+            </h3>
+            <Badge className="ml-auto text-[10px] bg-[#A23B72]/10 text-[#A23B72] border-[#A23B72]/20">
+              {selectedCount} selected
+            </Badge>
+          </div>
+          <p className="text-[10px] text-[#9CA3AF] mt-1">
+            Output formats for this narrative
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-2">
+          {(() => {
+            const grouped = deliverables.reduce(
+              (acc, d) => {
+                if (!acc[d.platform]) acc[d.platform] = [];
+                acc[d.platform].push(d);
+                return acc;
+              },
+              {} as Record<string, DeliverableFormat[]>
+            );
+
+            return Object.entries(grouped).map(([platform, items]) => (
+              <div key={platform} className="mb-1">
+                <p className="px-4 py-2 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                  {platform}
+                </p>
+                {items.map((item) => (
+                  <label
+                    key={item.id}
+                    className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F8F9FA] transition-colors"
+                  >
+                    <Checkbox
+                      checked={item.checked}
+                      onCheckedChange={() => toggleDeliverable(item.id)}
+                    />
+                    <span
+                      className={`text-xs ${
+                        item.checked
+                          ? "text-[#1A1A1A] font-medium"
+                          : "text-[#6B7280]"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                    {item.checked && (
+                      <ChevronRight className="h-3 w-3 text-[#9CA3AF] ml-auto" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            ));
+          })()}
+        </div>
+
+        <div className="px-4 py-3 border-t border-[#E5E7EB] space-y-2">
+          <Button
+            className="w-full text-xs bg-[#A23B72] hover:bg-[#8a3261]"
+            size="sm"
+            disabled={selectedCount === 0}
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+            Generate {selectedCount} Deliverable{selectedCount !== 1 ? "s" : ""}
+          </Button>
+          <p className="text-[10px] text-[#9CA3AF] text-center">
+            AI will adapt the narrative for each format
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
