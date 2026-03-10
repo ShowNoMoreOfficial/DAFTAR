@@ -42,7 +42,7 @@ function timeAgo(dateStr: string): string {
 
 function describeActivity(a: Activity): string {
   if (a.action === "status_changed") {
-    return `moved "${a.task.title}" to ${a.newValue?.replace("_", " ").toLowerCase()}`;
+    return `moved "${a.task.title}" to ${(a.newValue ?? "unknown").replace("_", " ").toLowerCase()}`;
   }
   if (a.action === "created") {
     return `created "${a.task.title}"`;

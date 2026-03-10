@@ -104,7 +104,7 @@ export function NotificationProvider({
   const [notifications, setNotifications] = useState<LiveNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttempts = useRef(0);
 
   // ── Fetch initial notifications ───────────────────────
@@ -227,7 +227,7 @@ export function NotificationProvider({
     return () => {
       eventSourceRef.current?.close();
       eventSourceRef.current = null;
-      clearTimeout(reconnectTimeoutRef.current);
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [fetchNotifications, connectSSE]);

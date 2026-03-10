@@ -51,8 +51,8 @@ export function TaskCard({ task, onClick, draggable }: TaskCardProps) {
       {/* Priority + Weight */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Flag className={cn("h-3.5 w-3.5", PRIORITY_ICONS[task.priority])} />
-          <Badge className={cn("text-[10px]", PRIORITY_COLORS[task.priority])}>
+          <Flag className={cn("h-3.5 w-3.5", PRIORITY_ICONS[task.priority] ?? PRIORITY_ICONS.MEDIUM)} />
+          <Badge className={cn("text-[10px]", PRIORITY_COLORS[task.priority] ?? PRIORITY_COLORS.MEDIUM)}>
             {task.priority}
           </Badge>
         </div>

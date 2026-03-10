@@ -121,7 +121,7 @@ export function UpcomingDeadlines() {
                     <Badge
                       className={cn(
                         "text-[10px]",
-                        PRIORITY_COLORS[task.priority]
+                        PRIORITY_COLORS[task.priority] ?? PRIORITY_COLORS.MEDIUM
                       )}
                     >
                       {task.priority}
