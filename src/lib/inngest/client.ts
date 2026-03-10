@@ -46,6 +46,18 @@ type DaftarEvents = {
       scheduledAt?: string; // ISO string, if scheduled for later
     };
   };
+
+  /**
+   * Khabri: Hourly cron scan completed — internal event for chaining.
+   */
+  "khabri/scan.completed": {
+    data: {
+      scraped: number;
+      saved: number;
+      urgent: number;
+      timestamp: string;
+    };
+  };
 };
 
 // ─── Inngest Client ──────────────────────────────────────

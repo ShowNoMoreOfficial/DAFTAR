@@ -5,6 +5,7 @@ import {
   generateDeliverable,
   publishPost,
 } from "@/lib/inngest/functions";
+import { khabriHourlyScan } from "@/lib/inngest/khabri-workflows";
 
 // Serve the Inngest API at /api/inngest
 // This endpoint handles:
@@ -13,5 +14,5 @@ import {
 // - Introspection: Inngest UI reads function metadata
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [processSignal, generateDeliverable, publishPost],
+  functions: [processSignal, generateDeliverable, publishPost, khabriHourlyScan],
 });
