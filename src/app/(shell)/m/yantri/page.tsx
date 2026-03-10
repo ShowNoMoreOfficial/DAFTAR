@@ -17,12 +17,16 @@ import {
 
 interface NarrativeTree {
   id: string;
-  rootTrend: string;
+  rootTrend?: string;
+  title?: string;
   summary: string | null;
   status: string;
-  updatedAt: string;
-  _count: { nodes: number };
-  dossier: { id: string } | null;
+  updatedAt?: string;
+  lastUpdated?: string;
+  _count?: { nodes: number };
+  branchCount?: number;
+  signalCount?: number;
+  dossier?: { id: string } | null;
 }
 
 interface EditorialLog {
@@ -35,8 +39,10 @@ interface EditorialLog {
 
 function treeStatusColor(status: string) {
   switch (status) {
-    case "ACTIVE": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "MERGED": return "bg-blue-50 text-blue-700 border-blue-200";
+    case "ACTIVE":
+    case "DISCOVERING": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "MERGED":
+    case "DEVELOPING": return "bg-blue-50 text-blue-700 border-blue-200";
     case "ARCHIVED": return "bg-gray-100 text-gray-600 border-gray-200";
     default: return "bg-gray-100 text-gray-600 border-gray-200";
   }
@@ -161,7 +167,7 @@ export default function YantriDashboard() {
               <Card key={tree.id} className="border-[#E5E7EB] hover:border-[#2E86AB]/30 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="text-sm font-semibold text-[#1A1A1A] line-clamp-2">{tree.rootTrend}</h3>
+                    <h3 className="text-sm font-semibold text-[#1A1A1A] line-clamp-2">{tree.rootTrend || tree.title}</h3>
                     <Badge className={`shrink-0 text-[10px] font-semibold border ${treeStatusColor(tree.status)}`}>
                       {tree.status}
                     </Badge>
@@ -169,8 +175,14 @@ export default function YantriDashboard() {
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex items-center gap-1 text-xs text-[#6B7280]">
                       <GitBranch className="h-3.5 w-3.5" />
-                      <span>{tree._count.nodes} node{tree._count.nodes !== 1 ? "s" : ""}</span>
+                      <span>{tree._count?.nodes ?? tree.branchCount ?? 0} branch{(tree._count?.nodes ?? tree.branchCount ?? 0) !== 1 ? "es" : ""}</span>
                     </div>
+                    {tree.signalCount != null && (
+                      <div className="flex items-center gap-1 text-xs text-[#6B7280]">
+                        <FileText className="h-3.5 w-3.5" />
+                        <span>{tree.signalCount} signal{tree.signalCount !== 1 ? "s" : ""}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 text-xs">
                       <BookOpen className="h-3.5 w-3.5" />
                       {tree.dossier ? (
@@ -184,7 +196,7 @@ export default function YantriDashboard() {
                     <p className="text-xs text-[#6B7280] line-clamp-2 mb-2">{tree.summary}</p>
                   )}
                   <div className="text-[10px] text-[#9CA3AF]">
-                    Updated {new Date(tree.updatedAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                    Updated {new Date(tree.updatedAt || tree.lastUpdated || "").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
                   </div>
                 </CardContent>
               </Card>

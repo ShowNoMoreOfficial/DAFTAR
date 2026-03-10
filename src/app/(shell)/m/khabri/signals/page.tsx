@@ -129,9 +129,31 @@ export default function KhabriSignalsPage() {
     setActiveSearch(searchQuery);
   };
 
-  const handleSendToYantri = (signalId: string) => {
+  const handleSendToYantri = async (signalId: string) => {
+    const signal = signals.find((s) => s.id === signalId);
+    if (!signal) return;
+
     setSentToYantri((prev) => new Set(prev).add(signalId));
-    // TODO: POST to /api/yantri/ingest with signal data
+
+    try {
+      await fetch("/api/pipeline/trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          signalId: signal.id,
+          trendTitle: signal.title,
+          summary: signal.content || signal.title,
+          urgency: (signal.impactScore ?? 0) > 8 ? "breaking" : (signal.impactScore ?? 0) > 6 ? "high" : "normal",
+        }),
+      });
+    } catch {
+      // Revert on failure
+      setSentToYantri((prev) => {
+        const next = new Set(prev);
+        next.delete(signalId);
+        return next;
+      });
+    }
   };
 
   return (

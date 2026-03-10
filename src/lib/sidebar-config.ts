@@ -29,6 +29,13 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: "Brain",
     href: "/m/yantri",
     roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER"],
+    children: [
+      { id: "yantri-dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/m/yantri", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-narrative-trees", label: "Narrative Trees", icon: "GitBranch", href: "/m/yantri/narrative-trees", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-brands", label: "Brands", icon: "Palette", href: "/m/yantri/brands", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-workspace", label: "Workspace", icon: "Layers", href: "/m/yantri/workspace", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-performance", label: "Performance", icon: "BarChart3", href: "/m/yantri/performance", roles: ["ADMIN", "DEPT_HEAD"] },
+    ],
   },
   {
     id: "khabri",
