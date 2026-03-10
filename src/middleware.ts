@@ -7,7 +7,9 @@ export function middleware(req: NextRequest) {
   // Public routes — skip auth check
   if (
     pathname.startsWith("/login") ||
-    pathname.startsWith("/api/auth")
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/portal") ||
+    pathname.startsWith("/api/client/action")
   ) {
     return NextResponse.next();
   }
