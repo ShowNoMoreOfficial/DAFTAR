@@ -99,6 +99,8 @@ model User {
   uploadedMedia       ArticleMedia[]      @relation("MediaUploader")
   editorialComments   EditorialComment[]  @relation("EditorialComments")
   articleVersionEdits ArticleVersion[]    @relation("VersionEditor")
+  // HOCCR Phase 1
+  employeeProfile     EmployeeProfile?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -162,6 +164,8 @@ model Department {
   workflows    WorkflowTemplate[]
   expenses     Expense[]          @relation("DeptExpenses")
   invites      Invite[]           @relation("DeptInvites")
+  // HOCCR Phase 1
+  metrics      DepartmentMetrics?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -628,6 +632,7 @@ enum NotificationType {
   APPROVAL_COMPLETED
   DELIVERABLE_READY
   GI_SUGGESTION
+  GI_REVIEW
   SYSTEM
 }
 
@@ -1556,4 +1561,33 @@ model SaaSSubscription {
   @@unique([organizationId, productId])
   @@index([status])
   @@map("saas_subscriptions")
+}
+
+// ============================================================================
+// RING 1: HOCCR (HR & Operations Intelligence) - Phase 1 Additions
+// ============================================================================
+
+model EmployeeProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  sentimentScore Float?   // 0.0 to 10.0 (Tracked by GI interactions)
+  capacity       Int      @default(100) // Percentage of workload
+  skills         String[] // e.g., ["Video Editing", "Copywriting"]
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt      DateTime @updatedAt
+
+  @@map("employee_profiles")
+}
+
+model DepartmentMetrics {
+  id             String     @id @default(cuid())
+  departmentId   String     @unique
+  velocity       Float      // Average tasks completed per week
+  openBlockers   Int        @default(0)
+
+  department     Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  recordedAt     DateTime   @default(now())
+
+  @@map("department_metrics")
 }

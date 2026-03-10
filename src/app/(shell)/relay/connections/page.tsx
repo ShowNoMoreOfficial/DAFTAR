@@ -95,6 +95,19 @@ export default function ConnectionsPage() {
     setDialogOpen(true);
   };
 
+  const handleDisconnect = async (connectionId: string) => {
+    try {
+      const res = await fetch(`/api/relay/connections?id=${connectionId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setConnections((prev) => prev.filter((c) => c.id !== connectionId));
+      }
+    } catch {
+      // silently fail — user can retry
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -163,14 +176,24 @@ export default function ConnectionsPage() {
                           {conn.accountName || conn.accountId || "Connected"}
                         </p>
                         <p className="text-[10px] text-[#9CA3AF]">
-                          {conn.brand.name} -- Connected {new Date(conn.connectedAt).toLocaleDateString("en-IN", {
+                          {conn.brand.name} &middot; Connected {new Date(conn.connectedAt).toLocaleDateString("en-IN", {
                             day: "numeric", month: "short", year: "numeric",
                           })}
                         </p>
                       </div>
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-medium text-emerald-700">
-                        Active
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-medium text-emerald-700">
+                          Connected
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-[10px] text-red-500 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => handleDisconnect(conn.id)}
+                        >
+                          Disconnect
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

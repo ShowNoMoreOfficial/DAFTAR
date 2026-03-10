@@ -4,6 +4,7 @@ import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-ut
 import type { TaskStatus } from "@prisma/client";
 import { notifyTaskStatusChanged, notifyDeliverableReady } from "@/lib/notifications";
 import { recordActivity, checkTaskAchievements } from "@/lib/gamification";
+import { daftarEvents } from "@/lib/event-bus";
 
 const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   CREATED: ["ASSIGNED", "CANCELLED"],
@@ -61,6 +62,26 @@ export async function PATCH(
       oldValue: task.status,
       newValue: status,
     },
+  });
+
+  // Emit GI event when task moves to REVIEW
+  if (status === "REVIEW") {
+    daftarEvents.emitEvent("PMS_TASK_NEEDS_REVIEW", {
+      taskId: id,
+      title: task.title,
+      description: task.description,
+      assigneeId: task.assigneeId,
+      assigneeName: updated.assignee?.name || "Unassigned",
+      departmentId: task.departmentId,
+    });
+  }
+
+  // Emit generic status change event
+  daftarEvents.emitEvent("PMS_TASK_STATUS_CHANGED", {
+    taskId: id,
+    oldStatus: task.status,
+    newStatus: status,
+    actorId: session.user.id,
   });
 
   // Notify relevant users about status change

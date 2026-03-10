@@ -7,6 +7,7 @@ import {
 } from "@/lib/gi-engine";
 import { skillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
 import { daftarEvents } from "@/lib/event-bus";
+import { prisma } from "@/lib/prisma";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -354,6 +355,155 @@ export function registerGIEventListeners(): void {
           signalId: payload.signalId,
           skillsLoaded: skills,
           mode: "breaking",
+        });
+      } catch {
+        // Silent
+      }
+    }
+  );
+
+  // ─── PMS: GI Task Reviewer (Phase 1) ────────────────────
+  // When a task moves to REVIEW, run the task-reviewer skill
+  // and inject GI feedback as a comment + notification.
+  daftarEvents.on(
+    "PMS_TASK_NEEDS_REVIEW",
+    async (payload: {
+      taskId: string;
+      title: string;
+      description: string | null;
+      assigneeId: string | null;
+      assigneeName: string;
+      departmentId: string | null;
+    }) => {
+      try {
+        const result = await skillOrchestrator.executeSkill({
+          skillPath: "pms/task-reviewer.md",
+          context: {
+            task: {
+              title: payload.title,
+              description: payload.description || "(No description provided)",
+              assigneeName: payload.assigneeName,
+            },
+          },
+        });
+
+        if (!result.success) return;
+
+        const review = result.output as {
+          approvedForDone?: boolean;
+          feedbackComment?: string;
+          flaggedDependencies?: string[];
+        };
+
+        if (!review.feedbackComment) return;
+
+        // Use first admin as system user for GI comments
+        const systemUser = await prisma.user.findFirst({
+          where: { role: "ADMIN" },
+          select: { id: true },
+        });
+        if (!systemUser) return;
+
+        // Inject GI review as task comment
+        await prisma.taskComment.create({
+          data: {
+            taskId: payload.taskId,
+            authorId: systemUser.id,
+            content: `**GI Review:** ${review.feedbackComment}${
+              review.flaggedDependencies?.length
+                ? `\n\n**Flagged Dependencies:**\n${review.flaggedDependencies.map((d) => `- ${d}`).join("\n")}`
+                : ""
+            }${
+              review.approvedForDone
+                ? "\n\n*Recommendation: Ready to move to DONE.*"
+                : "\n\n*Recommendation: Needs attention before completion.*"
+            }`,
+          },
+        });
+
+        // Log GI review activity
+        await prisma.taskActivity.create({
+          data: {
+            taskId: payload.taskId,
+            actorId: systemUser.id,
+            action: "gi_review",
+            field: "status",
+            oldValue: "REVIEW",
+            newValue: review.approvedForDone ? "approved" : "needs_attention",
+          },
+        });
+
+        // Notify task creator
+        const task = await prisma.task.findUnique({
+          where: { id: payload.taskId },
+          select: { creatorId: true },
+        });
+        if (task?.creatorId) {
+          await prisma.notification.create({
+            data: {
+              userId: task.creatorId,
+              type: "GI_REVIEW",
+              title: `GI reviewed: ${payload.title}`,
+              message: review.feedbackComment,
+              link: `/m/pms/board?task=${payload.taskId}`,
+            },
+          });
+        }
+
+        daftarEvents.emitEvent("gi.task.reviewed", {
+          taskId: payload.taskId,
+          approved: review.approvedForDone,
+          dependencies: review.flaggedDependencies,
+        });
+      } catch {
+        // Silent — GI review should never block task flow
+      }
+    }
+  );
+
+  // ─── PMS: Task Created — Track Department Metrics ───────
+  daftarEvents.on(
+    "PMS_TASK_CREATED",
+    async (payload: { taskId: string; departmentId: string | null }) => {
+      if (!payload.departmentId) return;
+      try {
+        await prisma.departmentMetrics.upsert({
+          where: { departmentId: payload.departmentId },
+          create: { departmentId: payload.departmentId, velocity: 0, openBlockers: 0 },
+          update: {},
+        });
+      } catch {
+        // Silent
+      }
+    }
+  );
+
+  // ─── PMS: Task Done — Update Department Velocity ────────
+  daftarEvents.on(
+    "PMS_TASK_STATUS_CHANGED",
+    async (payload: { taskId: string; oldStatus: string; newStatus: string }) => {
+      if (payload.newStatus !== "DONE") return;
+      try {
+        const task = await prisma.task.findUnique({
+          where: { id: payload.taskId },
+          select: { departmentId: true },
+        });
+        if (!task?.departmentId) return;
+
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const completedThisWeek = await prisma.task.count({
+          where: {
+            departmentId: task.departmentId,
+            status: "DONE",
+            completedAt: { gte: weekAgo },
+          },
+        });
+
+        await prisma.departmentMetrics.upsert({
+          where: { departmentId: task.departmentId },
+          create: { departmentId: task.departmentId, velocity: completedThisWeek, openBlockers: 0 },
+          update: { velocity: completedThisWeek },
         });
       } catch {
         // Silent

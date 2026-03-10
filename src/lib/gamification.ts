@@ -1,28 +1,64 @@
 import { prisma } from "@/lib/prisma";
 
-// XP thresholds per level: level N requires N*100 total XP
+// Escalating XP thresholds per level using a power curve:
+// Level 1: 0–100, Level 2: 100–250, Level 3: 250–475, Level 4: 475–800, ...
+// Formula: XP needed for level N = floor(100 * N^1.5)
+function xpRequiredForLevel(level: number): number {
+  return Math.floor(100 * Math.pow(level, 1.5));
+}
+
+// Cumulative XP needed to reach a given level
+function cumulativeXpForLevel(level: number): number {
+  let total = 0;
+  for (let i = 1; i < level; i++) {
+    total += xpRequiredForLevel(i);
+  }
+  return total;
+}
+
 export function levelFromXp(xp: number): number {
   let level = 1;
   let remaining = xp;
-  while (remaining >= level * 100) {
-    remaining -= level * 100;
+  while (remaining >= xpRequiredForLevel(level)) {
+    remaining -= xpRequiredForLevel(level);
     level++;
   }
   return level;
 }
 
 export function xpForNextLevel(level: number): number {
-  return level * 100;
+  return xpRequiredForLevel(level);
 }
 
 export function xpInCurrentLevel(totalXp: number): number {
   let level = 1;
   let remaining = totalXp;
-  while (remaining >= level * 100) {
-    remaining -= level * 100;
+  while (remaining >= xpRequiredForLevel(level)) {
+    remaining -= xpRequiredForLevel(level);
     level++;
   }
   return remaining;
+}
+
+export interface LevelInfo {
+  level: number;
+  totalXp: number;
+  xpInLevel: number;
+  nextLevelXp: number;
+  percentComplete: number;
+}
+
+/**
+ * Calculate full level info from a total XP value.
+ * Returns current level, XP progress within level, XP target, and percentage.
+ */
+export function calculateLevel(xp: number): LevelInfo {
+  const level = levelFromXp(xp);
+  const xpInLevel = xpInCurrentLevel(xp);
+  const nextLevelXp = xpForNextLevel(level);
+  const percentComplete = nextLevelXp > 0 ? Math.round((xpInLevel / nextLevelXp) * 100) : 100;
+
+  return { level, totalXp: xp, xpInLevel, nextLevelXp, percentComplete };
 }
 
 /**

@@ -43,6 +43,26 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(connections);
 }
 
+// DELETE /api/relay/connections?id=... — Disconnect a platform (ADMIN only)
+export async function DELETE(req: NextRequest) {
+  const session = await getAuthSession();
+  if (!session) return unauthorized();
+
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return badRequest("Connection ID is required");
+
+  await prisma.platformConnection.update({
+    where: { id },
+    data: { isActive: false },
+  });
+
+  return NextResponse.json({ success: true });
+}
+
 // POST /api/relay/connections — Create or update a platform connection (ADMIN only)
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();

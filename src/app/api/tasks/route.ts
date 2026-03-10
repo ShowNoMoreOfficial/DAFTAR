@@ -4,6 +4,7 @@ import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
 import { notifyTaskAssigned } from "@/lib/notifications";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
+import { daftarEvents } from "@/lib/event-bus";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -115,6 +116,15 @@ export async function POST(req: NextRequest) {
   if (assigneeId && assigneeId !== session.user.id) {
     notifyTaskAssigned(assigneeId, title, task.id, session.user.name).catch(() => {});
   }
+
+  // Emit PMS event for GI
+  daftarEvents.emitEvent("PMS_TASK_CREATED", {
+    taskId: task.id,
+    title: task.title,
+    creatorId: session.user.id,
+    assigneeId: task.assigneeId,
+    departmentId: task.departmentId,
+  });
 
   return NextResponse.json(task, { status: 201 });
 }
