@@ -1282,6 +1282,174 @@ async function main() {
   }
   console.log(`Created organization "${org.name}" with ${products.length} SaaS products`);
 
+  // ─── Signal Intelligence: Trends & Signals ──────────────
+  const trend1 = await prisma.trend.create({
+    data: {
+      name: "India-Iran Economic Corridor Tensions",
+      description: "Escalating geopolitical tensions impacting India-Iran Chabahar port agreement and broader economic ties",
+      lifecycle: "peaking",
+      velocityScore: 7.5,
+    },
+  });
+
+  const trend2 = await prisma.trend.create({
+    data: {
+      name: "Indian Tech Layoffs Q1 2026",
+      description: "Wave of layoffs across major Indian IT companies amid AI automation concerns",
+      lifecycle: "emerging",
+      velocityScore: 4.2,
+    },
+  });
+
+  const trend3 = await prisma.trend.create({
+    data: {
+      name: "Rupee Depreciation Against Dollar",
+      description: "Indian Rupee hitting record lows against USD driven by oil price surge and FII outflows",
+      lifecycle: "declining",
+      velocityScore: 2.1,
+    },
+  });
+
+  // Signals for trend 1
+  await prisma.signal.createMany({
+    data: [
+      {
+        trendId: trend1.id,
+        title: "India pauses Chabahar port investment amid US sanctions warning",
+        content: "India has reportedly paused further investment in the Chabahar port project following renewed US sanctions threats against Iran.",
+        source: "Reuters",
+        sourceCredibility: 0.95,
+        eventType: "political",
+        stakeholders: { people: ["PM Modi", "Iran FM"], organizations: ["MEA", "US State Dept"] },
+        geoRelevance: { india: 0.95, us: 0.6, iran: 0.9, global: 0.5 },
+        sentiment: "negative",
+      },
+      {
+        trendId: trend1.id,
+        title: "Oil prices surge 8% as Gulf tensions escalate",
+        content: "Brent crude crosses $92/barrel following military posturing in the Strait of Hormuz, directly impacting India's import bill.",
+        source: "Bloomberg",
+        sourceCredibility: 0.92,
+        eventType: "economic",
+        stakeholders: { organizations: ["OPEC", "Indian Oil Ministry"] },
+        geoRelevance: { india: 0.85, us: 0.4, global: 0.7 },
+        sentiment: "negative",
+      },
+      {
+        trendId: trend1.id,
+        title: "Indian diaspora in Gulf express concern over escalating tensions",
+        content: "Over 8 million Indian workers in Gulf states facing uncertainty as regional tensions mount.",
+        source: "The Hindu",
+        sourceCredibility: 0.82,
+        eventType: "social",
+        stakeholders: { people: ["Indian Ambassador to UAE"], organizations: ["Indian Embassy"] },
+        geoRelevance: { india: 0.90, uae: 0.85, global: 0.4 },
+        sentiment: "negative",
+      },
+    ],
+  });
+
+  // Signals for trend 2
+  await prisma.signal.createMany({
+    data: [
+      {
+        trendId: trend2.id,
+        title: "Infosys announces 6,000 job cuts in AI-driven restructuring",
+        content: "India's second-largest IT firm restructures operations, replacing mid-level roles with AI automation tools.",
+        source: "Economic Times",
+        sourceCredibility: 0.85,
+        eventType: "economic",
+        stakeholders: { people: ["Infosys CEO"], organizations: ["Infosys", "NASSCOM"] },
+        geoRelevance: { india: 0.95, us: 0.5, global: 0.4 },
+        sentiment: "negative",
+      },
+      {
+        trendId: trend2.id,
+        title: "TCS and Wipro follow suit with hiring freeze for FY27",
+        content: "Major IT firms signal cautious outlook, shifting investment from headcount to AI infrastructure.",
+        source: "Mint",
+        sourceCredibility: 0.80,
+        eventType: "economic",
+        stakeholders: { organizations: ["TCS", "Wipro"] },
+        geoRelevance: { india: 0.90, global: 0.3 },
+        sentiment: "negative",
+      },
+    ],
+  });
+
+  // Signals for trend 3
+  await prisma.signal.createMany({
+    data: [
+      {
+        trendId: trend3.id,
+        title: "Rupee falls to 87.5 against dollar, RBI intervenes",
+        content: "The Reserve Bank of India sold $2.3 billion in forex reserves to defend the rupee as FII outflows accelerate.",
+        source: "PTI",
+        sourceCredibility: 0.90,
+        eventType: "economic",
+        stakeholders: { people: ["RBI Governor"], organizations: ["RBI", "SEBI"] },
+        geoRelevance: { india: 0.95, us: 0.5, global: 0.4 },
+        sentiment: "negative",
+      },
+    ],
+  });
+
+  // Trend relationships
+  await prisma.trendRelation.create({
+    data: {
+      sourceTrendId: trend1.id,
+      relatedTrendId: trend3.id,
+      relationship: "causes",
+      strength: 0.75,
+    },
+  });
+
+  await prisma.trendRelation.create({
+    data: {
+      sourceTrendId: trend2.id,
+      relatedTrendId: trend3.id,
+      relationship: "related_to",
+      strength: 0.45,
+    },
+  });
+
+  console.log(`Created ${3} trends with ${6} signals and ${2} relationships`);
+
+  // ─── Content Performance & Strategy Tests ────────────────
+  await prisma.contentPerformance.create({
+    data: {
+      deliverableId: "demo-video-001",
+      brandId: brands[0].id, // Breaking Tube
+      platform: "youtube",
+      publishedAt: new Date("2026-03-05"),
+      metrics: { views: 85000, likes: 4200, comments: 890, shares: 320, retention: 0.62, ctr: 0.078 },
+      revenueGenerated: 12500,
+      skillsUsed: ["narrative/voice/hook-engineering.md", "platforms/youtube/title-engineering.md"],
+      narrativeAngle: "data-first-explainer",
+      hookType: "data_specific",
+      performanceTier: "top_10",
+      benchmarkDelta: 42.5,
+    },
+  });
+
+  await prisma.strategyTest.create({
+    data: {
+      name: "Hook Style A/B — Data vs Question",
+      hypothesis: "Data-specific hooks outperform question-format hooks for geopolitical content on YouTube",
+      skillPath: "narrative/voice/hook-engineering.md",
+      brandId: brands[0].id,
+      platform: "youtube",
+      variant: "A",
+      startDate: new Date("2026-03-01"),
+      endDate: new Date("2026-03-15"),
+      results: { sampleSize: 12, avgRetentionA: 0.62, avgRetentionB: 0.48, pValue: 0.03 },
+      conclusion: "A wins",
+      status: "completed",
+    },
+  });
+
+  console.log("Created demo content performance and strategy test records");
+
   console.log("Seed complete!");
 }
 

@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector] // Requires pgvector extension for embeddings
 }
 
 // ─── Enums ───────────────────────────────────────────────
@@ -1330,6 +1332,165 @@ model GILearningLog {
   @@unique([category, key, departmentId, userId])
   @@index([category, isActive])
   @@map("gi_learning_logs")
+}
+
+// ─── Skills Ecosystem ─────────────────────────────────────
+
+model Skill {
+  id            String             @id @default(cuid())
+  path          String             @unique  // e.g. "/narrative/editorial/topic-selection.md"
+  domain        String             // signals, narrative, production, platforms, distribution, analytics, brand, gi, workflows, system
+  module        String             // khabri, yantri, pms, relay, hoccr, daftar, gi
+  name          String
+  description   String?            @db.Text
+  version       Int                @default(1)
+  isActive      Boolean            @default(true)
+  metadata      Json?              // extra config: trigger, inputs, outputs, dependencies, scripts
+  executions    SkillExecution[]
+  learningLogs  SkillLearningLog[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([domain])
+  @@index([module])
+  @@index([isActive])
+  @@map("skills")
+}
+
+model SkillExecution {
+  id               String   @id @default(cuid())
+  skill            Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId          String
+  deliverableId    String?  // links to the deliverable this execution produced
+  brandId          String?
+  platform         String?
+  inputContext      Json     // what context was provided
+  outputSummary     Json     // what the skill produced
+  modelUsed        String   // which LLM processed this skill
+  tokensUsed       Int?
+  durationMs       Int?
+  performanceScore Float?   // scored later by analytics (0-10)
+  status           String   @default("completed") // completed, failed, partial
+  errorMessage     String?  @db.Text
+  executedById     String?  // user who triggered, null if system
+  executedAt       DateTime @default(now())
+
+  @@index([skillId, executedAt])
+  @@index([brandId])
+  @@index([platform])
+  @@index([status])
+  @@map("skill_executions")
+}
+
+model SkillLearningLog {
+  id          String   @id @default(cuid())
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId     String
+  entry       Json     // the learning entry: { pattern, recommendation, data, metrics }
+  source      String   @default("auto") // "auto" or "manual" (admin-edited)
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([skillId, createdAt])
+  @@map("skill_learning_logs")
+}
+
+// ─── Signal Intelligence (Khabri) ───────────────────────
+
+model Trend {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?         @db.Text
+  lifecycle     String          @default("emerging") // emerging, peaking, declining, resurgent
+  velocityScore Float?
+  signals       Signal[]
+  relatedTrends TrendRelation[] @relation("SourceTrend")
+  relatedFrom   TrendRelation[] @relation("RelatedTrend")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([lifecycle])
+  @@map("trends")
+}
+
+model Signal {
+  id                String                  @id @default(cuid())
+  trend             Trend                   @relation(fields: [trendId], references: [id], onDelete: Cascade)
+  trendId           String
+  title             String
+  content           String?                 @db.Text
+  source            String
+  sourceCredibility Float?                  // 0-1 score
+  eventType         String?                 // war, political, economic, social, etc.
+  stakeholders      Json?                   // Key people/orgs involved
+  eventMarkers      Json?                   // Timestamps, locations, key facts
+  visualAnchors     Json?                   // Image URLs, video clips, infographic links
+  geoRelevance      Json?                   // { "india": 0.9, "us": 0.3, "global": 0.7 }
+  sentiment         String?                 // positive, negative, neutral, mixed
+  embedding         Unsupported("vector(768)")? // Embeddings for similarity search
+  detectedAt        DateTime                @default(now())
+  isDuplicate       Boolean                 @default(false)
+  duplicateOfId     String?
+
+  @@index([trendId])
+  @@index([source])
+  @@index([detectedAt])
+  @@map("signals")
+}
+
+model TrendRelation {
+  id             String @id @default(cuid())
+  sourceTrend    Trend  @relation("SourceTrend", fields: [sourceTrendId], references: [id], onDelete: Cascade)
+  sourceTrendId  String
+  relatedTrend   Trend  @relation("RelatedTrend", fields: [relatedTrendId], references: [id], onDelete: Cascade)
+  relatedTrendId String
+  relationship   String // "causes", "related_to", "contradicts", "escalates"
+  strength       Float  // 0-1
+
+  @@unique([sourceTrendId, relatedTrendId])
+  @@map("trend_relations")
+}
+
+// ─── Content Performance Tracking ───────────────────────
+
+model ContentPerformance {
+  id               String   @id @default(cuid())
+  deliverableId    String
+  brandId          String
+  platform         String
+  publishedAt      DateTime?
+  metrics          Json     // { views, likes, comments, shares, retention, ctr, etc. }
+  revenueGenerated Float?
+  skillsUsed       String[] // Skill paths that created this content
+  narrativeAngle   String?
+  hookType         String?
+  performanceTier  String?  // "top_10", "above_avg", "average", "below_avg", "poor"
+  benchmarkDelta   Float?   // % above or below brand+platform average
+  lastUpdated      DateTime @updatedAt
+
+  @@index([brandId, platform])
+  @@index([performanceTier])
+  @@map("content_performances")
+}
+
+model StrategyTest {
+  id         String    @id @default(cuid())
+  name       String
+  hypothesis String    @db.Text
+  skillPath  String    // Which skill is being tested
+  brandId    String
+  platform   String
+  variant    String    // "A" or "B"
+  startDate  DateTime
+  endDate    DateTime?
+  results    Json?
+  conclusion String?   // "A wins", "B wins", "inconclusive"
+  status     String    @default("active") // active, completed, cancelled
+
+  @@index([status])
+  @@index([brandId, platform])
+  @@map("strategy_tests")
 }
 
 // ─── Multi-Tenant SaaS Foundation ───────────────────────

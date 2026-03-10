@@ -126,6 +126,17 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     roles: ["ADMIN", "FINANCE"],
   },
   {
+    id: "skills",
+    label: "Skills",
+    icon: "BookOpen",
+    href: "/admin/skills",
+    roles: ["ADMIN"],
+    children: [
+      { id: "skills-list", label: "All Skills", icon: "BookOpen", href: "/admin/skills", roles: ["ADMIN"] },
+      { id: "skills-performance", label: "Performance", icon: "BarChart3", href: "/admin/skills/performance", roles: ["ADMIN"] },
+    ],
+  },
+  {
     id: "gi-config",
     label: "GI Intelligence",
     icon: "Sparkles",
