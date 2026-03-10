@@ -58,6 +58,16 @@ type DaftarEvents = {
       timestamp: string;
     };
   };
+
+  /**
+   * Vritti: An article has been published in the CMS.
+   * Triggers the RAG ingestion pipeline (chunking + embedding).
+   */
+  "vritti/article.published": {
+    data: {
+      articleId: string;
+    };
+  };
 };
 
 // ─── Inngest Client ──────────────────────────────────────

@@ -9,5 +9,10 @@ export async function register() {
       "@/lib/gi-skill-engine"
     );
     registerGIEventListeners();
+
+    const { registerCultureMonitor } = await import(
+      "@/lib/hoccr/culture-monitor"
+    );
+    registerCultureMonitor();
   }
 }
