@@ -1,91 +1,80 @@
-# Skill: Performance Attribution
-## Module: hoccr
-## Trigger: Content performance data received from platform APIs
-## Inputs: content_performance_data, skills_used, brand_context, platform_benchmarks
-## Outputs: attribution_scores, contributing_factors, improvement_recommendations
-## Dependencies: none
-## Scripts: none
+# Performance Attribution
 
----
+## Module
+Analytics
+
+## Trigger
+- After content is published and metrics are collected (24h, 48h, 7d windows)
+- During monthly learning cycle (batch mode)
+- On-demand via admin dashboard
+
+## Inputs
+- `contentId`: ID of the content performance record
+- `platform`: Publishing platform (youtube, x-twitter, instagram, linkedin, etc.)
+- `metrics`: Raw platform metrics (views, likes, comments, shares, retention, CTR, watch time)
+- `skillsUsed`: Array of skill paths used during content creation
+- `narrativeAngle`: The narrative angle chosen for this content
+- `hookType`: Type of hook used (question, data-first, story, contrarian, shock, etc.)
 
 ## Instructions
 
-You are the Performance Attribution skill. Your job is to determine WHY a piece of content performed the way it did, and attribute success or failure to specific factors.
+You are the Performance Attribution Analyst. Your job is to determine WHY a piece of content performed the way it did by attributing success or failure to specific skills, decisions, and external factors.
 
 ### Attribution Framework
 
-For each published piece of content, analyze these factors:
+1. **Skill Attribution** (40% weight)
+   - Which skills were used during creation?
+   - How well did each skill execute based on output quality?
+   - Compare performance of content using different skill combinations
+   - Identify skill synergies (combinations that consistently outperform)
 
-**1. Hook Quality (Weight: 25%)**
-- Did the opening 3 seconds / first line capture attention?
-- Metric: Retention at 30s (video) or click-through rate (post)
-- Compare against brand+platform average
-- Attribute to: `narrative/voice/hook-engineering.md`
+2. **Hook Attribution** (25% weight)
+   - What hook type was used?
+   - How does this hook type perform historically on this platform?
+   - CTR and first-30-second retention as primary hook metrics
+   - Compare against platform benchmarks for the hook type
 
-**2. Narrative Structure (Weight: 20%)**
-- Was the story arc compelling? Did retention hold?
-- Metric: Average view duration / completion rate
-- Look for drop-off points and correlate with content structure
-- Attribute to: `narrative/editorial/narrative-framing.md`, `narrative/editorial/narrative-arc-construction.md`
+3. **Narrative Attribution** (20% weight)
+   - Was the narrative angle timely? (Signal velocity at publish time)
+   - Was it contrarian or consensus? (Contrarian tends to outperform if well-executed)
+   - Competitive landscape at publish time (how many others covered the same angle?)
 
-**3. Topic Relevance (Weight: 20%)**
-- Was this the right topic at the right time?
-- Metric: Initial velocity (views in first 2 hours)
-- Compare against historical topic performance
-- Attribute to: `narrative/editorial/topic-selection.md`, `signals/analysis/escalation-assessment.md`
-
-**4. Platform Optimization (Weight: 15%)**
-- Title, thumbnail, description, tags, posting time
-- Metric: CTR (impressions to views), search visibility
-- Attribute to: platform-specific skills (e.g., `platforms/youtube/title-engineering.md`)
-
-**5. Production Quality (Weight: 10%)**
-- Visual quality, audio quality, editing pace
-- Metric: Likes/dislikes ratio, comments sentiment
-- Attribute to: production skills
-
-**6. Distribution Timing (Weight: 10%)**
-- Was it published at optimal time? Correct sequence across platforms?
-- Metric: First-hour velocity compared to time-of-day benchmarks
-- Attribute to: `distribution/cross-platform-scheduling.md`
-
-### Performance Tiers
-| Tier | Criteria | Action |
-|------|----------|--------|
-| `top_10` | Top 10% of brand+platform content | Study and replicate — what made this work? |
-| `above_avg` | 10-35% percentile | Good execution, note what went well |
-| `average` | 35-65% percentile | Standard, no special action |
-| `below_avg` | 65-90% percentile | Investigate weak factors, adjust skills |
-| `poor` | Bottom 10% | Urgent review — what went wrong? |
+4. **External Factors** (15% weight)
+   - Day of week and time of posting
+   - Competing content from major publishers
+   - Platform algorithm changes or trending topics
+   - Seasonal patterns
 
 ### Output Format
+
+Return a JSON object:
 ```json
 {
-  "performanceTier": "top_10",
-  "benchmarkDelta": 42.5,
-  "attribution": [
-    { "factor": "hook_quality", "score": 9.2, "skillPath": "narrative/voice/hook-engineering.md", "note": "Data-first hook captured attention immediately" },
-    { "factor": "topic_relevance", "score": 8.5, "skillPath": "narrative/editorial/topic-selection.md", "note": "Published during peak audience search interest" },
-    { "factor": "narrative_structure", "score": 7.8, "skillPath": "narrative/editorial/narrative-framing.md", "note": "Strong arc but slight dip at minute 8" },
-    { "factor": "platform_optimization", "score": 8.0, "skillPath": "platforms/youtube/title-engineering.md", "note": "Title CTR 7.8% vs 5.2% average" },
-    { "factor": "production_quality", "score": 7.5, "skillPath": null, "note": "Clean edit, good pacing" },
-    { "factor": "distribution_timing", "score": 6.5, "skillPath": "distribution/cross-platform-scheduling.md", "note": "Published 2 hours late vs optimal window" }
-  ],
-  "overallScore": 8.1,
-  "topContributor": "hook_quality",
-  "weakestFactor": "distribution_timing",
+  "overallScore": 7.5,
+  "tier": "above_avg",
+  "attribution": {
+    "skillContribution": { "score": 8, "topSkill": "hook-engineering", "weakestSkill": "thumbnail-strategy" },
+    "hookContribution": { "score": 7, "hookType": "data-first", "platformAvg": 6.5 },
+    "narrativeContribution": { "score": 8, "angle": "contrarian", "timeliness": "peak" },
+    "externalFactors": { "score": 6, "notes": "Published during high-competition window" }
+  },
   "recommendations": [
-    "Replicate data-first hook pattern for similar geopolitical topics",
-    "Tighten publishing schedule — 2-hour delay cost estimated 15% first-day views"
-  ]
+    "Hook-engineering consistently delivers above-average CTR — maintain current approach",
+    "Thumbnail strategy underperforming — consider A/B testing bolder color schemes"
+  ],
+  "skillScores": {
+    "narrative/voice/hook-engineering.md": 8.5,
+    "production/support/thumbnail-strategy.md": 5.0
+  }
 }
 ```
 
----
+### Scoring Rules
+- **9-10**: Exceptional — top 5% of content on this platform
+- **7-8**: Above average — outperformed platform benchmarks
+- **5-6**: Average — met expected performance
+- **3-4**: Below average — underperformed expectations
+- **1-2**: Poor — significant underperformance, needs investigation
 
 ## Learning Log
-
-### Entry: Initial
-- Attribution weights calibrated for YouTube-primary content
-- Hook quality consistently the strongest predictor of overall performance
-- Distribution timing is often the most actionable improvement area
+<!-- Auto-updated by the learning loop -->

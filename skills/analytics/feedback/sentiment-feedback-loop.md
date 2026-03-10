@@ -1,75 +1,66 @@
-# Skill: Sentiment Feedback Loop
-## Module: hoccr
-## Trigger: Content published for 24+ hours with engagement data
-## Inputs: content_data, comments, engagement_metrics, audience_demographics
-## Outputs: audience_sentiment, engagement_quality, content_reception_analysis
-## Dependencies: none
-## Scripts: none
+# Sentiment Feedback Loop
 
----
+## Module
+Analytics
+
+## Trigger
+- After content performance data collected (comments, reactions)
+- During monthly learning cycle
+- When negative sentiment spike detected
+
+## Inputs
+- `topContent`: Array of content records with platform, metrics
+- `comments`: Sample of audience comments (when available)
+- `reactions`: Reaction breakdown (likes, dislikes, emoji reactions)
 
 ## Instructions
 
-You are the Sentiment Feedback Loop skill. You analyze audience reactions to published content to understand not just HOW MUCH engagement, but WHAT KIND.
+You are the Sentiment Analyst. You analyze audience reactions and feedback to understand how content resonates emotionally and identify sentiment trends that should influence future content strategy.
 
-### Analysis Dimensions
+### Analysis Framework
 
-**1. Comment Sentiment Analysis**
-- Positive: Agreement, praise, sharing personal stories, tagging friends
-- Negative: Disagreement, criticism, accusations of bias
-- Constructive: Suggestions, corrections, requests for more coverage
-- Toxic: Hate speech, personal attacks (flag for moderation, don't count as engagement)
+1. **Comment Sentiment Analysis**
+   - Classify comments: positive, neutral, negative, constructive criticism
+   - Extract common themes from positive comments (what they love)
+   - Extract common themes from negative comments (what they dislike)
+   - Identify recurring requests or suggestions
 
-**2. Engagement Quality Score (0-10)**
-Not all engagement is equal:
-- Saves/Bookmarks (10/10) — strongest signal of value
-- Long comments/replies (8/10) — deep engagement
-- Shares/Retweets (7/10) — audience vouching for content
-- Likes (4/10) — passive approval
-- Views without engagement (1/10) — saw it, didn't care
-- Negative engagement (varies) — disagreement can still mean relevance
+2. **Engagement Quality Assessment**
+   - Like-to-dislike ratio trend
+   - Comment depth (one-word vs substantive engagement)
+   - Share-to-view ratio (high shares = content worth spreading)
+   - Save rate (content people want to revisit)
 
-**3. Audience Alignment**
-- Are we reaching our target demographic?
-- Is new audience growing (good) or are we losing core audience (bad)?
-- Geographic distribution — are India-based viewers engaging?
+3. **Emotional Response Mapping**
+   - Which emotional hooks generate most engagement?
+   - Does controversy drive views but hurt brand sentiment?
+   - Is audience satisfaction trending up or down?
 
-**4. Content Reception Patterns**
-- "Informed" reception: Audience learned something → educational value confirmed
-- "Validated" reception: Audience agreed with a position → opinion/analysis resonated
-- "Challenged" reception: Audience pushed back respectfully → thought-provoking content
-- "Controversial" reception: Strong split in reactions → handle carefully but high engagement
-- "Ignored" reception: Low engagement despite reach → content missed the mark
+4. **Feedback-to-Skill Mapping**
+   - Connect audience feedback to specific skill outputs
+   - "Great editing" = production skills performing well
+   - "Clickbait title" = title-engineering skill needs adjustment
+   - "Loved the research" = fact-dossier-building skill validated
 
 ### Output Format
+
 ```json
 {
-  "overallSentiment": "positive",
-  "sentimentBreakdown": { "positive": 0.62, "neutral": 0.25, "negative": 0.10, "toxic": 0.03 },
-  "engagementQualityScore": 7.8,
-  "receptionPattern": "informed",
-  "audienceAlignment": {
-    "targetReach": 0.78,
-    "newAudienceGrowth": "+3.2%",
-    "geoMatch": { "india": 0.72, "us": 0.15, "uk": 0.08 }
+  "overallSentiment": 7.8,
+  "trend": "stable",
+  "positiveThemes": ["thorough research", "engaging presentation", "unique perspective"],
+  "negativeThemes": ["video length too long", "thumbnails misleading"],
+  "audienceRequests": ["more short-form content", "weekly series on economics"],
+  "skillFeedback": {
+    "production/long-form/explainer-production.md": { "sentiment": "positive", "signal": "research depth praised" },
+    "platforms/youtube/title-engineering.md": { "sentiment": "negative", "signal": "clickbait complaints" }
   },
-  "keyInsights": [
-    "Comments requesting a follow-up on economic impact — high demand signal",
-    "3 corrections on a specific data point — update fact dossier",
-    "Strong sharing in WhatsApp groups (inferred from traffic patterns) — trusted content"
-  ],
-  "actionItems": [
-    { "type": "content_opportunity", "description": "Follow-up video on economic impact requested by 40+ comments" },
-    { "type": "fact_correction", "description": "GDP growth figure was Q2, not Q3 — update and pin correction" }
+  "recommendations": [
+    "Reduce clickbait in titles — audience pushback detected",
+    "Consider weekly economics series — 12% of comments request it"
   ]
 }
 ```
 
----
-
 ## Learning Log
-
-### Entry: Initial
-- Comment sentiment analysis requires careful handling of Indian political discourse (passionate ≠ toxic)
-- Saves/bookmarks are the most underrated metric — strong predictor of long-term channel growth
-- WhatsApp sharing patterns detectable via referral traffic spikes
+<!-- Auto-updated by the learning loop -->

@@ -63,13 +63,13 @@ model Invite {
 // ─── Core Models ─────────────────────────────────────────
 
 model User {
-  id                  String              @id @default(cuid())
-  email               String              @unique
+  id                  String             @id @default(cuid())
+  email               String             @unique
   name                String
   avatar              String?
-  role                Role                @default(MEMBER)
-  isActive            Boolean             @default(false)
-  primaryDepartment   Department?         @relation("PrimaryDept", fields: [primaryDeptId], references: [id])
+  role                Role               @default(MEMBER)
+  isActive            Boolean            @default(false)
+  primaryDepartment   Department?        @relation("PrimaryDept", fields: [primaryDeptId], references: [id])
   primaryDeptId       String?
   departments         DepartmentMember[]
   brandAccess         UserBrandAccess[]
@@ -80,29 +80,29 @@ model User {
   accounts            Account[]
   sessions            Session[]
   // PMS relations
-  createdTasks        Task[]              @relation("TaskCreator")
-  assignedTasks       Task[]              @relation("TaskAssignee")
-  taskComments        TaskComment[]       @relation("CommentAuthor")
-  taskActivities      TaskActivity[]      @relation("ActivityActor")
+  createdTasks        Task[]             @relation("TaskCreator")
+  assignedTasks       Task[]             @relation("TaskAssignee")
+  taskComments        TaskComment[]      @relation("CommentAuthor")
+  taskActivities      TaskActivity[]     @relation("ActivityActor")
   credibilityScore    CredibilityScore?
   // HOCCR relations
-  createdReports      Report[]            @relation("ReportCreator")
+  createdReports      Report[]           @relation("ReportCreator")
   // Notifications
   notifications       Notification[]
   // Gamification
   achievements        UserAchievement[]
   streak              UserStreak?
   // Vritti
-  authoredArticles    Article[]           @relation("ArticleAuthor")
-  editedArticles      Article[]           @relation("ArticleEditor")
-  reviewedArticles    Article[]           @relation("ArticleReviewer")
-  uploadedMedia       ArticleMedia[]      @relation("MediaUploader")
-  editorialComments   EditorialComment[]  @relation("EditorialComments")
-  articleVersionEdits ArticleVersion[]    @relation("VersionEditor")
+  authoredArticles    Article[]          @relation("ArticleAuthor")
+  editedArticles      Article[]          @relation("ArticleEditor")
+  reviewedArticles    Article[]          @relation("ArticleReviewer")
+  uploadedMedia       ArticleMedia[]     @relation("MediaUploader")
+  editorialComments   EditorialComment[] @relation("EditorialComments")
+  articleVersionEdits ArticleVersion[]   @relation("VersionEditor")
   // HOCCR Phase 1
   employeeProfile     EmployeeProfile?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   @@map("users")
 }
@@ -188,36 +188,36 @@ model DepartmentMember {
 // ─── Client & Brand ──────────────────────────────────────
 
 model Client {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   email     String?
   company   String?
-  userId    String?  @unique
-  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?   @unique
+  user      User?     @relation(fields: [userId], references: [id])
   brands    Brand[]
   invoices  Invoice[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@map("clients")
 }
 
 model Brand {
-  id         String            @id @default(cuid())
-  name       String
-  slug       String            @unique
-  client     Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId   String
-  config     Json?
-  platforms  BrandPlatform[]
-  userAccess UserBrandAccess[]
-  tasks      Task[]
-  invoices   Invoice[]
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  client              Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId            String
+  config              Json?
+  platforms           BrandPlatform[]
+  userAccess          UserBrandAccess[]
+  tasks               Task[]
+  invoices            Invoice[]
   posts               ContentPost[]
   platformConnections PlatformConnection[]
-  articles   Article[]         @relation("ArticleBrand")
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  articles            Article[]            @relation("ArticleBrand")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@map("brands")
 }
@@ -338,36 +338,36 @@ enum TaskPriority {
 }
 
 model Task {
-  id            String       @id @default(cuid())
-  title         String
-  description   String?      @db.Text
-  status        TaskStatus   @default(CREATED)
-  priority      TaskPriority @default(MEDIUM)
-  difficultyWeight Int       @default(1)
+  id               String       @id @default(cuid())
+  title            String
+  description      String?      @db.Text
+  status           TaskStatus   @default(CREATED)
+  priority         TaskPriority @default(MEDIUM)
+  difficultyWeight Int          @default(1)
 
   // Relations
-  creator       User         @relation("TaskCreator", fields: [creatorId], references: [id])
-  creatorId     String
-  assignee      User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  assigneeId    String?
-  department    Department?  @relation("DeptTasks", fields: [departmentId], references: [id])
-  departmentId  String?
-  brand         Brand?       @relation(fields: [brandId], references: [id])
-  brandId       String?
-  project       Project?     @relation(fields: [projectId], references: [id])
-  projectId     String?
+  creator      User        @relation("TaskCreator", fields: [creatorId], references: [id])
+  creatorId    String
+  assignee     User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assigneeId   String?
+  department   Department? @relation("DeptTasks", fields: [departmentId], references: [id])
+  departmentId String?
+  brand        Brand?      @relation(fields: [brandId], references: [id])
+  brandId      String?
+  project      Project?    @relation(fields: [projectId], references: [id])
+  projectId    String?
 
   // Dates
-  dueDate       DateTime?
-  startedAt     DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  dueDate     DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Sub-relations
-  comments      TaskComment[]
-  activities    TaskActivity[]
-  tags          TaskTag[]
+  comments   TaskComment[]
+  activities TaskActivity[]
+  tags       TaskTag[]
 
   @@index([assigneeId, status])
   @@index([departmentId, status])
@@ -444,34 +444,34 @@ enum CandidateStatus {
 }
 
 model HiringPosition {
-  id           String      @id @default(cuid())
+  id           String            @id @default(cuid())
   title        String
-  department   Department  @relation("DeptPositions", fields: [departmentId], references: [id])
+  department   Department        @relation("DeptPositions", fields: [departmentId], references: [id])
   departmentId String
-  description  String?     @db.Text
+  description  String?           @db.Text
   requirements Json?
-  isOpen       Boolean     @default(true)
+  isOpen       Boolean           @default(true)
   candidates   HiringCandidate[]
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@map("hiring_positions")
 }
 
 model HiringCandidate {
-  id           String          @id @default(cuid())
-  name         String
-  email        String
-  phone        String?
-  resumeUrl    String?
-  status       CandidateStatus @default(APPLIED)
-  position     HiringPosition  @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  positionId   String
-  notes        String?         @db.Text
-  rating       Int?
+  id            String          @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  resumeUrl     String?
+  status        CandidateStatus @default(APPLIED)
+  position      HiringPosition  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  positionId    String
+  notes         String?         @db.Text
+  rating        Int?
   interviewDate DateTime?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@map("hiring_candidates")
 }
@@ -487,18 +487,18 @@ enum ReportType {
 }
 
 model Report {
-  id           String     @id @default(cuid())
-  title        String
-  type         ReportType
-  description  String?
-  config       Json?
+  id            String      @id @default(cuid())
+  title         String
+  type          ReportType
+  description   String?
+  config        Json?
   generatedData Json?
-  createdBy    User       @relation("ReportCreator", fields: [createdById], references: [id])
-  createdById  String
-  department   Department? @relation("DeptReports", fields: [departmentId], references: [id])
-  departmentId String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdBy     User        @relation("ReportCreator", fields: [createdById], references: [id])
+  createdById   String
+  department    Department? @relation("DeptReports", fields: [departmentId], references: [id])
+  departmentId  String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@map("reports")
 }
@@ -530,13 +530,13 @@ model SentimentEntry {
 }
 
 model Recognition {
-  id           String   @id @default(cuid())
-  fromUserId   String
-  toUserId     String
-  category     String   // kudos, teamwork, innovation, quality, leadership
-  message      String   @db.Text
-  isPublic     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  category   String // kudos, teamwork, innovation, quality, leadership
+  message    String   @db.Text
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
 
   @@index([toUserId, createdAt])
   @@index([fromUserId])
@@ -544,18 +544,18 @@ model Recognition {
 }
 
 model EngagementMetric {
-  id           String   @id @default(cuid())
-  userId       String
-  departmentId String?
-  period       String   // "2026-W10", "2026-03"
-  taskCompletionRate Float @default(0)
-  avgResponseTime    Float @default(0) // hours
-  collaborationScore Float @default(0) // 0-100
-  activeDays         Int   @default(0)
-  recognitionsGiven  Int   @default(0)
-  recognitionsReceived Int @default(0)
-  overallScore       Float @default(0) // 0-100
-  computedAt         DateTime @default(now())
+  id                   String   @id @default(cuid())
+  userId               String
+  departmentId         String?
+  period               String // "2026-W10", "2026-03"
+  taskCompletionRate   Float    @default(0)
+  avgResponseTime      Float    @default(0) // hours
+  collaborationScore   Float    @default(0) // 0-100
+  activeDays           Int      @default(0)
+  recognitionsGiven    Int      @default(0)
+  recognitionsReceived Int      @default(0)
+  overallScore         Float    @default(0) // 0-100
+  computedAt           DateTime @default(now())
 
   @@unique([userId, period])
   @@index([departmentId, period])
@@ -565,17 +565,17 @@ model EngagementMetric {
 // ─── HOCCR: Operations ──────────────────────────────────
 
 model Bottleneck {
-  id           String   @id @default(cuid())
-  type         String   // task_blocked, approval_delayed, capacity_exceeded, dependency_waiting
-  severity     String   @default("medium") // low, medium, high, critical
+  id           String    @id @default(cuid())
+  type         String // task_blocked, approval_delayed, capacity_exceeded, dependency_waiting
+  severity     String    @default("medium") // low, medium, high, critical
   title        String
-  description  String?  @db.Text
+  description  String?   @db.Text
   departmentId String?
   taskId       String?
-  blockedById  String?  // user causing the block
-  affectedIds  Json?    // array of affected user/task ids
-  status       String   @default("active") // active, acknowledged, resolved
-  detectedAt   DateTime @default(now())
+  blockedById  String? // user causing the block
+  affectedIds  Json? // array of affected user/task ids
+  status       String    @default("active") // active, acknowledged, resolved
+  detectedAt   DateTime  @default(now())
   resolvedAt   DateTime?
 
   @@index([status, severity])
@@ -584,16 +584,16 @@ model Bottleneck {
 }
 
 model CapacitySnapshot {
-  id           String   @id @default(cuid())
-  userId       String
-  departmentId String?
-  period       String   // "2026-W10"
-  totalCapacity Int     @default(40) // hours/week
-  allocatedHours Float  @default(0)
-  activeTaskCount Int   @default(0)
-  totalWeight    Float  @default(0)
-  utilizationPct Float  @default(0) // 0-100
-  computedAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  departmentId    String?
+  period          String // "2026-W10"
+  totalCapacity   Int      @default(40) // hours/week
+  allocatedHours  Float    @default(0)
+  activeTaskCount Int      @default(0)
+  totalWeight     Float    @default(0)
+  utilizationPct  Float    @default(0) // 0-100
+  computedAt      DateTime @default(now())
 
   @@unique([userId, period])
   @@index([departmentId, period])
@@ -603,18 +603,18 @@ model CapacitySnapshot {
 // ─── HOCCR: Cross-Department Dependencies ───────────────
 
 model CrossDeptDependency {
-  id              String   @id @default(cuid())
-  fromDeptId      String
-  toDeptId        String
-  taskId          String?
-  description     String
-  status          String   @default("waiting") // waiting, acknowledged, resolved, escalated
-  priority        String   @default("medium") // low, medium, high, critical
-  createdById     String
+  id               String    @id @default(cuid())
+  fromDeptId       String
+  toDeptId         String
+  taskId           String?
+  description      String
+  status           String    @default("waiting") // waiting, acknowledged, resolved, escalated
+  priority         String    @default("medium") // low, medium, high, critical
+  createdById      String
   acknowledgedById String?
-  resolvedAt      DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  resolvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([fromDeptId, status])
   @@index([toDeptId, status])
@@ -658,8 +658,8 @@ model NotificationPreference {
   userId          String   @unique
   // JSON map of NotificationType -> {enabled: boolean, channels: ["in_app", "email"]}
   preferences     Json     @default("{}")
-  quietHoursStart String?  // "22:00"
-  quietHoursEnd   String?  // "08:00"
+  quietHoursStart String? // "22:00"
+  quietHoursEnd   String? // "08:00"
   updatedAt       DateTime @updatedAt
 
   @@map("notification_preferences")
@@ -733,44 +733,44 @@ model Expense {
 // ─── Configuration-over-Code ──────────────────────────────
 
 model WorkflowTemplate {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  department  Department? @relation(fields: [departmentId], references: [id])
+  id           String      @id @default(cuid())
+  name         String      @unique
+  description  String?
+  department   Department? @relation(fields: [departmentId], references: [id])
   departmentId String?
-  stages      Json     // Array of stage definitions [{name, order, participants, approvalGate, autoGenRules}]
-  triggers    Json?    // What events start this workflow
-  escalation  Json?    // Escalation rules
-  isDefault   Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  stages       Json // Array of stage definitions [{name, order, participants, approvalGate, autoGenRules}]
+  triggers     Json? // What events start this workflow
+  escalation   Json? // Escalation rules
+  isDefault    Boolean     @default(false)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   @@map("workflow_templates")
 }
 
 model PlatformConfig {
-  id              String  @id @default(cuid())
-  platform        String  @unique  // youtube, x, instagram, linkedin, facebook
-  displayName     String
-  deliverableTypes Json   // [{type, formatSpecs, dimensions}]
-  postingRules    Json?   // frequency limits, hashtag rules, etc
-  analyticsMetrics Json?  // metrics tracked per platform
-  isActive        Boolean @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  platform         String   @unique // youtube, x, instagram, linkedin, facebook
+  displayName      String
+  deliverableTypes Json // [{type, formatSpecs, dimensions}]
+  postingRules     Json? // frequency limits, hashtag rules, etc
+  analyticsMetrics Json? // metrics tracked per platform
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("platform_configs")
 }
 
 model RoleConfig {
-  id              String  @id @default(cuid())
-  role            Role    @unique
-  dashboardViews  Json    // accessible screens
-  notifications   Json?   // event triggers for alerts
-  reportAccess    Json?   // visible dashboards
-  giConversation  Json?   // GI topic boundaries
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  role           Role     @unique
+  dashboardViews Json // accessible screens
+  notifications  Json? // event triggers for alerts
+  reportAccess   Json? // visible dashboards
+  giConversation Json? // GI topic boundaries
+  updatedAt      DateTime @updatedAt
 
   @@map("role_configs")
 }
@@ -782,14 +782,14 @@ model Achievement {
   key         String   @unique // e.g., "first_task", "streak_7", "quality_master"
   name        String
   description String
-  icon        String   // emoji or icon name
-  category    String   // milestone, streak, quality, speed, collaboration, special
+  icon        String // emoji or icon name
+  category    String // milestone, streak, quality, speed, collaboration, special
   threshold   Int      @default(1) // e.g., complete 10 tasks, 7-day streak
   points      Int      @default(10)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
-  unlocks     UserAchievement[]
+  unlocks UserAchievement[]
 
   @@map("achievements")
 }
@@ -823,50 +823,50 @@ model UserStreak {
 }
 
 model MicroChallenge {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  type        String   // speed, quality, volume, collaboration
-  metric      String   // e.g., "fastest_task_completion", "most_first_pass_approvals"
-  targetValue Float?   // optional target to beat
-  currentRecord Json?  // {userId, value, recordedAt}
-  departmentId String? // null = org-wide
-  startsAt    DateTime
-  endsAt      DateTime
-  bonusPoints Int      @default(25)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  type          String // speed, quality, volume, collaboration
+  metric        String // e.g., "fastest_task_completion", "most_first_pass_approvals"
+  targetValue   Float? // optional target to beat
+  currentRecord Json? // {userId, value, recordedAt}
+  departmentId  String? // null = org-wide
+  startsAt      DateTime
+  endsAt        DateTime
+  bonusPoints   Int      @default(25)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
-  entries     ChallengeEntry[]
+  entries ChallengeEntry[]
 
   @@index([isActive, endsAt])
   @@map("micro_challenges")
 }
 
 model ChallengeEntry {
-  id           String         @id @default(cuid())
-  challenge    MicroChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  challengeId  String
-  userId       String
-  value        Float
-  taskId       String?
-  submittedAt  DateTime       @default(now())
+  id          String         @id @default(cuid())
+  challenge   MicroChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId String
+  userId      String
+  value       Float
+  taskId      String?
+  submittedAt DateTime       @default(now())
 
   @@unique([challengeId, userId])
   @@map("challenge_entries")
 }
 
 model VariableReward {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  type      String   // surprise_bonus, spotlight, badge_upgrade, streak_save
+  type      String // surprise_bonus, spotlight, badge_upgrade, streak_save
   title     String
   message   String
-  points    Int      @default(0)
+  points    Int       @default(0)
   metadata  Json?
-  claimed   Boolean  @default(false)
+  claimed   Boolean   @default(false)
   expiresAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId, claimed])
   @@map("variable_rewards")
@@ -908,25 +908,25 @@ enum PostStatus {
 }
 
 model ContentPost {
-  id             String     @id @default(cuid())
+  id             String         @id @default(cuid())
   title          String
-  content        String?    @db.Text
-  platform       String     // youtube, x, instagram, linkedin, facebook
+  content        String?        @db.Text
+  platform       String // youtube, x, instagram, linkedin, facebook
   brandId        String
-  brand          Brand      @relation(fields: [brandId], references: [id])
-  status         PostStatus @default(DRAFT)
+  brand          Brand          @relation(fields: [brandId], references: [id])
+  status         PostStatus     @default(DRAFT)
   scheduledAt    DateTime?
   publishedAt    DateTime?
   publishedUrl   String?
-  platformPostId String?    // ID from the platform after publishing
-  mediaUrls      Json?      // array of media URLs
-  metadata       Json?      // platform-specific data (hashtags, thumbnails, etc.)
-  taskId         String?    // link to originating PMS task
+  platformPostId String? // ID from the platform after publishing
+  mediaUrls      Json? // array of media URLs
+  metadata       Json? // platform-specific data (hashtags, thumbnails, etc.)
+  taskId         String? // link to originating PMS task
   createdById    String
   errorMessage   String?
   analytics      PostAnalytics?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([brandId, platform])
   @@index([status, scheduledAt])
@@ -946,7 +946,7 @@ model PostAnalytics {
   reach          Int         @default(0)
   impressions    Int         @default(0)
   engagementRate Float       @default(0)
-  rawData        Json?       // full platform analytics response
+  rawData        Json? // full platform analytics response
   lastSyncedAt   DateTime    @default(now())
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -955,39 +955,39 @@ model PostAnalytics {
 }
 
 model PlatformConnection {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   brandId        String
-  brand          Brand    @relation(fields: [brandId], references: [id])
-  platform       String   // youtube, x, instagram, linkedin, facebook
-  accessToken    String?  @db.Text
-  refreshToken   String?  @db.Text
-  accountId      String?  // platform account/page ID
+  brand          Brand     @relation(fields: [brandId], references: [id])
+  platform       String // youtube, x, instagram, linkedin, facebook
+  accessToken    String?   @db.Text
+  refreshToken   String?   @db.Text
+  accountId      String? // platform account/page ID
   accountName    String?
   tokenExpiresAt DateTime?
-  isActive       Boolean  @default(true)
-  config         Json?    // platform-specific config
-  connectedAt    DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive       Boolean   @default(true)
+  config         Json? // platform-specific config
+  connectedAt    DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@unique([brandId, platform])
   @@map("platform_connections")
 }
 
 model ContentCalendarEntry {
-  id            String   @id @default(cuid())
-  title         String
-  description   String?
-  brandId       String
-  platform      String
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  brandId         String
+  platform        String
   deliverableType String // video, carousel, reel, thread, post, story
-  date          DateTime
-  assigneeId    String?
-  status        String   @default("planned") // planned, in_progress, ready, posted
-  postId        String?  // links to ContentPost when created
-  metadata      Json?
-  createdById   String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  date            DateTime
+  assigneeId      String?
+  status          String   @default("planned") // planned, in_progress, ready, posted
+  postId          String? // links to ContentPost when created
+  metadata        Json?
+  createdById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([brandId, date])
   @@index([date])
@@ -1010,9 +1010,9 @@ model Announcement {
   type         String               @default("general") // general, urgent, policy, celebration
   priority     AnnouncementPriority @default(NORMAL)
   scope        String               @default("org") // org, department, brand
-  scopeId      String?              // departmentId or brandId if scoped
+  scopeId      String? // departmentId or brandId if scoped
   authorId     String
-  departmentId String?              // null = org-wide
+  departmentId String? // null = org-wide
   isPinned     Boolean              @default(false)
   expiresAt    DateTime?
   readBy       AnnouncementRead[]
@@ -1036,31 +1036,31 @@ model AnnouncementRead {
 }
 
 model FeedbackChannel {
-  id          String           @id @default(cuid())
+  id          String          @id @default(cuid())
   name        String
   description String?
-  type        String           @default("suggestion") // suggestion, concern, idea, general
-  isAnonymous Boolean          @default(true)
-  isActive    Boolean          @default(true)
+  type        String          @default("suggestion") // suggestion, concern, idea, general
+  isAnonymous Boolean         @default(true)
+  isActive    Boolean         @default(true)
   entries     FeedbackEntry[]
-  createdAt   DateTime         @default(now())
+  createdAt   DateTime        @default(now())
 
   @@map("feedback_channels")
 }
 
 model FeedbackEntry {
-  id        String          @id @default(cuid())
-  channel   FeedbackChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  channelId String
-  userId    String?         // null if anonymous
-  content   String          @db.Text
-  status    String          @default("open") // open, acknowledged, in_progress, resolved, closed
-  response  String?         @db.Text
+  id          String          @id @default(cuid())
+  channel     FeedbackChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId   String
+  userId      String? // null if anonymous
+  content     String          @db.Text
+  status      String          @default("open") // open, acknowledged, in_progress, resolved, closed
+  response    String?         @db.Text
   respondedBy String?
   respondedAt DateTime?
-  upvotes   Int             @default(0)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  upvotes     Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@index([channelId, status])
   @@map("feedback_entries")
@@ -1079,51 +1079,51 @@ enum ArticleStatus {
 }
 
 model ArticleCategory {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
+  id          String            @id @default(cuid())
+  name        String            @unique
+  slug        String            @unique
   description String?
-  color       String?   // hex color for UI
+  color       String? // hex color for UI
   parentId    String?
   parent      ArticleCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
   children    ArticleCategory[] @relation("CategoryTree")
   articles    Article[]
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime          @default(now())
 
   @@map("article_categories")
 }
 
 model Article {
-  id            String        @id @default(cuid())
-  title         String
-  slug          String        @unique
-  excerpt       String?       @db.Text
-  body          String?       @db.Text  // rich text / markdown
-  status        ArticleStatus @default(IDEA)
-  categoryId    String?
-  category      ArticleCategory? @relation(fields: [categoryId], references: [id])
-  brandId       String?
-  brand         Brand?        @relation("ArticleBrand", fields: [brandId], references: [id])
-  tags          String[]      // array of tag strings
-  coverImageUrl String?
-  seoTitle      String?
+  id             String             @id @default(cuid())
+  title          String
+  slug           String             @unique
+  excerpt        String?            @db.Text
+  body           String?            @db.Text // rich text / markdown
+  status         ArticleStatus      @default(IDEA)
+  categoryId     String?
+  category       ArticleCategory?   @relation(fields: [categoryId], references: [id])
+  brandId        String?
+  brand          Brand?             @relation("ArticleBrand", fields: [brandId], references: [id])
+  tags           String[] // array of tag strings
+  coverImageUrl  String?
+  seoTitle       String?
   seoDescription String?
-  authorId      String
-  author        User          @relation("ArticleAuthor", fields: [authorId], references: [id])
-  editorId      String?       // assigned editor
-  editor        User?         @relation("ArticleEditor", fields: [editorId], references: [id])
-  reviewerId    String?       // assigned reviewer
-  reviewer      User?         @relation("ArticleReviewer", fields: [reviewerId], references: [id])
-  wordCount     Int           @default(0)
-  readTimeMin   Int           @default(0)
-  publishedAt   DateTime?
-  scheduledAt   DateTime?
-  metadata      Json?         // custom fields, layout config
-  versions      ArticleVersion[]
-  media         ArticleMedia[]
-  comments      EditorialComment[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  authorId       String
+  author         User               @relation("ArticleAuthor", fields: [authorId], references: [id])
+  editorId       String? // assigned editor
+  editor         User?              @relation("ArticleEditor", fields: [editorId], references: [id])
+  reviewerId     String? // assigned reviewer
+  reviewer       User?              @relation("ArticleReviewer", fields: [reviewerId], references: [id])
+  wordCount      Int                @default(0)
+  readTimeMin    Int                @default(0)
+  publishedAt    DateTime?
+  scheduledAt    DateTime?
+  metadata       Json? // custom fields, layout config
+  versions       ArticleVersion[]
+  media          ArticleMedia[]
+  comments       EditorialComment[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   @@index([status, categoryId])
   @@index([authorId, status])
@@ -1149,18 +1149,18 @@ model ArticleVersion {
 }
 
 model ArticleMedia {
-  id        String   @id @default(cuid())
-  article   Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
-  articleId String?
-  fileName  String
-  fileUrl   String
-  fileType  String   // image, video, document, audio
-  fileSize  Int      @default(0) // bytes
-  altText   String?
-  caption   String?
+  id           String   @id @default(cuid())
+  article      Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  articleId    String?
+  fileName     String
+  fileUrl      String
+  fileType     String // image, video, document, audio
+  fileSize     Int      @default(0) // bytes
+  altText      String?
+  caption      String?
   uploadedById String
   uploadedBy   User     @relation("MediaUploader", fields: [uploadedById], references: [id])
-  createdAt DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   @@index([articleId])
   @@index([fileType])
@@ -1185,22 +1185,22 @@ model EditorialComment {
 // ─── Client Portal ─────────────────────────────────────
 
 model ClientDeliverable {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   clientId     String
   brandId      String
   title        String
-  description  String?  @db.Text
-  type         String   // video, article, graphic, report, social_post
+  description  String?   @db.Text
+  type         String // video, article, graphic, report, social_post
   fileUrl      String?
   thumbnailUrl String?
-  status       String   @default("pending") // pending, ready_for_review, approved, revision_requested, final
-  taskId       String?  // links to originating PMS task
-  postId       String?  // links to ContentPost if applicable
-  feedback     String?  @db.Text
+  status       String    @default("pending") // pending, ready_for_review, approved, revision_requested, final
+  taskId       String? // links to originating PMS task
+  postId       String? // links to ContentPost if applicable
+  feedback     String?   @db.Text
   approvedAt   DateTime?
   approvedBy   String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([clientId, brandId])
   @@index([status])
@@ -1212,9 +1212,9 @@ model ClientReport {
   clientId    String
   brandId     String
   title       String
-  period      String   // "2026-03", "2026-Q1"
+  period      String // "2026-03", "2026-Q1"
   type        String   @default("monthly") // weekly, monthly, quarterly
-  metrics     Json     // {views, engagement, posts_published, top_content, growth}
+  metrics     Json // {views, engagement, posts_published, top_content, growth}
   summary     String?  @db.Text
   generatedAt DateTime @default(now())
 
@@ -1226,15 +1226,15 @@ model ClientReport {
 // ─── GI: Pattern History (Adolescent) ──────────────────
 
 model GIPatternLog {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   userId       String?
   departmentId String?
-  patternType  String   // velocity_trend, quality_trend, workload_shift, engagement_drop, collaboration_pattern
-  description  String   @db.Text
-  data         Json     // {trend, periods, values, comparison}
-  severity     String   @default("info") // info, warning, critical
-  isActive     Boolean  @default(true)
-  detectedAt   DateTime @default(now())
+  patternType  String // velocity_trend, quality_trend, workload_shift, engagement_drop, collaboration_pattern
+  description  String    @db.Text
+  data         Json // {trend, periods, values, comparison}
+  severity     String    @default("info") // info, warning, critical
+  isActive     Boolean   @default(true)
+  detectedAt   DateTime  @default(now())
   expiresAt    DateTime?
 
   @@index([userId, patternType])
@@ -1261,30 +1261,30 @@ model GIMotivationProfile {
 // ─── GI: Adult (v4) — Predictive & Autonomous ──────────
 
 enum GIActionStatus {
-  PENDING     // Awaiting approval (Tier 2)
-  APPROVED    // Approved by user
-  EXECUTED    // Auto-executed (Tier 3/4)
-  REJECTED    // User rejected
-  UNDONE      // User undid the action
-  FAILED      // Execution failed
+  PENDING // Awaiting approval (Tier 2)
+  APPROVED // Approved by user
+  EXECUTED // Auto-executed (Tier 3/4)
+  REJECTED // User rejected
+  UNDONE // User undid the action
+  FAILED // Execution failed
 }
 
 model GIAutonomousAction {
   id           String         @id @default(cuid())
-  actionType   String         // task_reassignment, deadline_extension, workload_rebalance, scheduling, notification_batch
-  tier         Int            // 1=inform, 2=suggest, 3=act_notify, 4=act_silent
+  actionType   String // task_reassignment, deadline_extension, workload_rebalance, scheduling, notification_batch
+  tier         Int // 1=inform, 2=suggest, 3=act_notify, 4=act_silent
   status       GIActionStatus @default(PENDING)
   description  String         @db.Text
-  targetUserId String?        // user affected by the action
-  targetEntity String?        // e.g. "task:cuid123" or "dept:cuid456"
-  actionData   Json           // {type-specific payload for execution}
+  targetUserId String? // user affected by the action
+  targetEntity String? // e.g. "task:cuid123" or "dept:cuid456"
+  actionData   Json // {type-specific payload for execution}
   reasoning    String?        @db.Text // why the GI decided to take this action
-  result       Json?          // outcome data after execution
-  triggeredBy  String?        // prediction or pattern that triggered this
-  approvedById String?        // who approved (for Tier 2)
+  result       Json? // outcome data after execution
+  triggeredBy  String? // prediction or pattern that triggered this
+  approvedById String? // who approved (for Tier 2)
   executedAt   DateTime?
   undoneAt     DateTime?
-  expiresAt    DateTime?      // auto-expire pending actions
+  expiresAt    DateTime? // auto-expire pending actions
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -1295,23 +1295,23 @@ model GIAutonomousAction {
 }
 
 model GIPrediction {
-  id           String   @id @default(cuid())
-  type         String   // deadline_risk, capacity_crunch, quality_decline, burnout_risk, bottleneck_forming, dependency_stall
-  confidence   Float    // 0-1 confidence score
-  severity     String   @default("medium") // low, medium, high, critical
+  id           String    @id @default(cuid())
+  type         String // deadline_risk, capacity_crunch, quality_decline, burnout_risk, bottleneck_forming, dependency_stall
+  confidence   Float // 0-1 confidence score
+  severity     String    @default("medium") // low, medium, high, critical
   title        String
-  description  String   @db.Text
-  data         Json     // {prediction-specific data, evidence, factors}
+  description  String    @db.Text
+  data         Json // {prediction-specific data, evidence, factors}
   targetUserId String?
   departmentId String?
-  entityRef    String?  // "task:id", "dept:id", etc.
-  isActive     Boolean  @default(true)
-  actionTaken  String?  // what was done about it
-  actionId     String?  // links to GIAutonomousAction
-  accuracy     Float?   // retrospective: was the prediction correct? 0-1
+  entityRef    String? // "task:id", "dept:id", etc.
+  isActive     Boolean   @default(true)
+  actionTaken  String? // what was done about it
+  actionId     String? // links to GIAutonomousAction
+  accuracy     Float? // retrospective: was the prediction correct? 0-1
   resolvedAt   DateTime?
   predictsAt   DateTime // when the predicted event is expected to occur
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
   @@index([type, isActive])
   @@index([targetUserId, isActive])
@@ -1321,18 +1321,18 @@ model GIPrediction {
 }
 
 model GILearningLog {
-  id            String   @id @default(cuid())
-  category      String   // rhythm, preference, pattern, correction, outcome
-  key           String   // e.g. "team_peak_hours", "approval_avg_time", "dept_velocity_baseline"
-  value         Json     // learned data
-  confidence    Float    @default(0.5) // how confident in this learning
-  observations  Int      @default(1) // number of data points
-  departmentId  String?
-  userId        String?
-  isActive      Boolean  @default(true)
-  lastObserved  DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  category     String // rhythm, preference, pattern, correction, outcome
+  key          String // e.g. "team_peak_hours", "approval_avg_time", "dept_velocity_baseline"
+  value        Json // learned data
+  confidence   Float    @default(0.5) // how confident in this learning
+  observations Int      @default(1) // number of data points
+  departmentId String?
+  userId       String?
+  isActive     Boolean  @default(true)
+  lastObserved DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@unique([category, key, departmentId, userId])
   @@index([category, isActive])
@@ -1342,19 +1342,19 @@ model GILearningLog {
 // ─── Skills Ecosystem ─────────────────────────────────────
 
 model Skill {
-  id            String             @id @default(cuid())
-  path          String             @unique  // e.g. "/narrative/editorial/topic-selection.md"
-  domain        String             // signals, narrative, production, platforms, distribution, analytics, brand, gi, workflows, system
-  module        String             // khabri, yantri, pms, relay, hoccr, daftar, gi
-  name          String
-  description   String?            @db.Text
-  version       Int                @default(1)
-  isActive      Boolean            @default(true)
-  metadata      Json?              // extra config: trigger, inputs, outputs, dependencies, scripts
-  executions    SkillExecution[]
-  learningLogs  SkillLearningLog[]
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id           String             @id @default(cuid())
+  path         String             @unique // e.g. "/narrative/editorial/topic-selection.md"
+  domain       String // signals, narrative, production, platforms, distribution, analytics, brand, gi, workflows, system
+  module       String // khabri, yantri, pms, relay, hoccr, daftar, gi
+  name         String
+  description  String?            @db.Text
+  version      Int                @default(1)
+  isActive     Boolean            @default(true)
+  metadata     Json? // extra config: trigger, inputs, outputs, dependencies, scripts
+  executions   SkillExecution[]
+  learningLogs SkillLearningLog[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
   @@index([domain])
   @@index([module])
@@ -1366,18 +1366,18 @@ model SkillExecution {
   id               String   @id @default(cuid())
   skill            Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
   skillId          String
-  deliverableId    String?  // links to the deliverable this execution produced
+  deliverableId    String? // links to the deliverable this execution produced
   brandId          String?
   platform         String?
-  inputContext      Json     // what context was provided
-  outputSummary     Json     // what the skill produced
-  modelUsed        String   // which LLM processed this skill
+  inputContext     Json // what context was provided
+  outputSummary    Json // what the skill produced
+  modelUsed        String // which LLM processed this skill
   tokensUsed       Int?
   durationMs       Int?
-  performanceScore Float?   // scored later by analytics (0-10)
+  performanceScore Float? // scored later by analytics (0-10)
   status           String   @default("completed") // completed, failed, partial
   errorMessage     String?  @db.Text
-  executedById     String?  // user who triggered, null if system
+  executedById     String? // user who triggered, null if system
   executedAt       DateTime @default(now())
 
   @@index([skillId, executedAt])
@@ -1391,7 +1391,7 @@ model SkillLearningLog {
   id          String   @id @default(cuid())
   skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
   skillId     String
-  entry       Json     // the learning entry: { pattern, recommendation, data, metrics }
+  entry       Json // the learning entry: { pattern, recommendation, data, metrics }
   source      String   @default("auto") // "auto" or "manual" (admin-edited)
   periodStart DateTime
   periodEnd   DateTime
@@ -1420,22 +1420,22 @@ model Trend {
 }
 
 model Signal {
-  id                String                  @id @default(cuid())
-  trend             Trend                   @relation(fields: [trendId], references: [id], onDelete: Cascade)
+  id                String                      @id @default(cuid())
+  trend             Trend                       @relation(fields: [trendId], references: [id], onDelete: Cascade)
   trendId           String
   title             String
-  content           String?                 @db.Text
+  content           String?                     @db.Text
   source            String
-  sourceCredibility Float?                  // 0-1 score
-  eventType         String?                 // war, political, economic, social, etc.
-  stakeholders      Json?                   // Key people/orgs involved
-  eventMarkers      Json?                   // Timestamps, locations, key facts
-  visualAnchors     Json?                   // Image URLs, video clips, infographic links
-  geoRelevance      Json?                   // { "india": 0.9, "us": 0.3, "global": 0.7 }
-  sentiment         String?                 // positive, negative, neutral, mixed
+  sourceCredibility Float? // 0-1 score
+  eventType         String? // war, political, economic, social, etc.
+  stakeholders      Json? // Key people/orgs involved
+  eventMarkers      Json? // Timestamps, locations, key facts
+  visualAnchors     Json? // Image URLs, video clips, infographic links
+  geoRelevance      Json? // { "india": 0.9, "us": 0.3, "global": 0.7 }
+  sentiment         String? // positive, negative, neutral, mixed
   embedding         Unsupported("vector(768)")? // Embeddings for similarity search
-  detectedAt        DateTime                @default(now())
-  isDuplicate       Boolean                 @default(false)
+  detectedAt        DateTime                    @default(now())
+  isDuplicate       Boolean                     @default(false)
   duplicateOfId     String?
 
   @@index([trendId])
@@ -1451,7 +1451,7 @@ model TrendRelation {
   relatedTrend   Trend  @relation("RelatedTrend", fields: [relatedTrendId], references: [id], onDelete: Cascade)
   relatedTrendId String
   relationship   String // "causes", "related_to", "contradicts", "escalates"
-  strength       Float  // 0-1
+  strength       Float // 0-1
 
   @@unique([sourceTrendId, relatedTrendId])
   @@map("trend_relations")
@@ -1460,19 +1460,19 @@ model TrendRelation {
 // ─── Content Performance Tracking ───────────────────────
 
 model ContentPerformance {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   deliverableId    String
   brandId          String
   platform         String
   publishedAt      DateTime?
-  metrics          Json     // { views, likes, comments, shares, retention, ctr, etc. }
+  metrics          Json // { views, likes, comments, shares, retention, ctr, etc. }
   revenueGenerated Float?
   skillsUsed       String[] // Skill paths that created this content
   narrativeAngle   String?
   hookType         String?
-  performanceTier  String?  // "top_10", "above_avg", "average", "below_avg", "poor"
-  benchmarkDelta   Float?   // % above or below brand+platform average
-  lastUpdated      DateTime @updatedAt
+  performanceTier  String? // "top_10", "above_avg", "average", "below_avg", "poor"
+  benchmarkDelta   Float? // % above or below brand+platform average
+  lastUpdated      DateTime  @updatedAt
 
   @@index([brandId, platform])
   @@index([performanceTier])
@@ -1483,14 +1483,14 @@ model StrategyTest {
   id         String    @id @default(cuid())
   name       String
   hypothesis String    @db.Text
-  skillPath  String    // Which skill is being tested
+  skillPath  String // Which skill is being tested
   brandId    String
   platform   String
-  variant    String    // "A" or "B"
+  variant    String // "A" or "B"
   startDate  DateTime
   endDate    DateTime?
   results    Json?
-  conclusion String?   // "A wins", "B wins", "inconclusive"
+  conclusion String? // "A wins", "B wins", "inconclusive"
   status     String    @default("active") // active, completed, cancelled
 
   @@index([status])
@@ -1501,20 +1501,20 @@ model StrategyTest {
 // ─── Multi-Tenant SaaS Foundation ───────────────────────
 
 model Organization {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
-  domain        String?  @unique // custom domain
-  logo          String?
-  plan          String   @default("starter") // starter, professional, enterprise
-  planExpiresAt DateTime?
-  settings      Json?    // org-level settings (timezone, locale, branding)
-  features      Json?    // feature flags per plan
-  maxUsers      Int      @default(10)
-  isActive      Boolean  @default(true)
-  onboardingStep String  @default("created") // created, profile, departments, invite, complete
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  domain         String?   @unique // custom domain
+  logo           String?
+  plan           String    @default("starter") // starter, professional, enterprise
+  planExpiresAt  DateTime?
+  settings       Json? // org-level settings (timezone, locale, branding)
+  features       Json? // feature flags per plan
+  maxUsers       Int       @default(10)
+  isActive       Boolean   @default(true)
+  onboardingStep String    @default("created") // created, profile, departments, invite, complete
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   subscriptions SaaSSubscription[]
   products      SaaSProduct[]
@@ -1523,40 +1523,40 @@ model Organization {
 }
 
 model SaaSProduct {
-  id             String   @id @default(cuid())
+  id             String        @id @default(cuid())
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
-  product        String   // daftar, hoccr, relay, yantri, khabri
+  product        String // daftar, hoccr, relay, yantri, khabri
   displayName    String
-  description    String?  @db.Text
-  isActive       Boolean  @default(true)
-  config         Json?    // product-specific configuration
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  description    String?       @db.Text
+  isActive       Boolean       @default(true)
+  config         Json? // product-specific configuration
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  subscriptions  SaaSSubscription[]
+  subscriptions SaaSSubscription[]
 
   @@unique([organizationId, product])
   @@map("saas_products")
 }
 
 model SaaSSubscription {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  productId      String
-  product        SaaSProduct  @relation(fields: [productId], references: [id])
-  plan           String       // starter, professional, enterprise
-  status         String       @default("active") // active, trial, past_due, cancelled, paused
-  trialEndsAt    DateTime?
+  id                 String       @id @default(cuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  productId          String
+  product            SaaSProduct  @relation(fields: [productId], references: [id])
+  plan               String // starter, professional, enterprise
+  status             String       @default("active") // active, trial, past_due, cancelled, paused
+  trialEndsAt        DateTime?
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
-  amount         Float        @default(0)
-  currency       String       @default("INR")
-  metadata       Json?
-  cancelledAt    DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  amount             Float        @default(0)
+  currency           String       @default("INR")
+  metadata           Json?
+  cancelledAt        DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   @@unique([organizationId, productId])
   @@index([status])
@@ -1570,24 +1570,25 @@ model SaaSSubscription {
 model EmployeeProfile {
   id             String   @id @default(cuid())
   userId         String   @unique
-  sentimentScore Float?   // 0.0 to 10.0 (Tracked by GI interactions)
+  sentimentScore Float? // 0.0 to 10.0 (Tracked by GI interactions)
   capacity       Int      @default(100) // Percentage of workload
   skills         String[] // e.g., ["Video Editing", "Copywriting"]
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  updatedAt      DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
 
   @@map("employee_profiles")
 }
 
 model DepartmentMetrics {
-  id             String     @id @default(cuid())
-  departmentId   String     @unique
-  velocity       Float      // Average tasks completed per week
-  openBlockers   Int        @default(0)
+  id           String @id @default(cuid())
+  departmentId String @unique
+  velocity     Float // Average tasks completed per week
+  openBlockers Int    @default(0)
 
-  department     Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  recordedAt     DateTime   @default(now())
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  recordedAt DateTime   @default(now())
 
   @@map("department_metrics")
 }
+

@@ -1,113 +1,91 @@
-# Skill: Learning Cycle Report
-## Module: hoccr
-## Trigger: End of weekly/monthly learning cycle
-## Inputs: all_skill_scores, all_performance_data, strategy_test_results, period
-## Outputs: learning_report, skill_updates, recommendations
-## Dependencies: analytics/feedback/skill-performance-scoring.md, analytics/performance/performance-attribution.md
-## Scripts: none
+# Learning Cycle Report
 
----
+## Module
+Analytics
+
+## Trigger
+- End of monthly learning cycle
+- On-demand by Admin for strategic review
+- Quarterly comprehensive review
+
+## Inputs
+- `period`: Report period (start, end)
+- `skillScores`: All skill scores for the period
+- `contentPerformances`: All content performance records
+- `testResults`: A/B test outcomes
+- `audienceChanges`: Audience evolution data
+- `revenueData`: Revenue attribution data
 
 ## Instructions
 
-You are the Learning Cycle Report skill. You synthesize all performance and learning data from a period into a single actionable report for the team and the GI.
+You are the Learning Report Generator. You compile the complete monthly learning cycle into a comprehensive, actionable report for the Admin and Department Heads.
 
-### Report Sections
+### Report Structure
 
-**1. Executive Summary**
-- Overall content performance this period vs previous
-- Number of pieces published across all brands/platforms
-- Top performing content (title, platform, key metric)
-- Biggest improvement area
-- Biggest concern
+1. **Executive Summary**
+   - Overall content performance vs previous period
+   - Revenue summary and trend
+   - Key wins and losses
+   - Top 3 actionable recommendations
 
-**2. Skill Ecosystem Health**
-- Total skills active in the ecosystem
-- Skills by health category (star, solid, variable, struggling, untested)
-- Skills that improved this period
-- Skills that declined this period
-- New skills added or retired
+2. **Skill Ecosystem Health**
+   - Star performers (top 5 skills by score)
+   - Struggling skills (bottom 5, with revision recommendations)
+   - New skills added and their initial performance
+   - Skills with most improvement vs decline
 
-**3. Strategy Test Results**
-- Completed A/B tests and their conclusions
-- Active tests and interim results
-- Recommended new tests based on performance patterns
+3. **Content Performance Overview**
+   - Total content published (by brand, platform, format)
+   - Performance distribution (% top / above avg / avg / below avg / poor)
+   - Best performing content pieces and why
+   - Worst performing content pieces and lessons
 
-**4. Pattern Discovery**
-New patterns detected this period:
-- What content types are performing better/worse than usual?
-- What time slots are shifting in effectiveness?
-- What audience segments are growing/shrinking?
-- What topics have untapped potential?
+4. **A/B Test Results**
+   - Tests concluded this period
+   - Winners and their impact on skills
+   - Active tests and interim results
+   - Proposed tests for next period
 
-**5. Skill Update Recommendations**
-For each skill that needs revision:
-- Current version summary
-- What the data says
-- Specific recommended changes
-- Priority (urgent, normal, low)
+5. **Audience Intelligence**
+   - Audience growth/decline by platform
+   - Demographic shifts
+   - Interest evolution
+   - Engagement quality trends
 
-**6. Next Period Focus**
-- Top 3 priorities for the editorial team
-- Suggested strategy tests to run
-- Skills to watch closely
+6. **Revenue Analysis**
+   - Revenue by source, brand, platform
+   - Revenue per content piece trend
+   - Forecast for next period
+   - Monetization recommendations
 
-### Report Format
+7. **Recommendations for Next Period**
+   - Skill revisions needed
+   - Content strategy adjustments
+   - Platform focus changes
+   - Resource allocation suggestions
+
+### Output Format
+
 ```json
 {
-  "period": { "start": "2026-03-01", "end": "2026-03-31", "type": "monthly" },
-  "executive": {
-    "contentPublished": 48,
-    "avgPerformanceScore": 7.2,
-    "previousPeriodAvg": 6.8,
-    "change": "+5.9%",
-    "topContent": { "title": "...", "platform": "youtube", "views": 125000 },
-    "biggestImprovement": "Hook quality across all platforms",
-    "biggestConcern": "Instagram engagement rate declining 12%"
+  "period": { "start": "2026-02-01", "end": "2026-02-28" },
+  "executiveSummary": {
+    "totalContent": 48,
+    "avgPerformanceScore": 6.8,
+    "vsLastPeriod": "+0.4",
+    "revenue": 45000,
+    "revenueVsLastPeriod": "+8%",
+    "topWins": ["..."],
+    "topRecommendations": ["..."]
   },
-  "skillHealth": {
-    "total": 25,
-    "stars": 4,
-    "solid": 12,
-    "variable": 4,
-    "struggling": 3,
-    "untested": 2,
-    "improved": ["narrative/voice/hook-engineering.md", "platforms/youtube/title-engineering.md"],
-    "declined": ["distribution/cross-platform-scheduling.md"]
-  },
-  "strategyTests": {
-    "completed": [
-      { "name": "Hook A/B", "result": "Data-first hooks win by 23%", "action": "Updated hook-engineering.md" }
-    ],
-    "active": [],
-    "recommended": [
-      { "name": "Thumbnail style test", "hypothesis": "Face-forward thumbnails outperform text-heavy", "skill": "production/support/thumbnail-strategy.md" }
-    ]
-  },
-  "patterns": [
-    "Evening publishes (6-8 PM IST) consistently outperform morning publishes for political content",
-    "Explainer format overtaking quick-takes in retention metrics"
-  ],
-  "skillUpdates": [
-    {
-      "skillPath": "distribution/cross-platform-scheduling.md",
-      "priority": "urgent",
-      "recommendation": "Update IST prime time windows based on last 30 days of data"
-    }
-  ],
-  "nextPeriodFocus": [
-    "Double down on data-first hooks across all platforms",
-    "Run thumbnail style A/B test",
-    "Investigate Instagram engagement decline — possible algorithm change"
-  ]
+  "skillHealth": { "stars": [], "struggling": [], "improved": [], "declined": [] },
+  "contentPerformance": { "distribution": {}, "best": [], "worst": [] },
+  "tests": { "concluded": [], "active": [], "proposed": [] },
+  "audience": {},
+  "revenue": {},
+  "nextPeriodRecommendations": []
 }
 ```
 
----
-
 ## Learning Log
-
-### Entry: Initial
-- Monthly reports are most useful for Admin strategic view
-- Weekly mini-reports (executive summary only) for department heads
-- Pattern discovery section is highest-value for editorial team
+<!-- Auto-updated by the learning loop -->

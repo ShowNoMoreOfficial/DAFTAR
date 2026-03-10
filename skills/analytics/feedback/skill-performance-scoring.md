@@ -1,96 +1,71 @@
-# Skill: Skill Performance Scoring
-## Module: hoccr
-## Trigger: Content performance data attributed (after performance-attribution runs)
-## Inputs: attribution_data, skill_execution_history, content_performance_records
-## Outputs: skill_scores, trending_skills, underperforming_skills, revision_recommendations
-## Dependencies: analytics/performance/performance-attribution.md
-## Scripts: none
+# Skill Performance Scoring
 
----
+## Module
+Analytics
+
+## Trigger
+- After each skill execution with performance outcome
+- During monthly learning cycle (batch scoring)
+- On-demand skill health assessment
+
+## Inputs
+- `skillPath`: Path to the skill being scored
+- `executions`: Array of recent executions with performance scores
+- `learningLogs`: Previous learning log entries for trend analysis
 
 ## Instructions
 
-You are the Skill Performance Scoring skill. You evaluate how well each skill file in the ecosystem is performing based on the outcomes of content that used it.
+You are the Skill Performance Scorer. You maintain objective performance scores for every skill in the ecosystem, enabling the leaderboard, health monitoring, and automated skill improvement.
 
-### Scoring Methodology
+### Scoring Dimensions
 
-For each skill that was used in producing content:
+1. **Effectiveness Score** (0-10)
+   - Does the skill output achieve its intended purpose?
+   - Measured by downstream content performance when this skill is used
+   - Compared against content produced without this skill
 
-1. **Collect all content that used this skill** in the scoring period
-2. **Get each content piece's performance score** from attribution data
-3. **Calculate the skill's contribution score** — weighted by how central the skill was:
-   - Primary skill (e.g., hook-engineering for hook quality): full weight
-   - Supporting skill (e.g., topic-selection for overall piece): 50% weight
-   - Contextual skill (e.g., brand identity loaded as context): 25% weight
+2. **Consistency Score** (0-10)
+   - How reliable is the skill output quality?
+   - Low variance = high consistency
+   - Measured by standard deviation of performance scores
 
-4. **Compute aggregate metrics:**
-   - Average performance score of content using this skill
-   - Trend: improving, stable, or declining over last 4 weeks
-   - Consistency: standard deviation of scores (low = reliable, high = variable)
-   - Sample size: number of content pieces using this skill
+3. **Efficiency Score** (0-10)
+   - Token usage relative to output quality
+   - Execution time relative to output quality
+   - Cost-effectiveness compared to alternatives
 
-### Skill Health Categories
+4. **Adaptability Score** (0-10)
+   - Does the skill perform well across different brands?
+   - Does it perform well across different platforms?
+   - How well does it handle edge cases?
 
-| Category | Criteria | Action |
-|----------|----------|--------|
-| `star` | Avg score ≥ 8.0, consistent, improving | Protect — don't change what's working |
-| `solid` | Avg score 6.0-7.9, consistent | Maintain, minor tweaks welcome |
-| `variable` | Avg score 5.0-7.9, high variance | Investigate — why inconsistent? |
-| `struggling` | Avg score < 5.0 OR declining trend | Priority revision needed |
-| `untested` | < 3 executions in period | Need more data before scoring |
+### Health Categories
 
-### Revision Recommendations
-
-For `struggling` or `variable` skills, generate specific recommendations:
-- What patterns correlate with high-performing uses of this skill?
-- What patterns correlate with low-performing uses?
-- Specific instruction changes to try
-- A/B test suggestions
+- **Star** (avg >= 8.0, consistency >= 0.7, not declining): Top performer
+- **Solid** (avg >= 6.0, consistency >= 0.6): Reliable performer
+- **Variable** (avg >= 5.0, consistency < 0.6): Inconsistent, needs investigation
+- **Struggling** (avg < 5.0): Underperforming, flag for revision
+- **Untested** (< 3 executions): Insufficient data
 
 ### Output Format
+
 ```json
 {
-  "scoringPeriod": { "start": "2026-03-01", "end": "2026-03-15" },
-  "skillScores": [
-    {
-      "skillPath": "narrative/voice/hook-engineering.md",
-      "avgScore": 8.4,
-      "trend": "improving",
-      "consistency": 0.85,
-      "sampleSize": 12,
-      "health": "star",
-      "topPattern": "Data-specific hooks with currency/numbers",
-      "bottomPattern": "Question-format hooks for geopolitical content",
-      "revision": null
-    },
-    {
-      "skillPath": "distribution/cross-platform-scheduling.md",
-      "avgScore": 5.2,
-      "trend": "declining",
-      "consistency": 0.62,
-      "sampleSize": 8,
-      "health": "struggling",
-      "topPattern": "Tuesday 6PM IST publishes",
-      "bottomPattern": "Weekend morning publishes",
-      "revision": "Update optimal time windows — current rules don't account for IST prime time shift"
-    }
-  ],
-  "summary": {
-    "totalSkillsScored": 15,
-    "stars": 3,
-    "solid": 7,
-    "variable": 2,
-    "struggling": 2,
-    "untested": 1
-  }
+  "skillPath": "narrative/voice/hook-engineering.md",
+  "overallScore": 8.2,
+  "health": "star",
+  "scores": {
+    "effectiveness": 8.5,
+    "consistency": 8.0,
+    "efficiency": 7.8,
+    "adaptability": 8.5
+  },
+  "trend": "improving",
+  "sampleSize": 45,
+  "recommendations": [],
+  "flagForRevision": false
 }
 ```
 
----
-
 ## Learning Log
-
-### Entry: Initial
-- Minimum 3 executions before scoring a skill — avoid overreacting to small samples
-- Hook engineering skill has been the most consistent performer in early testing
-- Distribution timing skills need the most revision — they were written with US audience assumptions
+<!-- Auto-updated by the learning loop -->

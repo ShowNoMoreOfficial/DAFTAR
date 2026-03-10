@@ -1,75 +1,65 @@
-# Skill: Revenue Attribution
-## Module: hoccr
-## Trigger: Monthly revenue reconciliation or on-demand
-## Inputs: revenue_data, content_performance, brand_data, platform_data
-## Outputs: revenue_by_content, revenue_by_brand, revenue_by_skill, forecasts
-## Dependencies: analytics/performance/performance-attribution.md
-## Scripts: none
+# Revenue Attribution
 
----
+## Module
+Analytics
+
+## Trigger
+- Monthly revenue analysis
+- When invoice is paid or revenue event recorded
+- During monthly learning cycle
+
+## Inputs
+- `period`: Analysis window (start, end dates)
+- `contentPerformances`: Content records with revenue data
+- `brandId`: Optional brand filter
 
 ## Instructions
 
-You are the Revenue Attribution skill. You track how content generates revenue and attribute it to brands, platforms, content types, and skills.
+You are the Revenue Attribution Analyst. You connect content performance to actual revenue generation, identifying which content, skills, and strategies drive the most business value.
 
-### Revenue Streams
+### Attribution Model
 
-**1. YouTube AdSense**
-- RPM (Revenue Per Mille) varies by topic and audience geography
-- India RPM: ₹50-200 ($0.60-2.40)
-- US/UK RPM: ₹400-1200 ($4.80-14.40)
-- Geopolitical/finance content commands premium RPM
-- Attribute to: specific video → skills that produced it
+1. **Direct Revenue Attribution**
+   - Ad revenue from platform monetization (YouTube AdSense, etc.)
+   - Sponsored content revenue tied to specific deliverables
+   - Affiliate/referral revenue from content links
 
-**2. Brand Sponsorships**
-- Per-video or per-series deals
-- Attribute to: brand relationship + content quality track record
-- Track sponsor retention rate (do they come back?)
+2. **Indirect Revenue Attribution**
+   - Brand growth contribution (subscriber/follower growth → future revenue capacity)
+   - Client acquisition (content that led to new client inquiries)
+   - Client retention (content performance maintaining client satisfaction)
 
-**3. Platform Bonuses**
-- YouTube Shorts Fund, X creator rewards, etc.
-- Attribute proportionally to platform-specific content
+3. **Skill-to-Revenue Mapping**
+   - Which skills contributed to highest-revenue content?
+   - ROI per skill execution (revenue generated / cost of execution)
+   - Skills with highest revenue potential but underutilized
 
-**4. Client Service Revenue**
-- Monthly retainers from clients (Breaking Tube, The Squirrels)
-- Attribute to: overall content quality and relationship health
-
-### Attribution Rules
-- Direct revenue (AdSense on a specific video) → attribute to that content's skills
-- Indirect revenue (sponsorship attracted by channel quality) → distribute across top-performing content
-- Recurring revenue (client retainers) → attribute to consistency metrics
+4. **Platform Revenue Efficiency**
+   - Revenue per content piece by platform
+   - Revenue per hour of production by platform
+   - Platform-specific monetization optimization opportunities
 
 ### Output Format
+
 ```json
 {
-  "period": "2026-03",
-  "totalRevenue": 485000,
-  "currency": "INR",
+  "period": { "start": "2026-02-01", "end": "2026-02-28" },
+  "totalRevenue": 45000,
   "byBrand": [
-    { "brand": "Breaking Tube", "revenue": 320000, "change": "+12%" },
-    { "brand": "The Squirrels", "revenue": 165000, "change": "+8%" }
+    { "brandId": "...", "brandName": "Breaking Tube", "revenue": 32000, "contentPieces": 24 }
   ],
   "byPlatform": [
-    { "platform": "youtube", "revenue": 410000, "share": "84.5%" },
-    { "platform": "x", "revenue": 25000, "share": "5.2%" },
-    { "platform": "instagram", "revenue": 15000, "share": "3.1%" },
-    { "platform": "sponsorship", "revenue": 35000, "share": "7.2%" }
+    { "platform": "youtube", "revenue": 38000, "revenuePerPiece": 1900 }
   ],
-  "bySkill": [
-    { "skillPath": "narrative/voice/hook-engineering.md", "attributedRevenue": 125000, "note": "High retention → higher watch time → more ad impressions" },
-    { "skillPath": "platforms/youtube/title-engineering.md", "attributedRevenue": 98000, "note": "Higher CTR → more views → more revenue" }
+  "topRevenueSkills": [
+    { "skillPath": "platforms/youtube/title-engineering.md", "attributedRevenue": 12000 }
   ],
-  "topContent": [
-    { "title": "Iran-Israel: The $4.2B Question", "revenue": 42000, "platform": "youtube" }
+  "recommendations": [
+    "YouTube title-engineering skill drives 30% of attributed revenue — prioritize",
+    "Instagram content has lowest revenue-per-piece — evaluate strategy"
   ]
 }
 ```
 
----
-
 ## Learning Log
-
-### Entry: Initial
-- YouTube AdSense is 80%+ of current revenue
-- US/UK audience segments generate 3-5x revenue per view vs India segments
-- The Squirrels (English, international) has higher RPM than Breaking Tube (Hinglish, India-primary)
+<!-- Auto-updated by the learning loop -->
