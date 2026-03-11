@@ -184,10 +184,14 @@ function AnnouncementsTab() {
   };
 
   const handleMarkRead = async (id: string) => {
-    await fetch(`/api/communication/announcements/${id}/read`, { method: "POST" });
-    setAnnouncements((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, isRead: true } : a))
-    );
+    try {
+      const res = await fetch(`/api/communication/announcements/${id}/read`, { method: "POST" });
+      if (res.ok) {
+        setAnnouncements((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, isRead: true } : a))
+        );
+      }
+    } catch { /* network error — state stays unchanged */ }
   };
 
   if (loading) {
@@ -434,33 +438,39 @@ function FeedbackTab() {
   const [responseText, setResponseText] = useState("");
 
   const handleUpdateStatus = async (entryId: string, status: string) => {
-    const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (res.ok && selectedChannel) fetchEntries(selectedChannel);
+    try {
+      const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok && selectedChannel) fetchEntries(selectedChannel);
+    } catch { /* network error */ }
   };
 
   const handleRespond = async (entryId: string) => {
     if (!responseText.trim()) return;
-    const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ response: responseText.trim(), status: "acknowledged" }),
-    });
-    if (res.ok) {
-      setRespondingTo(null);
-      setResponseText("");
-      if (selectedChannel) fetchEntries(selectedChannel);
-    }
+    try {
+      const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response: responseText.trim(), status: "acknowledged" }),
+      });
+      if (res.ok) {
+        setRespondingTo(null);
+        setResponseText("");
+        if (selectedChannel) fetchEntries(selectedChannel);
+      }
+    } catch { /* network error */ }
   };
 
   const handleUpvote = async (entryId: string) => {
-    const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
-      method: "POST",
-    });
-    if (res.ok && selectedChannel) fetchEntries(selectedChannel);
+    try {
+      const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
+        method: "POST",
+      });
+      if (res.ok && selectedChannel) fetchEntries(selectedChannel);
+    } catch { /* network error */ }
   };
 
   if (loading) {

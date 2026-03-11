@@ -107,13 +107,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  SALARY: "bg-[rgba(59,130,246,0.1)]0",
-  SOFTWARE: "bg-[rgba(168,85,247,0.1)]0",
-  EQUIPMENT: "bg-[rgba(245,158,11,0.1)]0",
-  TRAVEL: "bg-[rgba(20,184,166,0.1)]0",
-  MARKETING: "bg-[rgba(236,72,153,0.1)]0",
-  PRODUCTION: "bg-[rgba(99,102,241,0.1)]0",
-  OFFICE: "bg-[rgba(249,115,22,0.1)]0",
+  SALARY: "bg-[rgba(59,130,246,0.1)]",
+  SOFTWARE: "bg-[rgba(168,85,247,0.1)]",
+  EQUIPMENT: "bg-[rgba(245,158,11,0.1)]",
+  TRAVEL: "bg-[rgba(20,184,166,0.1)]",
+  MARKETING: "bg-[rgba(236,72,153,0.1)]",
+  PRODUCTION: "bg-[rgba(99,102,241,0.1)]",
+  OFFICE: "bg-[rgba(249,115,22,0.1)]",
   MISCELLANEOUS: "bg-gray-400",
 };
 
