@@ -93,7 +93,7 @@ async function main() {
       name: "Test Head HR",
       role: "HEAD_HR",
       isActive: true,
-      primaryDepartmentId: mediaDept.id,
+      primaryDeptId: mediaDept.id,
     },
   });
 
@@ -105,7 +105,7 @@ async function main() {
       name: "Test Dept Head",
       role: "DEPT_HEAD",
       isActive: true,
-      primaryDepartmentId: mediaDept.id,
+      primaryDeptId: mediaDept.id,
     },
   });
 
@@ -117,7 +117,7 @@ async function main() {
       name: "Test Member One",
       role: "MEMBER",
       isActive: true,
-      primaryDepartmentId: mediaDept.id,
+      primaryDeptId: mediaDept.id,
     },
   });
 
@@ -129,7 +129,7 @@ async function main() {
       name: "Test Member Two",
       role: "MEMBER",
       isActive: true,
-      primaryDepartmentId: techDept.id,
+      primaryDeptId: techDept.id,
     },
   });
 
@@ -163,7 +163,7 @@ async function main() {
       name: "Test Contractor",
       role: "CONTRACTOR",
       isActive: true,
-      primaryDepartmentId: techDept.id,
+      primaryDeptId: techDept.id,
     },
   });
 
@@ -220,7 +220,7 @@ async function main() {
       tone: "sharp, witty, analytical",
       identityMarkdown:
         "The Squirrels is an English-language political commentary channel focused on Indian geopolitics.",
-      activePlatforms: ["youtube", "x"],
+      activePlatforms: JSON.stringify(["youtube", "x"]),
       config: {
         language: "English",
         genre: "Political Commentary",
@@ -241,7 +241,7 @@ async function main() {
       tone: "direct, bold, confrontational",
       identityMarkdown:
         "Breaking Tube is a Hinglish political analysis channel for the Indian audience.",
-      activePlatforms: ["youtube"],
+      activePlatforms: JSON.stringify(["youtube"]),
       config: {
         language: "Hinglish",
         genre: "Political Analysis",
