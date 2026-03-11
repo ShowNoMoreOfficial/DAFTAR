@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
+import { getAuthSession } from "@/lib/api-utils";
+import { daftarEvents } from "@/lib/event-bus";
 
 // ─── GET /api/yantri/deliverables/[id] ─────────────────────────────────────────────
 
@@ -66,7 +68,41 @@ export async function PATCH(
     const updated = await prisma.deliverable.update({
       where: { id },
       data: { status: "APPROVED" },
+      include: { brand: { select: { id: true, name: true } } },
     });
+
+    // Auto-create PMS task for approved deliverable
+    const session = await getAuthSession();
+    const creatorId = session?.user?.id;
+    if (creatorId) {
+      const task = await prisma.task.create({
+        data: {
+          title: `Publish: ${updated.brand?.name ?? "Brand"} — ${updated.platform.replace(/_/g, " ")}`,
+          description: `Approved Yantri deliverable ready for publishing.\n\nDeliverable ID: ${id}\nPipeline: ${updated.pipelineType}\nPlatform: ${updated.platform}`,
+          status: "CREATED",
+          priority: "HIGH",
+          creatorId,
+          brandId: updated.brandId,
+        },
+      });
+
+      await prisma.taskActivity.create({
+        data: {
+          taskId: task.id,
+          actorId: creatorId,
+          action: "created",
+        },
+      });
+
+      daftarEvents.emitEvent("PMS_TASK_CREATED", {
+        taskId: task.id,
+        title: task.title,
+        creatorId,
+        source: "yantri-deliverable-approval",
+        deliverableId: id,
+      });
+    }
+
     return NextResponse.json(updated);
   }
 

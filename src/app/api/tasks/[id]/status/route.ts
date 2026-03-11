@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-utils";
 import type { TaskStatus } from "@prisma/client";
 import { notifyTaskStatusChanged, notifyDeliverableReady } from "@/lib/notifications";
-import { recordActivity, checkTaskAchievements } from "@/lib/gamification";
+import { recordActivity, checkTaskAchievements, checkSpeedAchievements, checkQualityAchievements } from "@/lib/gamification";
 import { daftarEvents } from "@/lib/event-bus";
 
 const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
@@ -104,15 +104,28 @@ export async function PATCH(
 
   // Gamification: record activity and check achievements on completion
   if (status === "DONE" && task.assigneeId) {
-    const xp = task.difficultyWeight * 10;
+    const priorityMultiplier: Record<string, number> = {
+      URGENT: 2,
+      HIGH: 1.5,
+      MEDIUM: 1,
+      LOW: 0.8,
+    };
+    const multiplier = priorityMultiplier[task.priority] ?? 1;
+    const xp = Math.round(task.difficultyWeight * 10 * multiplier);
     recordActivity(task.assigneeId, xp).catch(() => {});
     checkTaskAchievements(task.assigneeId).catch(() => {});
+    checkSpeedAchievements(task.assigneeId, task.startedAt, updated.completedAt as Date | null).catch(() => {});
+  }
+
+  // Quality achievement check on approval
+  if (status === "APPROVED" && task.assigneeId) {
+    checkQualityAchievements(task.assigneeId).catch(() => {});
   }
 
   // Update credibility score on task completion
   if (status === "DONE" && task.assigneeId) {
     const isOnTime = task.dueDate ? new Date() <= task.dueDate : true;
-    await prisma.credibilityScore.upsert({
+    const score = await prisma.credibilityScore.upsert({
       where: { userId: task.assigneeId },
       create: {
         userId: task.assigneeId,
@@ -125,6 +138,69 @@ export async function PATCH(
         tasksCompleted: { increment: 1 },
         tasksOnTime: isOnTime ? { increment: 1 } : undefined,
         tasksLate: isOnTime ? undefined : { increment: 1 },
+      },
+    });
+
+    // Recalculate all score components
+    const totalCompleted = score.tasksCompleted;
+    const totalOnTime = score.tasksOnTime;
+    const reliability = totalCompleted > 0 ? (totalOnTime / totalCompleted) * 100 : 50;
+
+    // Quality: ratio of tasks approved without revision (REVIEW→APPROVED, not REVIEW→IN_PROGRESS→REVIEW→APPROVED)
+    const approvedDirectly = await prisma.taskActivity.count({
+      where: {
+        actorId: task.assigneeId,
+        action: "status_changed",
+        field: "status",
+        oldValue: "REVIEW",
+        newValue: "APPROVED",
+      },
+    });
+    const revisionsCount = await prisma.taskActivity.count({
+      where: {
+        task: { assigneeId: task.assigneeId },
+        action: "status_changed",
+        field: "status",
+        oldValue: "REVIEW",
+        newValue: "IN_PROGRESS",
+      },
+    });
+    const totalReviewed = approvedDirectly + revisionsCount;
+    const quality = totalReviewed > 0 ? (approvedDirectly / totalReviewed) * 100 : 50;
+
+    // Consistency: based on how regularly tasks are completed over last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentCompletions = await prisma.task.findMany({
+      where: {
+        assigneeId: task.assigneeId,
+        status: "DONE",
+        completedAt: { gte: thirtyDaysAgo },
+      },
+      select: { completedAt: true },
+    });
+    let consistency = 50;
+    if (recentCompletions.length >= 3) {
+      const dates = recentCompletions
+        .map((t) => t.completedAt?.getTime() || 0)
+        .sort((a, b) => a - b);
+      const gaps = dates.slice(1).map((d, i) => d - dates[i]);
+      const avgGap = gaps.reduce((s, g) => s + g, 0) / gaps.length;
+      const variance = gaps.reduce((s, g) => s + Math.pow(g - avgGap, 2), 0) / gaps.length;
+      const stdDevDays = Math.sqrt(variance) / (1000 * 60 * 60 * 24);
+      // Lower stddev = more consistent = higher score (cap at 100)
+      consistency = Math.min(100, Math.max(0, 100 - stdDevDays * 10));
+    }
+
+    const overallScore = Math.round((reliability + quality + consistency) / 3 * 10) / 10;
+
+    await prisma.credibilityScore.update({
+      where: { userId: task.assigneeId },
+      data: {
+        reliability: Math.round(reliability * 10) / 10,
+        quality: Math.round(quality * 10) / 10,
+        consistency: Math.round(consistency * 10) / 10,
+        overallScore,
       },
     });
   }

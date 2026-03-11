@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, forbidden, notFound, badRequest } from "@/lib/api-utils";
 
+// POST /api/communication/feedback/entries/[id] — upvote a feedback entry
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getAuthSession();
+  if (!session) return unauthorized();
+
+  const { id } = await params;
+
+  const entry = await prisma.feedbackEntry.findUnique({ where: { id } });
+  if (!entry) return notFound("Feedback entry not found");
+
+  const updated = await prisma.feedbackEntry.update({
+    where: { id },
+    data: { upvotes: { increment: 1 } },
+  });
+
+  return NextResponse.json({ upvotes: updated.upvotes });
+}
+
 // PATCH /api/communication/feedback/entries/[id] — update entry (respond, change status)
 // ADMIN/HEAD_HR only for response
 export async function PATCH(

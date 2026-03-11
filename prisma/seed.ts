@@ -60,87 +60,7 @@ async function main() {
   });
   console.log(`Admin user created: ${admin.email}`);
 
-  // ─── Module Registry ───────────────────────────────────
-  const modules = await Promise.all([
-    prisma.module.upsert({
-      where: { name: "yantri" },
-      update: { baseUrl: "https://yantri-nine.vercel.app" },
-      create: {
-        name: "yantri",
-        displayName: "Yantri",
-        description: "AI Narrative Intelligence Orchestrator",
-        icon: "Brain",
-        baseUrl: "https://yantri-nine.vercel.app",
-        order: 1,
-      },
-    }),
-    prisma.module.upsert({
-      where: { name: "khabri" },
-      update: {},
-      create: {
-        name: "khabri",
-        displayName: "Khabri",
-        description: "Signal Detection Engine",
-        icon: "Newspaper",
-        baseUrl: "http://localhost:3002",
-        order: 2,
-      },
-    }),
-    prisma.module.upsert({
-      where: { name: "relay" },
-      update: {},
-      create: {
-        name: "relay",
-        displayName: "Relay",
-        description: "Content Distribution Platform",
-        icon: "Send",
-        baseUrl: "http://localhost:3003",
-        isActive: false,
-        order: 3,
-      },
-    }),
-    prisma.module.upsert({
-      where: { name: "pms" },
-      update: {},
-      create: {
-        name: "pms",
-        displayName: "PMS",
-        description: "Project Management System",
-        icon: "Kanban",
-        baseUrl: "http://localhost:3004",
-        isActive: false,
-        order: 4,
-      },
-    }),
-    prisma.module.upsert({
-      where: { name: "hoccr" },
-      update: {},
-      create: {
-        name: "hoccr",
-        displayName: "HOCCR",
-        description: "Hiring, Operations, Culture, Communication, Reporting",
-        icon: "Users",
-        baseUrl: "http://localhost:3005",
-        isActive: false,
-        order: 5,
-      },
-    }),
-    prisma.module.upsert({
-      where: { name: "vritti" },
-      update: {},
-      create: {
-        name: "vritti",
-        displayName: "Vritti",
-        description: "Content Management System",
-        icon: "FileText",
-        baseUrl: "http://localhost:3006",
-        isActive: false,
-        order: 6,
-      },
-    }),
-  ]);
-
-  console.log(`Registered ${modules.length} modules`);
+  // Module registry removed — modules are now part of the monolith sidebar, not a separate DB table.
 
   // ─── Sample Client & Brands ────────────────────────────
   const client = await prisma.client.upsert({
@@ -986,7 +906,11 @@ async function main() {
   ];
 
   for (const article of articles) {
-    await prisma.article.create({ data: article });
+    await prisma.article.upsert({
+      where: { slug: article.slug },
+      update: {},
+      create: article,
+    });
   }
 
   console.log(`Created ${articles.length} demo articles`);

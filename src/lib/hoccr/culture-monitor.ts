@@ -134,6 +134,53 @@ async function handleTaskOverdue(payload: OverduePayload) {
   });
 }
 
+interface TaskStatusPayload {
+  taskId: string;
+  oldStatus: string;
+  newStatus: string;
+  actorId: string;
+}
+
+/**
+ * Handle PMS_TASK_STATUS_CHANGED events — boost sentiment on task completion.
+ * On-time completion: +0.2 sentiment
+ * Early completion (1+ day before deadline): +0.3 sentiment
+ */
+async function handleTaskCompleted(payload: TaskStatusPayload) {
+  if (payload.newStatus !== "DONE") return;
+
+  const task = await prisma.task.findUnique({
+    where: { id: payload.taskId },
+    select: { assigneeId: true, dueDate: true, completedAt: true },
+  });
+  if (!task?.assigneeId) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: task.assigneeId },
+    select: {
+      primaryDeptId: true,
+      employeeProfile: { select: { id: true, sentimentScore: true } },
+    },
+  });
+  if (!user?.employeeProfile) return;
+
+  const currentSentiment = user.employeeProfile.sentimentScore ?? 5.0;
+  const now = new Date();
+  const isOnTime = !task.dueDate || now <= task.dueDate;
+
+  if (!isOnTime) return; // No boost for late completions
+
+  // Early completion: 1+ day before deadline → bigger boost
+  const isEarly = task.dueDate && (task.dueDate.getTime() - now.getTime()) > 24 * 60 * 60 * 1000;
+  const boost = isEarly ? 0.3 : 0.2;
+  const newSentiment = Math.min(10, currentSentiment + boost);
+
+  await prisma.employeeProfile.update({
+    where: { id: user.employeeProfile.id },
+    data: { sentimentScore: newSentiment },
+  });
+}
+
 /**
  * Register the culture monitor on the event bus.
  * Call this from instrumentation.ts on server startup.
@@ -142,6 +189,13 @@ export function registerCultureMonitor() {
   daftarEvents.on("PMS_TASK_OVERDUE", (payload: OverduePayload) => {
     handleTaskOverdue(payload).catch((err) => {
       console.error("[culture-monitor] Failed to handle overdue event:", err);
+    });
+  });
+
+  // Positive sentiment tracking: boost on task completion
+  daftarEvents.on("PMS_TASK_STATUS_CHANGED", (payload: TaskStatusPayload) => {
+    handleTaskCompleted(payload).catch((err) => {
+      console.error("[culture-monitor] Failed to handle task completed event:", err);
     });
   });
 }

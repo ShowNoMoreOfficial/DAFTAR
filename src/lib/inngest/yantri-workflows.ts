@@ -27,6 +27,7 @@ import {
   type SignalContext,
   type FactCheckResult,
 } from "@/lib/yantri/fact-checker";
+import { routeToModel } from "@/lib/yantri/model-router";
 import type { Prisma } from "@prisma/client";
 
 // ─── Constants ────────────────────────────────────────────
@@ -185,29 +186,63 @@ export const generateDeliverableV2 = inngest.createFunction(
       let draftContent = await step.run(
         `draft-${route.platform.toLowerCase()}`,
         async () => {
-          const result = await skillOrchestrator.executeSkill({
-            skillPath: route.primarySkill,
-            context: {
-              narrative: narrativeMarkdown,
-              brand: brandContext,
-              targetPlatform: route.platform,
-              contentType: route.contentType,
-              skillChain: route.skillPaths,
-            },
-            brandId,
-            platform: engineRouter.getPlatform(route.contentType),
-          });
+          // Validate skill file exists before attempting
+          const skillFileExists = await skillOrchestrator.skillExists(
+            route.primarySkill
+          );
 
-          if (!result.success) {
-            throw new Error(
-              `Draft generation failed for ${route.platform}: ${result.error}`
+          if (skillFileExists) {
+            const result = await skillOrchestrator.executeSkill({
+              skillPath: route.primarySkill,
+              context: {
+                narrative: narrativeMarkdown,
+                brand: brandContext,
+                targetPlatform: route.platform,
+                contentType: route.contentType,
+                skillChain: route.skillPaths,
+              },
+              brandId,
+              platform: engineRouter.getPlatform(route.contentType),
+            });
+
+            if (result.success) {
+              return (
+                (result.output as { draft?: string }).draft ??
+                narrativeMarkdown
+              );
+            }
+
+            console.warn(
+              `[yantri] Skill execution failed for ${route.primarySkill}: ${result.error}. Falling back to direct LLM call.`
+            );
+          } else {
+            console.warn(
+              `[yantri] Skill file not found: ${route.primarySkill}. Falling back to direct LLM call.`
             );
           }
 
-          return (
-            (result.output as { draft?: string }).draft ??
-            narrativeMarkdown
+          // Fallback: call LLM directly without skill file
+          const fallbackResult = await routeToModel(
+            "drafting",
+            `You are a content creator for the brand "${brandContext.brandName}". ` +
+              (brandContext.voiceInstructions
+                ? `Voice guidelines: ${brandContext.voiceInstructions}\n\n`
+                : "") +
+              `Generate a ${route.contentType.replace(/_/g, " ").toLowerCase()} for ${route.platform}.\n` +
+              `Respond with JSON containing a "draft" field with the full content.`,
+            `Create content based on:\n\n${narrativeMarkdown}`
           );
+
+          if (
+            typeof fallbackResult.parsed === "object" &&
+            fallbackResult.parsed !== null
+          ) {
+            return (
+              (fallbackResult.parsed as { draft?: string }).draft ??
+              fallbackResult.raw
+            );
+          }
+          return fallbackResult.raw || narrativeMarkdown;
         }
       );
 

@@ -16,6 +16,15 @@ export async function GET(req: NextRequest) {
   rangeStart.setDate(1);
   rangeStart.setHours(0, 0, 0, 0);
 
+  // Auto-mark overdue invoices: SENT invoices past their due date
+  await prisma.invoice.updateMany({
+    where: {
+      status: "SENT",
+      dueDate: { lt: new Date() },
+    },
+    data: { status: "OVERDUE" },
+  });
+
   const [allPaidInvoices, outstandingInvoices, allExpenses, clientRevenue] = await Promise.all([
     // Total revenue: sum of PAID invoices
     prisma.invoice.findMany({

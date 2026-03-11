@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
+import { routeToModel, type TaskType } from "@/lib/yantri/model-router";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -31,6 +32,8 @@ export interface SkillExecutionRequest {
   brandId?: string;
   platform?: string;
   deliverableId?: string;
+  /** Skip LLM call — return only the assembled prompt (for callers that handle LLM themselves) */
+  skipLlm?: boolean;
 }
 
 export interface SkillExecutionResult {
@@ -75,6 +78,20 @@ const DOMAIN_MODULE_MAP: Record<string, string> = {
   gi: "gi",
   workflows: "daftar",
   system: "daftar",
+};
+
+// Domain to LLM task type mapping
+const DOMAIN_TASK_MAP: Record<string, TaskType> = {
+  signals: "analysis",
+  narrative: "drafting",
+  production: "packaging",
+  platforms: "drafting",
+  distribution: "packaging",
+  analytics: "analysis",
+  brand: "analysis",
+  gi: "analysis",
+  workflows: "strategy",
+  system: "analysis",
 };
 
 // ─── Parser ───────────────────────────────────────────────
@@ -187,9 +204,8 @@ export class SkillOrchestrator {
   }
 
   /**
-   * Execute a skill: load md → combine with context → return prompt-ready data
-   * Note: Actual LLM call is handled by the caller (API route or GI engine)
-   * This returns the assembled prompt + tracks execution in DB
+   * Execute a skill: load md → combine with context → call LLM → return generated content.
+   * Set `skipLlm: true` to only assemble the prompt without calling the LLM.
    */
   async executeSkill(
     req: SkillExecutionRequest
@@ -199,17 +215,86 @@ export class SkillOrchestrator {
     try {
       const skill = await this.loadSkill(req.skillPath);
 
-      // Build the prompt that would be sent to the LLM
+      // Build the prompt from skill instructions + context
       const prompt = this.buildPrompt(skill, req.context);
 
+      // If skipLlm, return prompt-only (for GI skill-engine and other prompt assemblers)
+      if (req.skipLlm) {
+        const durationMs = Date.now() - startTime;
+        await this.recordExecution({
+          skillPath: req.skillPath,
+          context: req.context,
+          output: { prompt, instructions: skill.instructions },
+          model: "prompt-only",
+          durationMs,
+          executedById: req.executedById,
+          brandId: req.brandId,
+          platform: req.platform,
+          deliverableId: req.deliverableId,
+          status: "completed",
+        });
+        return {
+          success: true,
+          output: {
+            prompt,
+            skillName: skill.meta.name,
+            domain: skill.domain,
+            instructions: skill.instructions,
+            learningLog: skill.learningLog,
+            dependencies: skill.meta.dependencies,
+            scripts: skill.meta.scripts,
+          },
+          durationMs,
+        };
+      }
+
+      // Determine LLM task type from domain
+      const taskType: TaskType =
+        DOMAIN_TASK_MAP[skill.domain] ?? "drafting";
+
+      // System prompt: skill instructions + learning context
+      const systemPrompt = [
+        `You are executing the "${skill.meta.name}" skill.`,
+        skill.instructions,
+        skill.learningLog
+          ? `\n## Previous Learnings\n${skill.learningLog}`
+          : "",
+        "\nRespond with valid JSON containing your output. Include a `draft` field with the main generated text content.",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      // User message: the context data
+      const userMessage = `Process the following context and produce the output:\n\n${JSON.stringify(req.context, null, 2)}`;
+
+      // Call LLM via model-router
+      const llmResult = await routeToModel(taskType, systemPrompt, userMessage, {
+        temperature: taskType === "analysis" ? 0.2 : 0.5,
+      });
+
       const durationMs = Date.now() - startTime;
+
+      // Parse LLM output
+      const parsedOutput =
+        typeof llmResult.parsed === "object" && llmResult.parsed !== null
+          ? (llmResult.parsed as Record<string, unknown>)
+          : { draft: llmResult.raw };
+
+      const output: Record<string, unknown> = {
+        ...parsedOutput,
+        draft: parsedOutput.draft ?? llmResult.raw,
+        prompt,
+        skillName: skill.meta.name,
+        domain: skill.domain,
+        modelUsed: llmResult.model,
+      };
 
       // Record execution in DB
       await this.recordExecution({
         skillPath: req.skillPath,
         context: req.context,
-        output: { prompt, instructions: skill.instructions },
-        model: req.model ?? "system",
+        output,
+        model: llmResult.model,
         durationMs,
         executedById: req.executedById,
         brandId: req.brandId,
@@ -220,15 +305,8 @@ export class SkillOrchestrator {
 
       return {
         success: true,
-        output: {
-          prompt,
-          skillName: skill.meta.name,
-          domain: skill.domain,
-          instructions: skill.instructions,
-          learningLog: skill.learningLog,
-          dependencies: skill.meta.dependencies,
-          scripts: skill.meta.scripts,
-        },
+        output,
+        tokensUsed: undefined, // Gemini SDK doesn't expose token count in current wrapper
         durationMs,
       };
     } catch (error) {
@@ -534,6 +612,22 @@ export class SkillOrchestrator {
           execs.length > 0 ? successful.length / execs.length : 1,
       };
     });
+  }
+
+  /**
+   * Check if a skill file exists without loading it
+   */
+  async skillExists(skillPath: string): Promise<boolean> {
+    const normalized = skillPath.replace(/\\/g, "/");
+    // Check cache first
+    if (SKILL_CACHE.has(normalized)) return true;
+    const fullPath = path.join(SKILLS_DIR, normalized);
+    try {
+      await fs.access(fullPath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**

@@ -10,9 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Settings, LogOut, User } from "lucide-react";
+import { Search, Settings, LogOut, User, Menu } from "lucide-react";
 import { CommandSearch } from "./command-search";
 import { NotificationBell } from "./notification-bell";
+import { useSidebarStore } from "@/store/sidebar-store";
 
 interface TopBarProps {
   user: {
@@ -73,6 +74,7 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
   const pathname = usePathname();
   const breadcrumb = buildBreadcrumb(pathname);
   const [searchOpen, setSearchOpen] = useState(false);
+  const { setMobileOpen } = useSidebarStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,9 +89,16 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white px-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white px-3 md:px-6">
+        {/* Left: Hamburger (mobile) + Breadcrumb */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="rounded-lg p-1.5 text-[#6B7280] hover:bg-[#F0F2F5] md:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <nav className="hidden items-center gap-1.5 text-sm md:flex">
           {breadcrumb.map((crumb, i) => (
             <span key={crumb.href} className="flex items-center gap-1.5">
               {i > 0 && <span className="text-[#9CA3AF]">/</span>}
@@ -104,16 +113,17 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
               </span>
             </span>
           ))}
-        </nav>
+          </nav>
+        </div>
 
         {/* Center: Search */}
         <button
           onClick={() => setSearchOpen(true)}
-          className="flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-[#F8F9FA] px-3 py-1.5 text-sm text-[#9CA3AF] transition-colors hover:bg-[#F0F2F5]"
+          className="flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-[#F8F9FA] px-2 py-1.5 text-sm text-[#9CA3AF] transition-colors hover:bg-[#F0F2F5] md:px-3"
         >
           <Search className="h-3.5 w-3.5" />
-          <span>Search...</span>
-          <kbd className="ml-4 rounded bg-[#E5E7EB] px-1.5 py-0.5 font-mono text-[10px] text-[#6B7280]">
+          <span className="hidden sm:inline">Search...</span>
+          <kbd className="ml-4 hidden rounded bg-[#E5E7EB] px-1.5 py-0.5 font-mono text-[10px] text-[#6B7280] sm:inline">
             Ctrl+K
           </kbd>
         </button>

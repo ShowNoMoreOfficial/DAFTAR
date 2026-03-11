@@ -20,6 +20,8 @@ interface SelectOption {
 
 interface LineItem {
   description: string;
+  qty: number;
+  rate: number;
   amount: number;
 }
 
@@ -51,7 +53,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
   const totalAmount = effectiveAmount + taxAmount;
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { description: "", amount: 0 }]);
+    setLineItems([...lineItems, { description: "", qty: 1, rate: 0, amount: 0 }]);
   };
 
   const removeLineItem = (index: number) => {
@@ -60,8 +62,13 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
 
   const updateLineItem = (index: number, field: keyof LineItem, value: string | number) => {
     const updated = [...lineItems];
-    if (field === "amount") {
-      updated[index] = { ...updated[index], amount: parseFloat(value as string) || 0 };
+    const numVal = parseFloat(value as string) || 0;
+    if (field === "qty") {
+      updated[index] = { ...updated[index], qty: numVal, amount: numVal * updated[index].rate };
+    } else if (field === "rate") {
+      updated[index] = { ...updated[index], rate: numVal, amount: updated[index].qty * numVal };
+    } else if (field === "amount") {
+      updated[index] = { ...updated[index], amount: numVal };
     } else {
       updated[index] = { ...updated[index], [field]: value as string };
     }
@@ -176,6 +183,13 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
             </div>
             {lineItems.length > 0 && (
               <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[10px] font-medium text-[#9CA3AF]">
+                  <span className="flex-1">Description</span>
+                  <span className="w-16 text-center">Qty</span>
+                  <span className="w-24 text-center">Rate</span>
+                  <span className="w-24 text-center">Amount</span>
+                  <span className="w-8" />
+                </div>
                 {lineItems.map((item, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <Input
@@ -186,13 +200,25 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
                     />
                     <Input
                       type="number"
+                      min="1"
+                      step="1"
+                      value={item.qty || ""}
+                      onChange={(e) => updateLineItem(i, "qty", e.target.value)}
+                      placeholder="Qty"
+                      className="w-16"
+                    />
+                    <Input
+                      type="number"
                       min="0"
                       step="0.01"
-                      value={item.amount || ""}
-                      onChange={(e) => updateLineItem(i, "amount", e.target.value)}
-                      placeholder="Amount"
-                      className="w-28"
+                      value={item.rate || ""}
+                      onChange={(e) => updateLineItem(i, "rate", e.target.value)}
+                      placeholder="Rate"
+                      className="w-24"
                     />
+                    <span className="w-24 text-right text-sm text-[#6B7280]">
+                      {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(item.amount)}
+                    </span>
                     <button
                       type="button"
                       onClick={() => removeLineItem(i)}
@@ -271,7 +297,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
                 <div className="space-y-0.5 mb-1">
                   {lineItems.filter(i => i.description).map((item, i) => (
                     <div key={i} className="flex justify-between text-xs text-[#9CA3AF]">
-                      <span>{item.description}</span>
+                      <span>{item.description} {item.qty > 1 ? `(${item.qty} x ${new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(item.rate)})` : ""}</span>
                       <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(item.amount)}</span>
                     </div>
                   ))}

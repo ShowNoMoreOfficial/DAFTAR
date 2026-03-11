@@ -1694,6 +1694,157 @@ async function generateAutonomousActionSuggestions(
           }
         }
       }
+
+      // ── Deadline extension: tasks at risk of missing due date ──
+    {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const atRiskTasks = await prisma.task.findMany({
+        where: {
+          departmentId: user.primaryDeptId,
+          status: { in: ["ASSIGNED", "IN_PROGRESS"] },
+          dueDate: {
+            gt: new Date(),
+            lt: tomorrow,
+          },
+        },
+        select: { id: true, title: true, assigneeId: true, status: true, dueDate: true },
+        take: 5,
+      });
+
+      if (atRiskTasks.length > 0) {
+        const tierConfig = await prisma.gITierAssignment.findUnique({
+          where: { actionType: "deadline_extension" },
+        });
+        const tier = tierConfig?.tier ?? 2;
+
+        for (const task of atRiskTasks.slice(0, 3)) {
+          const existing = await prisma.gIAutonomousAction.findFirst({
+            where: {
+              targetEntity: `task:${task.id}`,
+              actionType: "deadline_extension",
+              status: "PENDING",
+            },
+          });
+
+          if (!existing && task.dueDate) {
+            const newDueDate = new Date(task.dueDate.getTime() + 48 * 60 * 60 * 1000);
+            await prisma.gIAutonomousAction.create({
+              data: {
+                actionType: "deadline_extension",
+                tier,
+                description: `Extend deadline for "${task.title}" — due in <24h but still ${task.status === "ASSIGNED" ? "not started" : "in progress"}`,
+                targetUserId: task.assigneeId,
+                targetEntity: `task:${task.id}`,
+                actionData: {
+                  taskId: task.id,
+                  currentDueDate: task.dueDate.toISOString(),
+                  newDueDate: newDueDate.toISOString(),
+                },
+                reasoning: `Task "${task.title}" is due within 24 hours but is still in ${task.status} status. A 48-hour extension prevents a missed deadline.`,
+                expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+              },
+            });
+
+            insights.push({
+              id: `gi-deadline-risk-${task.id}`,
+              type: "suggestion",
+              priority: "high",
+              title: "Deadline at Risk",
+              message: `"${task.title}" is due within 24 hours but hasn't been completed. GI suggests a 48h extension.`,
+              action: { label: "Review action", href: "/admin/gi/actions" },
+              context: context.module,
+            });
+          }
+        }
+      }
+    }
+
+    // ── Workload rebalance: detect team imbalance ──
+    {
+      const taskCounts = await prisma.task.groupBy({
+        by: ["assigneeId"],
+        where: {
+          departmentId: user.primaryDeptId,
+          status: { in: ["ASSIGNED", "IN_PROGRESS", "REVIEW"] },
+          assigneeId: { not: null },
+        },
+        _count: { id: true },
+      });
+
+      if (taskCounts.length >= 2) {
+        const counts = taskCounts.map((t) => t._count.id);
+        const sorted = [...counts].sort((a, b) => a - b);
+        const median = sorted[Math.floor(sorted.length / 2)];
+        const overloaded = taskCounts.filter(
+          (t) => t._count.id >= median * 3 && t._count.id >= 6
+        );
+        const underloaded = taskCounts
+          .filter((t) => t._count.id <= Math.max(median, 1))
+          .sort((a, b) => a._count.id - b._count.id);
+
+        if (overloaded.length > 0 && underloaded.length > 0) {
+          const tierConfig = await prisma.gITierAssignment.findUnique({
+            where: { actionType: "workload_rebalance" },
+          });
+          const tier = tierConfig?.tier ?? 2;
+
+          for (const heavy of overloaded.slice(0, 2)) {
+            if (!heavy.assigneeId) continue;
+            const light = underloaded[0];
+            if (!light?.assigneeId) continue;
+
+            // Find the lowest-priority task to move
+            const taskToMove = await prisma.task.findFirst({
+              where: {
+                assigneeId: heavy.assigneeId,
+                status: { in: ["ASSIGNED", "IN_PROGRESS"] },
+              },
+              orderBy: { priority: "asc" },
+              select: { id: true, title: true },
+            });
+
+            if (!taskToMove) continue;
+
+            const existing = await prisma.gIAutonomousAction.findFirst({
+              where: {
+                targetEntity: `task:${taskToMove.id}`,
+                actionType: "workload_rebalance",
+                status: "PENDING",
+              },
+            });
+
+            if (!existing) {
+              await prisma.gIAutonomousAction.create({
+                data: {
+                  actionType: "workload_rebalance",
+                  tier,
+                  description: `Reassign "${taskToMove.title}" to balance workload (${heavy._count.id} tasks vs team median ${median})`,
+                  targetUserId: heavy.assigneeId,
+                  targetEntity: `task:${taskToMove.id}`,
+                  actionData: {
+                    taskId: taskToMove.id,
+                    newAssigneeId: light.assigneeId,
+                    originalAssigneeId: heavy.assigneeId,
+                  },
+                  reasoning: `Team member has ${heavy._count.id} active tasks vs median of ${median}. Rebalancing one task to a less-loaded teammate prevents burnout and bottlenecks.`,
+                  expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
+                },
+              });
+
+              insights.push({
+                id: `gi-rebalance-${heavy.assigneeId}`,
+                type: "suggestion",
+                priority: "medium",
+                title: "Workload Imbalance Detected",
+                message: `One team member has ${heavy._count.id} active tasks (team median: ${median}). GI suggests reassigning one task.`,
+                action: { label: "Review action", href: "/admin/gi/actions" },
+                context: context.module,
+              });
+            }
+          }
+        }
+      }
+    }
     }
   } catch {
     // Non-critical

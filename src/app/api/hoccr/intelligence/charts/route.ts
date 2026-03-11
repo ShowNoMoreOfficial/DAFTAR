@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
 import type { Role } from "@prisma/client";
 
 /**
  * GET /api/hoccr/intelligence/charts
  *
- * Returns mocked time-series data for:
+ * Returns real time-series data for:
  * - Company Velocity: tasks completed per week over the last 8 weeks
  * - Department Capacity: percentage workload per department
  */
@@ -18,57 +19,84 @@ export async function GET() {
     return forbidden();
   }
 
-  // Generate week labels for the last 8 weeks
-  const weekLabels: string[] = [];
   const now = new Date();
+
+  // ── Company Velocity: real tasks completed per week ──────────
+  const companyVelocity: { week: string; tasks: number }[] = [];
+
   for (let i = 7; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i * 7);
-    weekLabels.push(
-      d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })
-    );
+    const weekEnd = new Date(now);
+    weekEnd.setDate(weekEnd.getDate() - i * 7);
+    const weekStart = new Date(weekEnd);
+    weekStart.setDate(weekStart.getDate() - 7);
+
+    const count = await prisma.task.count({
+      where: {
+        status: "DONE",
+        completedAt: { gte: weekStart, lt: weekEnd },
+      },
+    });
+
+    companyVelocity.push({
+      week: weekEnd.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+      }),
+      tasks: count,
+    });
   }
 
-  const companyVelocity = [
-    { week: weekLabels[0], tasks: 18 },
-    { week: weekLabels[1], tasks: 24 },
-    { week: weekLabels[2], tasks: 21 },
-    { week: weekLabels[3], tasks: 30 },
-    { week: weekLabels[4], tasks: 27 },
-    { week: weekLabels[5], tasks: 35 },
-    { week: weekLabels[6], tasks: 32 },
-    { week: weekLabels[7], tasks: 38 },
-  ];
+  // ── Department Capacity: open tasks / headcount ──────────────
+  const departments = await prisma.department.findMany({
+    select: { id: true, name: true },
+  });
 
-  const departmentCapacity = [
-    { department: "Editorial", capacity: 72, headcount: 5 },
-    { department: "Production", capacity: 88, headcount: 4 },
-    { department: "Design", capacity: 65, headcount: 3 },
-    { department: "Growth", capacity: 45, headcount: 3 },
-    { department: "Tech", capacity: 91, headcount: 4 },
-    { department: "Finance", capacity: 30, headcount: 2 },
-    { department: "HR & Admin", capacity: 55, headcount: 2 },
-  ];
+  const departmentCapacity = await Promise.all(
+    departments.map(async (dept) => {
+      const headcount = await prisma.user.count({
+        where: { primaryDeptId: dept.id },
+      });
+
+      const openTasks = await prisma.task.count({
+        where: {
+          departmentId: dept.id,
+          status: { in: ["CREATED", "ASSIGNED", "IN_PROGRESS", "REVIEW"] },
+        },
+      });
+
+      // Capacity = open tasks per person (scaled to 0–100)
+      // 5 open tasks per person = 100% capacity
+      const capacity =
+        headcount > 0
+          ? Math.min(100, Math.round((openTasks / headcount / 5) * 100))
+          : 0;
+
+      return { department: dept.name, capacity, headcount };
+    })
+  );
+
+  // ── Summary ──────────────────────────────────────────────────
+  const totalVelocity = companyVelocity.reduce((s, w) => s + w.tasks, 0);
+  const avgWeeklyVelocity = Math.round(totalVelocity / companyVelocity.length);
+  const lastWeek = companyVelocity[companyVelocity.length - 1]?.tasks ?? 0;
+  const prevWeek = companyVelocity[companyVelocity.length - 2]?.tasks ?? 0;
+
+  const avgCapacity =
+    departmentCapacity.length > 0
+      ? Math.round(
+          departmentCapacity.reduce((s, d) => s + d.capacity, 0) /
+            departmentCapacity.length
+        )
+      : 0;
 
   return NextResponse.json({
     companyVelocity,
     departmentCapacity,
     summary: {
-      avgWeeklyVelocity: Math.round(
-        companyVelocity.reduce((s, w) => s + w.tasks, 0) /
-          companyVelocity.length
-      ),
-      velocityTrend:
-        companyVelocity[companyVelocity.length - 1].tasks >
-        companyVelocity[companyVelocity.length - 2].tasks
-          ? "up"
-          : "down",
-      avgCapacity: Math.round(
-        departmentCapacity.reduce((s, d) => s + d.capacity, 0) /
-          departmentCapacity.length
-      ),
-      overloadedDepts: departmentCapacity.filter((d) => d.capacity > 85)
-        .length,
+      avgWeeklyVelocity,
+      velocityTrend: lastWeek > prevWeek ? "up" : lastWeek < prevWeek ? "down" : "stable",
+      avgCapacity,
+      overloadedDepts: departmentCapacity.filter((d) => d.capacity > 85).length,
     },
   });
 }

@@ -36,7 +36,7 @@ export async function PATCH(
     }
 
     // Execute the action
-    const result = await executeGIAction(existing);
+    const result = await executeGIAction(existing, session.user.id);
 
     const updated = await prisma.gIAutonomousAction.update({
       where: { id },
@@ -70,7 +70,7 @@ export async function PATCH(
     }
 
     // Attempt to reverse the action
-    await reverseGIAction(existing);
+    await reverseGIAction(existing, session.user.id);
 
     const updated = await prisma.gIAutonomousAction.update({
       where: { id },
@@ -83,9 +83,32 @@ export async function PATCH(
   return badRequest("Unknown action");
 }
 
+// Log a TaskActivity record for GI actions
+async function logTaskActivity(
+  taskId: string,
+  actorId: string,
+  action: string,
+  details: string
+): Promise<void> {
+  try {
+    await prisma.taskActivity.create({
+      data: {
+        taskId,
+        actorId,
+        action,
+        field: "gi_action",
+        newValue: details,
+      },
+    });
+  } catch {
+    console.error("[GI Actions] Failed to log task activity");
+  }
+}
+
 // Execute a GI autonomous action based on its type
 async function executeGIAction(
-  action: { actionType: string; actionData: unknown; targetEntity: string | null }
+  action: { actionType: string; actionData: unknown; targetEntity: string | null },
+  approvedById: string
 ): Promise<Record<string, unknown>> {
   const data = action.actionData as Record<string, unknown>;
 
@@ -93,11 +116,16 @@ async function executeGIAction(
     case "task_reassignment": {
       const taskId = data.taskId as string;
       if (data.action === "escalate_review") {
-        // Move task back to IN_PROGRESS for re-review
         await prisma.task.update({
           where: { id: taskId },
           data: { status: "IN_PROGRESS", updatedAt: new Date() },
         });
+        await logTaskActivity(
+          taskId,
+          approvedById,
+          "GI_ESCALATE_REVIEW",
+          "GI auto-escalated: task moved from REVIEW to IN_PROGRESS (stuck >48h)"
+        );
         return { action: "escalated_review", taskId };
       }
       return { action: "no_op" };
@@ -106,11 +134,18 @@ async function executeGIAction(
     case "deadline_extension": {
       const taskId = data.taskId as string;
       const newDueDate = data.newDueDate as string;
+      const currentDueDate = data.currentDueDate as string;
       if (taskId && newDueDate) {
         await prisma.task.update({
           where: { id: taskId },
           data: { dueDate: new Date(newDueDate) },
         });
+        await logTaskActivity(
+          taskId,
+          approvedById,
+          "GI_DEADLINE_EXTENSION",
+          `GI extended deadline from ${currentDueDate || "unknown"} to ${newDueDate}`
+        );
         return { action: "deadline_extended", taskId, newDueDate };
       }
       return { action: "no_op" };
@@ -119,11 +154,18 @@ async function executeGIAction(
     case "workload_rebalance": {
       const taskId = data.taskId as string;
       const newAssigneeId = data.newAssigneeId as string;
+      const originalAssigneeId = data.originalAssigneeId as string;
       if (taskId && newAssigneeId) {
         await prisma.task.update({
           where: { id: taskId },
           data: { assigneeId: newAssigneeId },
         });
+        await logTaskActivity(
+          taskId,
+          approvedById,
+          "GI_WORKLOAD_REBALANCE",
+          `GI reassigned task from ${originalAssigneeId || "unknown"} to ${newAssigneeId} for workload balance`
+        );
         return { action: "task_reassigned", taskId, newAssigneeId };
       }
       return { action: "no_op" };
@@ -136,7 +178,8 @@ async function executeGIAction(
 
 // Reverse an executed GI action
 async function reverseGIAction(
-  action: { actionType: string; actionData: unknown; result: unknown }
+  action: { actionType: string; actionData: unknown; result: unknown },
+  undoneById: string
 ): Promise<void> {
   const data = action.actionData as Record<string, unknown>;
   const result = action.result as Record<string, unknown>;
@@ -149,6 +192,20 @@ async function reverseGIAction(
           where: { id: taskId },
           data: { status: "REVIEW" },
         });
+        await logTaskActivity(taskId, undoneById, "GI_UNDO_ESCALATION", "Undone: task restored to REVIEW status");
+      }
+      break;
+    }
+
+    case "deadline_extension": {
+      const taskId = data.taskId as string;
+      const currentDueDate = data.currentDueDate as string;
+      if (taskId && currentDueDate) {
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { dueDate: new Date(currentDueDate) },
+        });
+        await logTaskActivity(taskId, undoneById, "GI_UNDO_DEADLINE", `Undone: deadline restored to ${currentDueDate}`);
       }
       break;
     }
@@ -161,6 +218,7 @@ async function reverseGIAction(
           where: { id: taskId },
           data: { assigneeId: originalAssigneeId },
         });
+        await logTaskActivity(taskId, undoneById, "GI_UNDO_REBALANCE", `Undone: task reassigned back to original owner`);
       }
       break;
     }

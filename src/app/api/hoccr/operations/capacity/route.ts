@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized } from "@/lib/api-utils";
-
-const CAPACITY_THRESHOLD = 40; // max weighted capacity per user
+import { computeCapacity } from "@/lib/hoccr/capacity-engine";
+import type { TaskPriority } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -36,37 +36,26 @@ export async function GET(req: NextRequest) {
       primaryDeptId: true,
       assignedTasks: {
         where: { status: { notIn: ["DONE", "CANCELLED"] } },
-        select: { id: true, difficultyWeight: true, priority: true },
+        select: { id: true, priority: true },
       },
     },
     orderBy: { name: "asc" },
   });
 
   const capacityData = users.map((user) => {
-    const activeTaskCount = user.assignedTasks.length;
-    const totalWeight = user.assignedTasks.reduce(
-      (sum, t) => sum + t.difficultyWeight,
-      0
+    const result = computeCapacity(
+      user.id,
+      user.assignedTasks as { id: string; priority: TaskPriority }[]
     );
-    const utilizationPct = Math.min(
-      Math.round((totalWeight / CAPACITY_THRESHOLD) * 100),
-      150
-    );
-
     return {
       id: user.id,
       name: user.name,
       avatar: user.avatar,
       departmentId: user.primaryDeptId,
-      activeTaskCount,
-      totalWeight,
-      utilizationPct,
-      status:
-        utilizationPct > 90
-          ? "overloaded"
-          : utilizationPct > 70
-          ? "busy"
-          : "available",
+      activeTaskCount: result.activeTaskCount,
+      utilizationPct: result.capacityLoad,
+      breakdown: result.breakdown,
+      status: result.status === "critical" ? "overloaded" : result.status,
     };
   });
 

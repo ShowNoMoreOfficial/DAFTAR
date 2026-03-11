@@ -1,6 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, forbidden } from "@/lib/api-utils";
+import type { Role } from "@prisma/client";
+
+// GET /api/hoccr/candidates — list candidates with optional filters
+export async function GET(req: NextRequest) {
+  const session = await getAuthSession();
+  if (!session) return unauthorized();
+
+  const allowedRoles: Role[] = ["ADMIN", "HEAD_HR", "DEPT_HEAD"];
+  if (!allowedRoles.includes(session.user.role as Role)) return forbidden();
+
+  const { searchParams } = req.nextUrl;
+  const positionId = searchParams.get("positionId");
+  const status = searchParams.get("status");
+  const search = searchParams.get("search");
+
+  const where: Record<string, unknown> = {};
+  if (positionId) where.positionId = positionId;
+  if (status) where.status = status;
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  const candidates = await prisma.hiringCandidate.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      position: { select: { id: true, title: true, department: { select: { id: true, name: true } } } },
+    },
+  });
+
+  return NextResponse.json(candidates);
+}
 
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();

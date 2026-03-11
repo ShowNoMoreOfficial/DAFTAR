@@ -23,6 +23,7 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 import { CreateInvoiceDialog } from "@/components/finance/create-invoice-dialog";
 import { CreateExpenseDialog } from "@/components/finance/create-expense-dialog";
 
@@ -125,6 +126,7 @@ function formatDate(dateStr: string): string {
 // ─── Main Page ───────────────────────────────────────────
 
 export default function FinancePage() {
+  const { data: session } = useSession();
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -261,7 +263,7 @@ export default function FinancePage() {
     const res = await fetch(`/api/finance/expenses/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ approvedBy: "Current User" }),
+      body: JSON.stringify({ approvedBy: "Approved" }),
     });
     if (res.ok) {
       fetchExpenses();

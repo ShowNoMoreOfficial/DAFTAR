@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { checkCollaborationAchievements } from "@/lib/gamification";
 
 export async function GET(req: NextRequest) {
   const session = await getAuthSession();
@@ -95,8 +96,11 @@ export async function POST(req: NextRequest) {
     return badRequest("Cannot give recognition to yourself");
   }
 
-  // Verify target user exists
-  const targetUser = await prisma.user.findUnique({ where: { id: toUserId } });
+  // Verify target user exists and get their sentiment info
+  const targetUser = await prisma.user.findUnique({
+    where: { id: toUserId },
+    select: { id: true, employeeProfile: { select: { id: true, sentimentScore: true } } },
+  });
   if (!targetUser) return badRequest("Target user not found");
 
   const recognition = await prisma.recognition.create({
@@ -108,6 +112,19 @@ export async function POST(req: NextRequest) {
       isPublic: isPublic !== false,
     },
   });
+
+  // Check collaboration achievements for the recognition giver
+  checkCollaborationAchievements(session.user.id).catch(() => {});
+
+  // Boost recipient's sentiment score on recognition (+0.15, capped at 10)
+  if (targetUser.employeeProfile) {
+    const currentSentiment = targetUser.employeeProfile.sentimentScore ?? 5.0;
+    const newSentiment = Math.min(10, currentSentiment + 0.15);
+    prisma.employeeProfile.update({
+      where: { id: targetUser.employeeProfile.id },
+      data: { sentimentScore: newSentiment },
+    }).catch(() => {});
+  }
 
   return NextResponse.json(recognition, { status: 201 });
 }

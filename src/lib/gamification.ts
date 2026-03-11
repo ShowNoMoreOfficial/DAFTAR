@@ -135,6 +135,71 @@ async function checkStreakAchievements(userId: string, streak: number) {
   if (streak >= 30) await unlockAchievement(userId, "streak_30");
 }
 
+/**
+ * Check speed-based achievements when a task is completed.
+ * "speed_demon": completed within 1 hour of starting
+ * "rapid_fire": 3+ tasks completed in a single day
+ */
+export async function checkSpeedAchievements(userId: string, startedAt: Date | null, completedAt: Date | null) {
+  // speed_demon: task completed within 1 hour of starting
+  if (startedAt && completedAt) {
+    const durationMs = completedAt.getTime() - startedAt.getTime();
+    const oneHourMs = 60 * 60 * 1000;
+    if (durationMs <= oneHourMs && durationMs > 0) {
+      await unlockAchievement(userId, "speed_demon");
+    }
+  }
+
+  // rapid_fire: 3+ tasks completed today
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+  const todayCount = await prisma.task.count({
+    where: {
+      assigneeId: userId,
+      status: "DONE",
+      completedAt: { gte: todayStart, lte: todayEnd },
+    },
+  });
+  if (todayCount >= 3) {
+    await unlockAchievement(userId, "rapid_fire");
+  }
+}
+
+/**
+ * Check collaboration achievements (based on recognitions given).
+ * "team_player": given 5+ recognitions
+ */
+export async function checkCollaborationAchievements(userId: string) {
+  const givenCount = await prisma.recognition.count({
+    where: { fromUserId: userId },
+  });
+  if (givenCount >= 5) {
+    await unlockAchievement(userId, "team_player");
+  }
+}
+
+/**
+ * Check quality achievements (tasks approved without revision).
+ * "quality_king": 10+ tasks approved directly (REVIEW→APPROVED without going back to IN_PROGRESS)
+ */
+export async function checkQualityAchievements(userId: string) {
+  // Count direct approvals: REVIEW→APPROVED transitions for tasks assigned to this user
+  const directApprovals = await prisma.taskActivity.count({
+    where: {
+      task: { assigneeId: userId },
+      action: "status_changed",
+      field: "status",
+      oldValue: "REVIEW",
+      newValue: "APPROVED",
+    },
+  });
+  if (directApprovals >= 10) {
+    await unlockAchievement(userId, "quality_king");
+  }
+}
+
 async function unlockAchievement(userId: string, achievementKey: string) {
   const achievement = await prisma.achievement.findUnique({ where: { key: achievementKey } });
   if (!achievement || !achievement.isActive) return null;
@@ -193,6 +258,7 @@ export async function seedAchievements() {
     { key: "streak_7", name: "Weekly Warrior", description: "7-day activity streak", icon: "flame", category: "streak", threshold: 7, points: 50 },
     { key: "streak_30", name: "Unstoppable", description: "30-day activity streak", icon: "trophy", category: "streak", threshold: 30, points: 200 },
     { key: "speed_demon", name: "Speed Demon", description: "Complete a task within 1 hour", icon: "timer", category: "speed", threshold: 1, points: 25 },
+    { key: "rapid_fire", name: "Rapid Fire", description: "Complete 3 tasks in a single day", icon: "zap", category: "speed", threshold: 3, points: 40 },
     { key: "team_player", name: "Team Player", description: "Give 5 recognitions", icon: "heart-handshake", category: "collaboration", threshold: 5, points: 30 },
     { key: "quality_king", name: "Quality King", description: "10 tasks approved without revision", icon: "shield-check", category: "quality", threshold: 10, points: 75 },
   ];

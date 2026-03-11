@@ -140,30 +140,44 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
 
             {/* Status progression */}
             <div className="flex flex-wrap gap-1.5">
-              {STATUS_FLOW.map((s) => {
-                const isCurrent = task.status === s;
-                const currentIdx = STATUS_FLOW.indexOf(task.status);
-                const thisIdx = STATUS_FLOW.indexOf(s);
-                const isPast = thisIdx < currentIdx;
-                const isNext = thisIdx === currentIdx + 1;
-
-                return (
+              {task.status === "CANCELLED" ? (
+                <>
+                  <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-medium", STATUS_COLORS.CANCELLED)}>
+                    CANCELLED
+                  </span>
                   <button
-                    key={s}
-                    onClick={() => isNext ? handleStatusChange(s) : undefined}
-                    disabled={!isNext}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors",
-                      isCurrent && STATUS_COLORS[s],
-                      isPast && "bg-[#F0F2F5] text-[#9CA3AF] line-through",
-                      isNext && "cursor-pointer border border-dashed border-[#2E86AB] text-[#2E86AB] hover:bg-[#2E86AB]/10",
-                      !isCurrent && !isPast && !isNext && "bg-[#F8F9FA] text-[#D1D5DB]"
-                    )}
+                    onClick={() => handleStatusChange("CREATED")}
+                    className="cursor-pointer rounded-full border border-dashed border-[#2E86AB] px-2.5 py-1 text-[10px] font-medium text-[#2E86AB] hover:bg-[#2E86AB]/10"
                   >
-                    {s.replace(/_/g, " ")}
+                    Reopen
                   </button>
-                );
-              })}
+                </>
+              ) : (
+                STATUS_FLOW.map((s) => {
+                  const isCurrent = task.status === s;
+                  const currentIdx = STATUS_FLOW.indexOf(task.status);
+                  const thisIdx = STATUS_FLOW.indexOf(s);
+                  const isPast = thisIdx < currentIdx;
+                  const isNext = thisIdx === currentIdx + 1;
+
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => isNext ? handleStatusChange(s) : undefined}
+                      disabled={!isNext}
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors",
+                        isCurrent && STATUS_COLORS[s],
+                        isPast && "bg-[#F0F2F5] text-[#9CA3AF] line-through",
+                        isNext && "cursor-pointer border border-dashed border-[#2E86AB] text-[#2E86AB] hover:bg-[#2E86AB]/10",
+                        !isCurrent && !isPast && !isNext && "bg-[#F8F9FA] text-[#D1D5DB]"
+                      )}
+                    >
+                      {s.replace(/_/g, " ")}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
 

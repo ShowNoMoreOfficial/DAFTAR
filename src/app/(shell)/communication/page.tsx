@@ -430,11 +430,35 @@ function FeedbackTab() {
     }
   };
 
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  const [responseText, setResponseText] = useState("");
+
   const handleUpdateStatus = async (entryId: string, status: string) => {
     const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
+    });
+    if (res.ok && selectedChannel) fetchEntries(selectedChannel);
+  };
+
+  const handleRespond = async (entryId: string) => {
+    if (!responseText.trim()) return;
+    const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ response: responseText.trim(), status: "acknowledged" }),
+    });
+    if (res.ok) {
+      setRespondingTo(null);
+      setResponseText("");
+      if (selectedChannel) fetchEntries(selectedChannel);
+    }
+  };
+
+  const handleUpvote = async (entryId: string) => {
+    const res = await fetch(`/api/communication/feedback/entries/${entryId}`, {
+      method: "POST",
     });
     if (res.ok && selectedChannel) fetchEntries(selectedChannel);
   };
@@ -523,6 +547,26 @@ function FeedbackTab() {
                           <p className="text-sm text-[#6B7280]">{entry.response}</p>
                         </div>
                       )}
+                      {/* Admin response form */}
+                      {isAdmin && !entry.response && respondingTo === entry.id && (
+                        <div className="mt-2 space-y-2">
+                          <Textarea
+                            value={responseText}
+                            onChange={(e) => setResponseText(e.target.value)}
+                            placeholder="Write your response..."
+                            rows={2}
+                            className="text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleRespond(entry.id)} disabled={!responseText.trim()}>
+                              Send Response
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => { setRespondingTo(null); setResponseText(""); }}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       <div className="mt-2 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF]">
                           <Badge className={cn("text-[10px]", STATUS_COLORS[entry.status] || "")}>
@@ -533,25 +577,38 @@ function FeedbackTab() {
                               day: "numeric", month: "short",
                             })}
                           </span>
-                          {entry.upvotes > 0 && (
-                            <span className="flex items-center gap-0.5">
-                              <ThumbsUp className="h-3 w-3" /> {entry.upvotes}
-                            </span>
+                          <button
+                            onClick={() => handleUpvote(entry.id)}
+                            className="flex items-center gap-0.5 hover:text-[#2E86AB] transition-colors"
+                          >
+                            <ThumbsUp className="h-3 w-3" /> {entry.upvotes}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isAdmin && !entry.response && respondingTo !== entry.id && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 text-[10px] text-[#2E86AB]"
+                              onClick={() => { setRespondingTo(entry.id); setResponseText(""); }}
+                            >
+                              Reply
+                            </Button>
+                          )}
+                          {isAdmin && entry.status !== "resolved" && (
+                            <select
+                              value={entry.status}
+                              onChange={(e) => handleUpdateStatus(entry.id, e.target.value)}
+                              className="rounded border border-[#E5E7EB] px-2 py-0.5 text-[10px]"
+                            >
+                              <option value="open">Open</option>
+                              <option value="acknowledged">Acknowledged</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="resolved">Resolved</option>
+                              <option value="closed">Closed</option>
+                            </select>
                           )}
                         </div>
-                        {isAdmin && entry.status !== "resolved" && (
-                          <select
-                            value={entry.status}
-                            onChange={(e) => handleUpdateStatus(entry.id, e.target.value)}
-                            className="rounded border border-[#E5E7EB] px-2 py-0.5 text-[10px]"
-                          >
-                            <option value="open">Open</option>
-                            <option value="acknowledged">Acknowledged</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                            <option value="closed">Closed</option>
-                          </select>
-                        )}
                       </div>
                     </div>
                   ))}

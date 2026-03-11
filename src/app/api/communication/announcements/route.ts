@@ -14,22 +14,31 @@ export async function GET(req: NextRequest) {
   const pinned = searchParams.get("pinned");
   const { page, limit, skip } = parsePagination(req);
 
-  const where: Record<string, unknown> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const conditions: any[] = [];
 
   if (departmentId) {
-    where.departmentId = departmentId;
+    conditions.push({ departmentId });
   } else {
-    // Show org-wide announcements + user's department announcements
-    where.OR = [
-      { departmentId: null },
-      ...(session.user.primaryDepartmentId
-        ? [{ departmentId: session.user.primaryDepartmentId }]
-        : []),
-    ];
+    conditions.push({
+      OR: [
+        { departmentId: null },
+        ...(session.user.primaryDepartmentId
+          ? [{ departmentId: session.user.primaryDepartmentId }]
+          : []),
+      ],
+    });
   }
 
-  if (pinned === "true") where.isPinned = true;
-  if (pinned === "false") where.isPinned = false;
+  if (pinned === "true") conditions.push({ isPinned: true });
+  if (pinned === "false") conditions.push({ isPinned: false });
+
+  // Filter out expired announcements
+  conditions.push({
+    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+  });
+
+  const where = { AND: conditions };
 
   const [announcements, total] = await Promise.all([
     prisma.announcement.findMany({
@@ -48,9 +57,31 @@ export async function GET(req: NextRequest) {
     prisma.announcement.count({ where }),
   ]);
 
+  // Resolve author names and department names
+  const authorIds = [...new Set(announcements.map((a) => a.authorId))];
+  const deptIds = [...new Set(announcements.map((a) => a.departmentId).filter(Boolean))] as string[];
+
+  const [authors, departments] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: authorIds } },
+      select: { id: true, name: true },
+    }),
+    deptIds.length > 0
+      ? prisma.department.findMany({
+          where: { id: { in: deptIds } },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const authorMap = Object.fromEntries(authors.map((u) => [u.id, u.name]));
+  const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.name]));
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = announcements.map((a: any) => ({
     ...a,
+    authorName: authorMap[a.authorId] || "Unknown",
+    departmentName: a.departmentId ? deptMap[a.departmentId] || null : null,
     readCount: a._count.readBy,
     isRead: a.readBy.length > 0,
     readAt: a.readBy[0]?.readAt ?? null,
@@ -65,10 +96,6 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();
   if (!session) return unauthorized();
-
-  if (!hasPermission(session.user.role, session.user.permissions, "hoccr.write.own")) {
-    return forbidden();
-  }
 
   const allowedRoles = ["ADMIN", "HEAD_HR", "DEPT_HEAD"];
   if (!allowedRoles.includes(session.user.role)) {
