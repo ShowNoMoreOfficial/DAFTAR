@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import {
+  getOverdueTasks,
+  getOverloadedUsers,
+  getPendingReviewDeliverables,
+  getTeamWeeklyStats,
+  getRecentSignals,
+  getBrandContentPipeline,
+} from "@/lib/gi/data-queries";
+import {
+  formatOverdueTasks,
+  formatOverloadedUsers,
+  formatPendingReviews,
+  formatTeamWeeklyStats,
+  formatRecentSignals,
+  formatBrandPipeline,
+} from "@/lib/gi/response-formatter";
+import {
+  reassignTask,
+  extendDeadline,
+  createTask,
+  startPipeline,
+  suggestTopics,
+} from "@/lib/gi/action-executor";
 
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();
@@ -194,6 +217,29 @@ export async function POST(req: NextRequest) {
     contextData.articleStats = { totalArticles, draftArticles, publishedArticles, reviewArticles };
   } catch {
     // Non-critical: continue without context data
+  }
+
+  // ─── Action Intent Detection ──────────────────────────
+  const actionResult = await detectAndExecuteAction(message, userId);
+  if (actionResult) {
+    return NextResponse.json({
+      message: actionResult.message,
+      suggestions: actionResult.suggestions,
+      contextUsed: Object.keys(contextData),
+      proactiveInsight: generateProactiveInsight(contextData, role),
+      actionExecuted: actionResult.actionExecuted,
+    });
+  }
+
+  // ─── Rich Data Query Detection ──────────────────────────
+  const queryResult = await detectAndRunQuery(message);
+  if (queryResult) {
+    return NextResponse.json({
+      message: queryResult.message,
+      suggestions: queryResult.suggestions,
+      contextUsed: Object.keys(contextData),
+      proactiveInsight: generateProactiveInsight(contextData, role),
+    });
   }
 
   // Build a reactive response based on the question and context
@@ -620,4 +666,101 @@ function isTomorrow(date: Date): boolean {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   return date.getFullYear() === tomorrow.getFullYear() && date.getMonth() === tomorrow.getMonth() && date.getDate() === tomorrow.getDate();
+}
+
+// ─── Action Intent Detection ────────────────────────────
+
+async function detectAndExecuteAction(
+  message: string,
+  userId: string
+): Promise<{ message: string; suggestions: string[]; actionExecuted?: string } | null> {
+  const lower = message.toLowerCase();
+
+  // "reassign [task] to [person]"
+  const reassignMatch = lower.match(/reassign\s+(?:task\s+)?["']?(.+?)["']?\s+to\s+(\w[\w\s]*)/i);
+  if (reassignMatch) {
+    const result = await reassignTask(reassignMatch[1].trim(), reassignMatch[2].trim(), userId);
+    return { message: result.details, suggestions: ["Show overdue tasks", "Team status"], actionExecuted: result.action };
+  }
+
+  // "extend deadline for [task] by [N] days"
+  const extendMatch = lower.match(/extend\s+(?:deadline\s+)?(?:for\s+)?["']?(.+?)["']?\s+by\s+(\d+)\s*days?/i);
+  if (extendMatch) {
+    const result = await extendDeadline(extendMatch[1].trim(), parseInt(extendMatch[2]), userId);
+    return { message: result.details, suggestions: ["Show overdue tasks", "Upcoming deadlines"], actionExecuted: result.action };
+  }
+
+  // "create task: [title]" or "create a task [title]"
+  const createMatch = lower.match(/create\s+(?:a\s+)?task[:\s]+["']?(.+?)["']?(?:\s+assign(?:ed)?\s+to\s+(\w[\w\s]*))?$/i);
+  if (createMatch) {
+    const result = await createTask(createMatch[1].trim(), userId, {
+      assigneeName: createMatch[2]?.trim(),
+    });
+    return { message: result.details, suggestions: ["Show my tasks", "View PMS board"], actionExecuted: result.action };
+  }
+
+  // "start pipeline for [topic]"
+  const pipelineMatch = lower.match(/start\s+(?:a\s+)?pipeline\s+(?:for\s+)?["']?(.+?)["']?(?:\s+(?:for|on)\s+(\w[\w\s]*))?$/i);
+  if (pipelineMatch) {
+    const result = await startPipeline(pipelineMatch[1].trim(), userId, pipelineMatch[2]?.trim());
+    return { message: result.details, suggestions: ["Show content pipeline", "Suggest topics"], actionExecuted: result.action };
+  }
+
+  // "what should we cover" / "suggest topics"
+  if (lower.match(/what\s+should\s+we\s+cover|suggest\s+topics|topic\s+suggestions|what\s+to\s+cover/)) {
+    const brandMatch = lower.match(/for\s+(the\s+squirrels|breaking\s+tube)/i);
+    const result = await suggestTopics(brandMatch?.[1]);
+    return { message: result.details, suggestions: ["Start pipeline", "Show signals"], actionExecuted: result.action };
+  }
+
+  return null;
+}
+
+// ─── Rich Data Query Detection ──────────────────────────
+
+async function detectAndRunQuery(
+  message: string
+): Promise<{ message: string; suggestions: string[] } | null> {
+  const lower = message.toLowerCase();
+
+  // Org-wide overdue tasks query (not personal)
+  if (lower.match(/(?:all|org|team|everyone).+overdue|overdue.+(?:all|org|team|everyone)|what\s+tasks?\s+are\s+overdue|show\s+(?:me\s+)?overdue/)) {
+    const data = await getOverdueTasks();
+    return formatOverdueTasks(data);
+  }
+
+  // Who's overloaded
+  if (lower.match(/who.+overloaded|overloaded|workload|who.+busy|who.+most\s+tasks/)) {
+    const data = await getOverloadedUsers();
+    return formatOverloadedUsers(data);
+  }
+
+  // Pending reviews / deliverables
+  if (lower.match(/(?:pending|need|awaiting)\s+review|deliverables?\s+(?:need|pending|awaiting)|review\s+queue/)) {
+    const data = await getPendingReviewDeliverables();
+    return formatPendingReviews(data);
+  }
+
+  // Team weekly / how's the team
+  if (lower.match(/team.+(?:doing|week|stats|performance|health)|how.+team|weekly\s+(?:stats|performance|summary)/)) {
+    const data = await getTeamWeeklyStats();
+    return formatTeamWeeklyStats(data);
+  }
+
+  // Khabri signals
+  if (lower.match(/signals?\s+(?:from|came|recent)|khabri\s+signals|recent\s+signals|what\s+signals/)) {
+    const data = await getRecentSignals();
+    return formatRecentSignals(data);
+  }
+
+  // Brand pipeline
+  const pipelineQuery = lower.match(/(?:show|get)\s+(?:me\s+)?(?:the\s+)?(squirrels?|breaking\s*tube).+pipeline|pipeline.+(?:for\s+)?(?:the\s+)?(squirrels?|breaking\s*tube)|(squirrels?|breaking\s*tube).+(?:pipeline|content)/);
+  if (pipelineQuery) {
+    const brandName = (pipelineQuery[1] || pipelineQuery[2] || pipelineQuery[3]).trim();
+    const mapped = brandName.toLowerCase().includes("squirrel") ? "The Squirrels" : "Breaking Tube";
+    const data = await getBrandContentPipeline(mapped);
+    return formatBrandPipeline(data);
+  }
+
+  return null;
 }

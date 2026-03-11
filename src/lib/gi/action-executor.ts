@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { checkTier, createPendingAction } from "./tier-guard";
 
 interface ActionResult {
@@ -58,9 +59,9 @@ export async function reassignTask(
       actionData: {
         taskId: task.id,
         newAssigneeId: person.id,
-        originalAssigneeId: task.assignee?.id,
+        originalAssigneeId: task.assignee?.id ?? null,
         action: "reassign",
-      },
+      } as Prisma.InputJsonValue,
       reasoning: `User requested reassignment via GI chat`,
     });
 
@@ -149,7 +150,7 @@ export async function extendDeadline(
         currentDueDate: task.dueDate.toISOString(),
         newDueDate: newDate.toISOString(),
         extensionDays: days,
-      },
+      } as Prisma.InputJsonValue,
       reasoning: `User requested deadline extension via GI chat`,
     });
 
@@ -251,11 +252,10 @@ export async function startPipeline(
       createdById: creatorId,
       nodes: {
         create: {
-          nodeType: "ROOT",
-          title: topic,
-          content: `Pipeline initiated via GI for topic: ${topic}`,
-          status: "active",
-          position: 0,
+          nodeType: "SIGNAL",
+          signalTitle: topic,
+          signalData: { source: "gi", description: `Pipeline initiated via GI for topic: ${topic}` },
+          signalScore: 50,
         },
       },
     },

@@ -258,16 +258,16 @@ export async function getUpcomingContent(limit = 5) {
   const posts = await prisma.contentPost.findMany({
     where: {
       status: { in: ["SCHEDULED", "QUEUED"] },
-      scheduledFor: { gte: new Date() },
+      scheduledAt: { gte: new Date() },
     },
     select: {
       id: true,
       title: true,
       platform: true,
-      scheduledFor: true,
+      scheduledAt: true,
       brand: { select: { name: true } },
     },
-    orderBy: { scheduledFor: "asc" },
+    orderBy: { scheduledAt: "asc" },
     take: limit,
   });
 
