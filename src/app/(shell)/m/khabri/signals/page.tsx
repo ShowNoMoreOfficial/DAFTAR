@@ -21,17 +21,13 @@ import {
   Zap,
   Send,
   Filter,
-  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { KhabriSignal, KhabriMeta } from "@/types/khabri";
 
-// ─── Extended Signal Type (includes mock fields) ────────
+// ─── Extended Signal Type ────────────────────────────────
 
-interface MockSignal extends KhabriSignal {
-  impactScore?: number;
-  timeScraped?: string;
-}
+type Signal = KhabriSignal;
 
 // ─── Sentiment Config ───────────────────────────────────
 
@@ -56,19 +52,20 @@ const ENTITY_ICONS: Record<string, React.ReactNode> = {
   LOCATION: <MapPin className="h-3 w-3" />,
 };
 
-// ─── Impact Score Bar ───────────────────────────────────
+// ─── Sentiment Bar ──────────────────────────────────────
 
-function ImpactBar({ score }: { score: number }) {
-  const pct = Math.min(score / 10, 1) * 100;
+function SentimentBar({ score }: { score: number }) {
+  // score is -1 to 1, map to 0-100
+  const pct = ((score + 1) / 2) * 100;
   const color =
-    score >= 9 ? "bg-red-500" : score >= 7 ? "bg-amber-500" : score >= 5 ? "bg-[#2E86AB]" : "bg-gray-300";
+    score > 0.3 ? "bg-emerald-500" : score < -0.3 ? "bg-red-500" : "bg-gray-400";
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-16 rounded-full bg-gray-100">
+      <div className="h-1.5 w-12 rounded-full bg-gray-100">
         <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
       </div>
-      <span className={cn("text-xs font-bold tabular-nums", score >= 9 ? "text-red-600" : score >= 7 ? "text-amber-600" : "text-[#6B7280]")}>
-        {score.toFixed(1)}
+      <span className={cn("text-xs font-medium tabular-nums", score > 0.3 ? "text-emerald-600" : score < -0.3 ? "text-red-600" : "text-[#6B7280]")}>
+        {score > 0 ? "+" : ""}{score.toFixed(2)}
       </span>
     </div>
   );
@@ -77,7 +74,7 @@ function ImpactBar({ score }: { score: number }) {
 // ─── Component ──────────────────────────────────────────
 
 export default function KhabriSignalsPage() {
-  const [signals, setSignals] = useState<MockSignal[]>([]);
+  const [signals, setSignals] = useState<Signal[]>([]);
   const [meta, setMeta] = useState<KhabriMeta | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -85,69 +82,51 @@ export default function KhabriSignalsPage() {
   const [activeSearch, setActiveSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState("");
-  const [minImpact, setMinImpact] = useState(0);
-  const [sources, setSources] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [sentToYantri, setSentToYantri] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSignals = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      // Fetch both mock and live signals in parallel, merge results
-      const params = new URLSearchParams();
-      if (activeSearch) params.set("search", activeSearch);
-      if (sourceFilter) params.set("source", sourceFilter);
-      if (minImpact > 0) params.set("minImpact", String(minImpact));
-      params.set("page", String(page));
-      params.set("pageSize", "20");
+      // Fetch only live signals from Khabri API
+      const res = await fetch(
+        activeSearch
+          ? `/api/khabri/signals/search?q=${encodeURIComponent(activeSearch)}&page=${page}&pageSize=25`
+          : `/api/khabri/signals?page=${page}&pageSize=25`
+      );
 
-      const [mockRes, liveRes] = await Promise.all([
-        fetch(`/api/m/khabri/signals?${params}`).catch(() => null),
-        fetch(
-          activeSearch
-            ? `/api/khabri/signals/search?q=${encodeURIComponent(activeSearch)}&page=${page}&pageSize=20`
-            : `/api/khabri/signals?page=${page}&pageSize=20`
-        ).catch(() => null),
-      ]);
-
-      let allSignals: MockSignal[] = [];
-      let liveMeta: KhabriMeta | null = null;
-      const allSources: string[] = [];
-
-      // Get mock signals
-      if (mockRes && mockRes.ok) {
-        const mockData = await mockRes.json();
-        const mockSignals = (mockData.data || []).map((s: MockSignal) => ({ ...s, _source: "mock" }));
-        allSignals.push(...mockSignals);
-        if (mockData.sources) allSources.push(...mockData.sources);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || `Failed to fetch signals (${res.status})`);
       }
 
-      // Get live signals from Khabri API
-      if (liveRes && liveRes.ok) {
-        const liveData = await liveRes.json();
-        const liveSignals = (liveData.data || []).map((s: MockSignal) => ({ ...s, _source: "live" }));
-        allSignals.push(...liveSignals);
-        liveMeta = liveData.meta || null;
+      const data = await res.json();
+      let fetchedSignals: Signal[] = data.data || [];
+
+      // Client-side source filter
+      if (sourceFilter) {
+        fetchedSignals = fetchedSignals.filter((s) => s.source === sourceFilter);
       }
 
-      // Deduplicate by id
-      const seen = new Set<string>();
-      allSignals = allSignals.filter((s) => {
-        if (seen.has(s.id)) return false;
-        seen.add(s.id);
-        return true;
+      // Sort by publishedAt descending (most recent first)
+      fetchedSignals.sort((a, b) => {
+        const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+        const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+        return dateB - dateA;
       });
 
-      setSignals(allSignals);
-      setMeta(liveMeta || { total: allSignals.length, page: 1, pageSize: allSignals.length, hasMore: false });
-      if (allSources.length > 0) setSources([...new Set(allSources)]);
-    } catch {
-      // ignore
+      setSignals(fetchedSignals);
+      setMeta(data.meta || { total: fetchedSignals.length, page: 1, pageSize: fetchedSignals.length, hasMore: false });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load signals");
+      setSignals([]);
     } finally {
       setLoading(false);
     }
-  }, [page, activeSearch, sourceFilter, minImpact]);
+  }, [page, activeSearch, sourceFilter]);
 
   useEffect(() => { fetchSignals(); }, [fetchSignals]);
 
@@ -163,6 +142,7 @@ export default function KhabriSignalsPage() {
     setSentToYantri((prev) => new Set(prev).add(signalId));
 
     try {
+      const sentimentScore = typeof signal.sentiment === "object" ? signal.sentiment?.score : signal.sentimentScore;
       const res = await fetch("/api/pipeline/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -170,19 +150,24 @@ export default function KhabriSignalsPage() {
           signalId: signal.id,
           trendTitle: signal.title,
           summary: signal.content || signal.title,
-          urgency: (signal.impactScore ?? 0) > 8 ? "breaking" : (signal.impactScore ?? 0) > 6 ? "high" : "normal",
+          urgency: (sentimentScore !== undefined && sentimentScore < -0.5) ? "breaking" : "normal",
+          source: signal.source,
+          category: signal.category,
         }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || "Failed");
+      }
       setToast({ message: `"${signal.title.substring(0, 50)}..." sent to Yantri`, type: "success" });
       setTimeout(() => setToast(null), 4000);
-    } catch {
+    } catch (err) {
       setSentToYantri((prev) => {
         const next = new Set(prev);
         next.delete(signalId);
         return next;
       });
-      setToast({ message: "Failed to send to Yantri. Please try again.", type: "error" });
+      setToast({ message: err instanceof Error ? err.message : "Failed to send to Yantri. Please try again.", type: "error" });
       setTimeout(() => setToast(null), 4000);
     }
   };
@@ -240,11 +225,11 @@ export default function KhabriSignalsPage() {
           <Button onClick={handleSearch} size="sm" className="bg-[#2E86AB] hover:bg-[#2E86AB]/90 text-white">
             Search
           </Button>
-          {(activeSearch || sourceFilter || minImpact > 0) && (
+          {(activeSearch || sourceFilter) && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { setSearchQuery(""); setActiveSearch(""); setSourceFilter(""); setMinImpact(0); setPage(1); }}
+              onClick={() => { setSearchQuery(""); setActiveSearch(""); setSourceFilter(""); setPage(1); }}
             >
               Clear All
             </Button>
@@ -262,29 +247,14 @@ export default function KhabriSignalsPage() {
                 className="rounded-md border border-[#E5E7EB] bg-white px-2 py-1 text-xs text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none"
               >
                 <option value="">All Sources</option>
-                {sources.map((s) => (
+                {[...new Set(signals.map((s) => s.source).filter(Boolean))].map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-[#6B7280]">Min Impact:</label>
-              <input
-                type="range"
-                min={0}
-                max={10}
-                step={0.5}
-                value={minImpact}
-                onChange={(e) => { setMinImpact(parseFloat(e.target.value)); setPage(1); }}
-                className="h-1.5 w-24 accent-[#2E86AB]"
-              />
-              <span className="min-w-[2.5rem] text-xs font-bold text-[#1A1A1A] tabular-nums">
-                {minImpact > 0 ? `${minImpact.toFixed(1)}+` : "Any"}
-              </span>
-            </div>
-            {(sourceFilter || minImpact > 0) && (
+            {sourceFilter && (
               <Badge variant="outline" className="text-[10px] gap-1 text-[#A23B72]">
-                {[sourceFilter && `Source: ${sourceFilter}`, minImpact > 0 && `Impact >= ${minImpact}`].filter(Boolean).join(" · ")}
+                Source: {sourceFilter}
               </Badge>
             )}
           </div>
@@ -299,11 +269,16 @@ export default function KhabriSignalsPage() {
         <>
           {/* Signal Stats Bar */}
           <div className="flex items-center gap-4 text-xs text-[#6B7280]">
-            <span>{signals.length} signals</span>
-            <span className="text-red-500 font-medium">
-              {signals.filter((s) => (s.impactScore ?? 0) > 8).length} urgent
-            </span>
+            <span>{meta?.total ?? signals.length} total signals</span>
+            <span>Showing {signals.length} on this page</span>
           </div>
+
+          {/* Error State */}
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           {/* Signals List — Bloomberg Terminal Style */}
           <div className="space-y-2">
@@ -314,11 +289,11 @@ export default function KhabriSignalsPage() {
             ) : (
               signals.map((signal) => {
                 const isExpanded = expandedId === signal.id;
-                const impact = signal.impactScore ?? 0;
-                const isUrgent = impact > 8;
+                const sentimentObj = typeof signal.sentiment === "object" ? signal.sentiment : null;
                 const sentimentLabel = typeof signal.sentiment === "string"
                   ? signal.sentiment
-                  : signal.sentiment?.label;
+                  : sentimentObj?.label;
+                const sentimentScore = sentimentObj?.score ?? signal.sentimentScore;
                 const sentimentCfg = sentimentLabel
                   ? SENTIMENT_CONFIG[sentimentLabel] || SENTIMENT_CONFIG.NEUTRAL
                   : null;
@@ -329,11 +304,9 @@ export default function KhabriSignalsPage() {
                     key={signal.id}
                     className={cn(
                       "rounded-xl border bg-white transition-all",
-                      isUrgent
-                        ? "border-red-300 shadow-[0_0_12px_rgba(239,68,68,0.15)]"
-                        : isExpanded
-                          ? "border-[#2E86AB]/30"
-                          : "border-[#E5E7EB]"
+                      isExpanded
+                        ? "border-[#2E86AB]/30"
+                        : "border-[#E5E7EB]"
                     )}
                   >
                     {/* Signal Row */}
@@ -341,10 +314,10 @@ export default function KhabriSignalsPage() {
                       className="flex items-start gap-3 px-5 py-3.5 cursor-pointer hover:bg-[#F8F9FA] transition-colors"
                       onClick={() => setExpandedId(isExpanded ? null : signal.id)}
                     >
-                      {/* Impact Score Column */}
+                      {/* Sentiment Score Column */}
                       <div className="shrink-0 pt-0.5">
-                        {impact > 0 ? (
-                          <ImpactBar score={impact} />
+                        {sentimentScore !== undefined ? (
+                          <SentimentBar score={sentimentScore} />
                         ) : (
                           <span className="text-xs text-[#D1D5DB]">—</span>
                         )}
@@ -352,14 +325,7 @@ export default function KhabriSignalsPage() {
 
                       {/* Main Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-2">
-                          <p className="text-sm font-medium text-[#1A1A1A] leading-snug">{signal.title}</p>
-                          {isUrgent && (
-                            <Badge className="shrink-0 bg-red-500 text-white text-[9px] gap-1 animate-pulse">
-                              <AlertTriangle className="h-2.5 w-2.5" /> Urgent
-                            </Badge>
-                          )}
-                        </div>
+                        <p className="text-sm font-medium text-[#1A1A1A] leading-snug">{signal.title}</p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-2">
                           {signal.source && (
                             <span className="text-xs font-medium text-[#6B7280]">{signal.source}</span>
@@ -372,9 +338,9 @@ export default function KhabriSignalsPage() {
                               {sentimentCfg.icon} {sentimentCfg.label}
                             </Badge>
                           )}
-                          {(signal.timeScraped || signal.publishedAt) && (
+                          {signal.publishedAt && (
                             <span className="text-[10px] text-[#9CA3AF]">
-                              {new Date(signal.timeScraped || signal.publishedAt!).toLocaleString("en-IN", {
+                              {new Date(signal.publishedAt).toLocaleString("en-IN", {
                                 day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
                               })}
                             </span>
@@ -464,15 +430,9 @@ export default function KhabriSignalsPage() {
                           </div>
                         )}
 
-                        {signal.sentiment && (
+                        {sentimentScore !== undefined && (
                           <div className="flex items-center gap-2 text-xs text-[#6B7280]">
-                            Sentiment score: <strong className="text-[#1A1A1A]">
-                              {typeof signal.sentiment === "object" && signal.sentiment.score !== undefined
-                                ? signal.sentiment.score.toFixed(2)
-                                : signal.sentimentScore !== undefined
-                                  ? signal.sentimentScore.toFixed(2)
-                                  : "N/A"}
-                            </strong>
+                            Sentiment score: <strong className="text-[#1A1A1A]">{sentimentScore.toFixed(2)}</strong>
                           </div>
                         )}
                       </div>

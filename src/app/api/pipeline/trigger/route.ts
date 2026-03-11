@@ -18,21 +18,27 @@ export async function POST(req: NextRequest) {
     return badRequest("trendTitle is required");
   }
 
-  const tree = await prisma.narrativeTree.create({
-    data: {
-      title: trendTitle,
-      summary: summary || null,
-      signalId: signalId || null,
-      signalData: body,
-      urgency: urgency === "breaking" ? "breaking" : urgency === "high" ? "high" : "normal",
-      status: "INCOMING",
-      createdById: session.user.id,
-    },
-  });
+  try {
+    const tree = await prisma.narrativeTree.create({
+      data: {
+        title: trendTitle,
+        summary: summary || null,
+        signalId: signalId || null,
+        signalData: body,
+        urgency: urgency === "breaking" ? "breaking" : urgency === "high" ? "high" : "normal",
+        status: "INCOMING",
+        createdById: session.user.id,
+      },
+    });
 
-  return NextResponse.json({
-    success: true,
-    narrativeTreeId: tree.id,
-    message: "Signal sent to Yantri. Open Yantri to evaluate and create deliverables.",
-  });
+    return NextResponse.json({
+      success: true,
+      narrativeTreeId: tree.id,
+      message: "Signal sent to Yantri. Open Yantri to evaluate and create deliverables.",
+    });
+  } catch (err) {
+    console.error("[pipeline/trigger] Error creating narrative tree:", err);
+    const message = err instanceof Error ? err.message : "Failed to create narrative tree";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
