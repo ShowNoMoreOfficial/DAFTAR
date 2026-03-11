@@ -54,7 +54,8 @@ const ENTITY_ICONS: Record<string, React.ReactNode> = {
 
 // ─── Sentiment Bar ──────────────────────────────────────
 
-function SentimentBar({ score }: { score: number }) {
+function SentimentBar({ score: rawScore }: { score: number }) {
+  const score = typeof rawScore === "number" && !isNaN(rawScore) ? rawScore : 0;
   // score is -1 to 1, map to 0-100
   const pct = ((score + 1) / 2) * 100;
   const color =
@@ -142,7 +143,8 @@ export default function KhabriSignalsPage() {
     setSentToYantri((prev) => new Set(prev).add(signalId));
 
     try {
-      const sentimentScore = typeof signal.sentiment === "object" ? signal.sentiment?.score : signal.sentimentScore;
+      const rawSentiment = typeof signal.sentiment === "object" ? signal.sentiment?.score : signal.sentimentScore;
+      const sentimentScore = typeof rawSentiment === "number" ? rawSentiment : undefined;
       const res = await fetch("/api/pipeline/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -293,7 +295,8 @@ export default function KhabriSignalsPage() {
                 const sentimentLabel = typeof signal.sentiment === "string"
                   ? signal.sentiment
                   : sentimentObj?.label;
-                const sentimentScore = sentimentObj?.score ?? signal.sentimentScore;
+                const rawScore = sentimentObj?.score ?? signal.sentimentScore;
+                const sentimentScore = typeof rawScore === "number" ? rawScore : undefined;
                 const sentimentCfg = sentimentLabel
                   ? SENTIMENT_CONFIG[sentimentLabel] || SENTIMENT_CONFIG.NEUTRAL
                   : null;
@@ -397,7 +400,9 @@ export default function KhabriSignalsPage() {
                                 <Badge key={i} variant="outline" className="text-xs gap-1">
                                   {ENTITY_ICONS[entity.type] || null}
                                   {entity.name}
-                                  <span className="text-[#9CA3AF]">({(entity.salience * 100).toFixed(0)}%)</span>
+                                  {typeof entity.salience === "number" && (
+                                    <span className="text-[#9CA3AF]">({(entity.salience * 100).toFixed(0)}%)</span>
+                                  )}
                                 </Badge>
                               ))}
                             </div>
