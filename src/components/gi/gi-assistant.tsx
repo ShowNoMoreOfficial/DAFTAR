@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Send, X, ChevronUp, ChevronDown, Minus } from "lucide-react";
 import { useGIContext } from "./gi-context";
+import { useSidebarStore } from "@/store/sidebar-store";
 import { cn } from "@/lib/utils";
 
 interface ChatMessage {
@@ -41,6 +42,7 @@ export function GIAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { context } = useGIContext();
+  const { isCollapsed: sidebarCollapsed } = useSidebarStore();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -135,7 +137,8 @@ export function GIAssistant() {
   return (
     <div
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 flex flex-col border-t border-[var(--border-default)] bg-[var(--bg-surface)] shadow-[var(--shadow-lg)] transition-all duration-300",
+        "fixed bottom-0 right-0 z-40 flex flex-col border-t border-[var(--border-default)] bg-[var(--bg-surface)] shadow-[var(--shadow-lg)] transition-all duration-300 left-0",
+        sidebarCollapsed ? "md:left-16" : "md:left-[260px]",
         expanded ? "h-[40vh] min-h-[300px]" : "h-auto"
       )}
     >

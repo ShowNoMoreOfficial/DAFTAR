@@ -536,7 +536,7 @@ export default function DeliverableReviewPage() {
 
       {/* ─── Bottom Action Bar ─── */}
       {isReviewable && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3">
+        <div className="fixed bottom-0 left-0 md:left-16 lg:left-[260px] right-0 z-30 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <p className="text-sm text-[var(--text-secondary)]">
               Review complete? Approve to create a production task.
