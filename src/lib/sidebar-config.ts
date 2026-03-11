@@ -47,8 +47,11 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     children: [
       { id: "yantri-dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/m/yantri", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
       { id: "yantri-narrative-trees", label: "Narrative Trees", icon: "GitBranch", href: "/m/yantri/narrative-trees", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-      { id: "yantri-brands", label: "Brands", icon: "Palette", href: "/m/yantri/brands", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-trends", label: "Trends", icon: "TrendingUp", href: "/m/yantri/trends", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
       { id: "yantri-workspace", label: "Workspace", icon: "Layers", href: "/m/yantri/workspace", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-prompt-library", label: "Prompts", icon: "FileText", href: "/m/yantri/prompt-library", roles: ["ADMIN", "DEPT_HEAD"] },
+      { id: "yantri-platform-rules", label: "Platform Rules", icon: "Settings", href: "/m/yantri/platform-rules", roles: ["ADMIN"] },
+      { id: "yantri-history", label: "History", icon: "Clock", href: "/m/yantri/history", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
       { id: "yantri-performance", label: "Performance", icon: "BarChart3", href: "/m/yantri/performance", roles: ["ADMIN", "DEPT_HEAD"] },
     ],
   },

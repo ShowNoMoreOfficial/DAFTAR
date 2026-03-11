@@ -8,6 +8,17 @@ import {
 import { generateDeliverableV2 } from "@/lib/inngest/yantri-workflows";
 import { khabriHourlyScan } from "@/lib/inngest/khabri-workflows";
 import { ingestVrittiArticle } from "@/lib/inngest/vritti-workflows";
+// Yantri pipeline functions (merged from standalone Yantri app)
+import {
+  factDossierSync,
+  gapAnalysisOnIngest,
+} from "@/lib/yantri/inngest/functions";
+import {
+  viralMicroPipeline,
+  carouselPipeline,
+  cinematicPipeline,
+  reelPipeline,
+} from "@/lib/yantri/inngest/deliverable-pipelines";
 
 // Serve the Inngest API at /api/inngest
 // This endpoint handles:
@@ -23,5 +34,12 @@ export const { GET, POST, PUT } = serve({
     publishPost,
     khabriHourlyScan,
     ingestVrittiArticle,
+    // Yantri pipeline functions
+    factDossierSync,
+    gapAnalysisOnIngest,
+    viralMicroPipeline,
+    carouselPipeline,
+    cinematicPipeline,
+    reelPipeline,
   ],
 });

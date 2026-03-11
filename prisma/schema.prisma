@@ -39,6 +39,48 @@ enum DepartmentType {
   CUSTOM
 }
 
+// ─── Yantri Pipeline Enums ──────────────────────────────
+
+enum ContentPlatform {
+  YOUTUBE
+  X_THREAD
+  X_SINGLE
+  BLOG
+  LINKEDIN
+  META_REEL
+  META_CAROUSEL
+  META_POST
+}
+
+enum ContentPipelineStatus {
+  PLANNED
+  RESEARCHING
+  SCRIPTING
+  GENERATING_ASSETS
+  STORYBOARDING
+  DRAFTED
+  REVIEW
+  APPROVED
+  RELAYED
+  PUBLISHED
+  KILLED
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO_CLIP
+  BROLL
+  CAROUSEL_SLIDE
+  THUMBNAIL
+  SOCIAL_CARD
+  AUDIO
+}
+
+enum NodeType {
+  SIGNAL
+  HYPOTHESIS
+}
+
 // ─── Invitations ────────────────────────────────────────
 
 model Invite {
@@ -205,22 +247,41 @@ model Client {
 }
 
 model Brand {
-  id                  String               @id @default(cuid())
-  name                String
-  slug                String               @unique
-  client              Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId            String
-  config              Json?
-  platforms           BrandPlatform[]
-  userAccess          UserBrandAccess[]
-  tasks               Task[]
-  invoices            Invoice[]
-  posts               ContentPost[]
-  platformConnections PlatformConnection[]
-  articles            Article[]            @relation("ArticleBrand")
-  narratives          Narrative[]
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  id                   String               @id @default(cuid())
+  name                 String
+  slug                 String               @unique
+  client               Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId             String
+  config               Json?
+  // Yantri editorial fields
+  tagline              String?
+  identityMarkdown     String?              @db.Text
+  language             String?
+  tone                 String?
+  editorialCovers      String? // JSON array of topics
+  editorialNever       String? // JSON array of exclusions
+  audienceSize         String?
+  audienceDemographics String? // JSON object
+  audienceGeography    String? // JSON object
+  audienceInterests    String? // JSON object
+  audienceDescription  String?
+  activePlatforms      String? // JSON array of { name, role }
+  voiceRules           Json? // Voice rules
+  editorialPriorities  String? // JSON array
+  contentFrequency     String? // JSON object
+  // Relations
+  platforms            BrandPlatform[]
+  userAccess           UserBrandAccess[]
+  tasks                Task[]
+  invoices             Invoice[]
+  posts                ContentPost[]
+  platformConnections  PlatformConnection[]
+  articles             Article[]            @relation("ArticleBrand")
+  narratives           Narrative[]
+  contentPieces        ContentPiece[]
+  deliverables         Deliverable[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
   @@map("brands")
 }
@@ -303,22 +364,6 @@ model SidebarPreference {
   order     Json   @default("[]")
 
   @@map("sidebar_preferences")
-}
-
-// ─── Module Registry ─────────────────────────────────────
-
-model Module {
-  id          String  @id @default(cuid())
-  name        String  @unique
-  displayName String
-  description String?
-  icon        String?
-  baseUrl     String
-  isActive    Boolean @default(true)
-  config      Json?
-  order       Int     @default(0)
-
-  @@map("modules")
 }
 
 // ─── PMS: Tasks ─────────────────────────────────────────
@@ -1473,19 +1518,24 @@ enum NarrativeStatus {
 }
 
 model NarrativeTree {
-  id          String          @id @default(cuid())
-  title       String
-  summary     String?         @db.Text
-  status      NarrativeStatus @default(INCOMING)
-  signalData  Json? // Original signal data from Khabri
-  signalId    String? // External Khabri signal ID
-  trendId     String? // Link to Trend if exists
-  urgency     String          @default("normal") // breaking, high, normal, low
-  createdById String
-  createdBy   User            @relation("NarrativeCreator", fields: [createdById], references: [id])
-  narratives  Narrative[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id            String          @id @default(cuid())
+  title         String
+  summary       String?         @db.Text
+  embedding     String?         @db.Text // Serialized embedding vector (JSON array of floats) for pgvector similarity
+  status        NarrativeStatus @default(INCOMING)
+  signalData    Json? // Original signal data from Khabri
+  signalId      String? // External Khabri signal ID
+  trendId       String? // Link to Trend if exists
+  urgency       String          @default("normal") // breaking, high, normal, low
+  createdById   String
+  createdBy     User            @relation("NarrativeCreator", fields: [createdById], references: [id])
+  narratives    Narrative[]
+  nodes         NarrativeNode[]
+  dossier       FactDossier?
+  contentPieces ContentPiece[]
+  deliverables  Deliverable[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([status])
   @@index([createdAt])
@@ -1493,26 +1543,256 @@ model NarrativeTree {
 }
 
 model Narrative {
-  id              String         @id @default(cuid())
-  tree            NarrativeTree  @relation(fields: [treeId], references: [id], onDelete: Cascade)
-  treeId          String
-  brand           Brand          @relation(fields: [brandId], references: [id])
-  brandId         String
-  platform        String // youtube, x, instagram, linkedin, facebook
-  angle           String? // Editorial angle for this brand+platform
-  formatNotes     String?        @db.Text // What type of content (long-form video, thread, reel, etc.)
-  status          NarrativeStatus @default(INCOMING)
-  taskId          String? // Link to PMS Task once created
-  contentPostId   String? // Link to ContentPost once created
-  deliverableId   String? // Link to ClientDeliverable once created
-  editorialNotes  String?        @db.Text
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id             String          @id @default(cuid())
+  tree           NarrativeTree   @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  treeId         String
+  brand          Brand           @relation(fields: [brandId], references: [id])
+  brandId        String
+  platform       String // youtube, x, instagram, linkedin, facebook
+  angle          String? // Editorial angle for this brand+platform
+  formatNotes    String?         @db.Text // What type of content (long-form video, thread, reel, etc.)
+  status         NarrativeStatus @default(INCOMING)
+  taskId         String? // Link to PMS Task once created
+  contentPostId  String? // Link to ContentPost once created
+  deliverableId  String? // Link to ClientDeliverable once created
+  editorialNotes String?         @db.Text
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@unique([treeId, brandId, platform])
   @@index([brandId])
   @@index([status])
   @@map("narratives")
+}
+
+// ─── Yantri: Narrative Nodes ─────────────────────────────
+
+model NarrativeNode {
+  id           String        @id @default(cuid())
+  treeId       String
+  tree         NarrativeTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  nodeType     NodeType      @default(SIGNAL)
+  signalData   Json // Raw Khabri payload
+  signalTitle  String // Quick-access headline
+  signalScore  Int           @default(0)
+  identifiedAt DateTime      @default(now())
+
+  @@index([treeId])
+  @@map("narrative_nodes")
+}
+
+// ─── Yantri: Fact Dossier ────────────────────────────────
+
+model FactDossier {
+  id             String        @id @default(cuid())
+  treeId         String        @unique
+  tree           NarrativeTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  structuredData Json // { facts, stats, quotes, timeline }
+  sources        String[] // Array of source URLs
+  visualAssets   String[] // URLs to scraped images/charts
+  rawResearch    String?       @db.Text // Full research text before synthesis
+  lastUpdated    DateTime      @updatedAt
+  createdAt      DateTime      @default(now())
+
+  @@map("fact_dossiers")
+}
+
+// ─── Yantri: Content Pieces ──────────────────────────────
+
+model ContentPiece {
+  id              String                @id @default(cuid())
+  brandId         String
+  brand           Brand                 @relation(fields: [brandId], references: [id])
+  treeId          String?
+  tree            NarrativeTree?        @relation(fields: [treeId], references: [id])
+  platform        ContentPlatform
+  status          ContentPipelineStatus @default(PLANNED)
+  bodyText        String                @db.Text
+  researchPrompt  String?               @db.Text
+  postingPlan     Json? // Timing, hashtags, engagement strategy
+  visualPrompts   String?               @db.Text // Nano Banana structural prompts
+  performanceData Json? // Fed back from Relay
+  approvedAt      DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([brandId])
+  @@index([status])
+  @@index([platform])
+  @@map("content_pieces")
+}
+
+// ─── Yantri: Deliverables ────────────────────────────────
+
+model Deliverable {
+  id             String                @id @default(cuid())
+  brandId        String
+  brand          Brand                 @relation(fields: [brandId], references: [id])
+  treeId         String?
+  tree           NarrativeTree?        @relation(fields: [treeId], references: [id])
+  platform       ContentPlatform
+  pipelineType   String                @default("standard") // standard, viral_micro, carousel, cinematic
+  status         ContentPipelineStatus @default(PLANNED)
+  copyMarkdown   String?               @db.Text
+  storyboardUrl  String?
+  scriptData     Json? // Full script structure for YouTube
+  carouselData   Json? // Slide-by-slide carousel data
+  postingPlan    Json? // Timing, hashtags, engagement strategy
+  researchPrompt String?               @db.Text
+  factDossierId  String?
+  assets         Asset[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([brandId])
+  @@index([status])
+  @@index([platform])
+  @@index([pipelineType])
+  @@map("deliverables")
+}
+
+model Asset {
+  id            String      @id @default(cuid())
+  deliverableId String
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  type          AssetType
+  url           String
+  promptUsed    String?     @db.Text
+  slideIndex    Int? // For carousel slides — ordering
+  metadata      Json? // Additional metadata (dimensions, duration, etc.)
+  createdAt     DateTime    @default(now())
+
+  @@index([deliverableId])
+  @@index([type])
+  @@map("assets")
+}
+
+// ─── Yantri: Prompt Templates ────────────────────────────
+
+model PromptTemplate {
+  id           String   @id @default(cuid())
+  platform     String // "twitter", "linkedin", "youtube", "meta", "blog"
+  name         String // e.g., "Standard X Thread", "Contrarian Growth Post"
+  systemPrompt String   @db.Text
+  userFormat   String   @db.Text // Template for how context is structured
+  isActive     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([platform, isActive])
+  @@map("prompt_templates")
+}
+
+// ─── Yantri: Legacy Models ───────────────────────────────
+
+model PlatformRule {
+  id                String   @id @default(cuid())
+  narrativeType     String
+  primaryPlatform   String
+  secondaryPlatform String?
+  brandName         String?
+  sendWhen          String // JSON array
+  neverSend         String // JSON array
+  speedPriority     String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("platform_rules")
+}
+
+model TrendBatch {
+  id         String          @id @default(cuid())
+  importedAt DateTime        @default(now())
+  source     String          @default("khabri_manual")
+  trends     ImportedTrend[]
+
+  @@map("trend_batches")
+}
+
+model ImportedTrend {
+  id             String               @id @default(cuid())
+  rank           Int
+  score          Int
+  headline       String
+  reason         String
+  informationGap String?
+  status         String               @default("pending")
+  skipReason     String?
+  batchId        String
+  batch          TrendBatch           @relation(fields: [batchId], references: [id])
+  createdAt      DateTime             @default(now())
+  narratives     EditorialNarrative[]
+
+  @@index([batchId])
+  @@index([status])
+  @@map("imported_trends")
+}
+
+model EditorialNarrative {
+  id                String        @id @default(cuid())
+  angle             String
+  whyThisAngle      String
+  informationGap    String
+  priority          Int
+  platform          String
+  secondaryPlatform String?
+  format            String
+  urgency           String
+  status            String        @default("planned")
+  trendId           String
+  trend             ImportedTrend @relation(fields: [trendId], references: [id])
+  brandId           String
+  researchPrompt    String?
+  researchResults   String?       @db.Text
+  enginePrompt      String?       @db.Text
+  packageData       String?       @db.Text
+  finalContent      String?       @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([trendId])
+  @@index([brandId])
+  @@index([status])
+  @@map("editorial_narratives")
+}
+
+model EditorialLog {
+  id             String   @id @default(cuid())
+  action         String
+  reasoning      String
+  trendHeadline  String
+  narrativeAngle String?
+  platform       String?
+  brandName      String?
+  createdAt      DateTime @default(now())
+
+  @@index([action])
+  @@map("editorial_logs")
+}
+
+model PerformanceData {
+  id             String    @id @default(cuid())
+  narrativeId    String?
+  platform       String
+  brandName      String
+  contentType    String
+  impressions    Int?
+  engagementRate Float?
+  replies        Int?
+  retweets       Int?
+  bookmarks      Int?
+  views          Int?
+  watchTime      Float?
+  ctr            Float?
+  notes          String?
+  publishedAt    DateTime?
+  recordedAt     DateTime  @default(now())
+
+  @@index([platform])
+  @@index([brandName])
+  @@index([recordedAt])
+  @@map("performance_data")
 }
 
 // ─── Content Performance Tracking ───────────────────────
@@ -1649,4 +1929,3 @@ model DepartmentMetrics {
 
   @@map("department_metrics")
 }
-
