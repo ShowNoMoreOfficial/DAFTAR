@@ -127,6 +127,14 @@ interface CardData {
   iconBg: string;
 }
 
+function formatCompletionTime(hours: number): string {
+  const absHours = Math.abs(hours);
+  if (absHours < 1) return "<1h";
+  if (absHours < 24) return `${absHours.toFixed(1)}h`;
+  const days = absHours / 24;
+  return `${days.toFixed(1)}d`;
+}
+
 function getCardsForRole(
   role: Role,
   kpi: KPIData | null,
@@ -157,8 +165,12 @@ function getCardsForRole(
       },
       {
         title: "Avg Completion",
-        value: kpi ? `${kpi.avgCompletionHours}h` : "--",
-        subtitle: "average time",
+        value: kpi ? formatCompletionTime(kpi.avgCompletionHours) : "--",
+        subtitle: kpi
+          ? kpi.avgCompletionHours < 0
+            ? "tasks avg late"
+            : "tasks avg early"
+          : "average time",
         icon: <Clock className="h-4 w-4 text-[var(--accent-tertiary)]" />,
         iconBg: "bg-[rgba(245,158,11,0.1)]",
       },
@@ -289,7 +301,7 @@ function getCardsForRole(
     },
     {
       title: "Avg Time",
-      value: kpi ? `${kpi.avgCompletionHours}h` : "--",
+      value: kpi ? formatCompletionTime(kpi.avgCompletionHours) : "--",
       subtitle: "to complete",
       icon: <Clock className="h-4 w-4 text-[var(--accent-tertiary)]" />,
       iconBg: "bg-[rgba(245,158,11,0.1)]",

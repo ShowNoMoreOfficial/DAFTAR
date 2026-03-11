@@ -10,9 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Settings, LogOut, User, Menu } from "lucide-react";
+import { Search, Settings, LogOut, User, Menu, Plus } from "lucide-react";
 import { CommandSearch } from "./command-search";
 import { NotificationBell } from "./notification-bell";
+import { QuickCreateModal } from "./quick-create-modal";
 import { useSidebarStore } from "@/store/sidebar-store";
 
 interface TopBarProps {
@@ -59,13 +60,10 @@ function buildBreadcrumb(pathname: string): { label: string; href: string }[] {
     departments: "Departments",
     clients: "Clients & Brands",
     skills: "Skills",
-    saas: "SaaS Platform",
     communication: "Communication",
     credibility: "Credibility",
     workspace: "Workspace",
     performance: "Performance",
-    onboarding: "Onboarding",
-    products: "Products",
     operations: "Operations",
     culture: "Culture",
     queue: "Queue",
@@ -104,6 +102,7 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
   const pathname = usePathname();
   const breadcrumb = buildBreadcrumb(pathname);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const { setMobileOpen } = useSidebarStore();
 
   useEffect(() => {
@@ -111,6 +110,10 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setSearchOpen(true);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+        e.preventDefault();
+        setCreateOpen(true);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -158,8 +161,16 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
           </kbd>
         </button>
 
-        {/* Right: Notifications + Avatar */}
+        {/* Right: Create + Notifications + Avatar */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCreateOpen(true)}
+            title="Create new (Ctrl+N)"
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-primary)] text-[var(--text-inverse)] transition-all hover:opacity-90 hover:shadow-[0_0_12px_rgba(0,212,170,0.3)]"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+
           <NotificationBell />
 
           <DropdownMenu>
@@ -196,6 +207,7 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
       </header>
 
       <CommandSearch open={searchOpen} onOpenChange={setSearchOpen} />
+      <QuickCreateModal open={createOpen} onOpenChange={setCreateOpen} />
     </>
   );
 }

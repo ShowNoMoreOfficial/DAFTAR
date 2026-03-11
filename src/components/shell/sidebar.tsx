@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/sidebar-store";
-import { getSidebarItemsForRole } from "@/lib/sidebar-config";
+import { getSidebarSectionsForRole } from "@/lib/sidebar-config";
+import type { SidebarSection } from "@/lib/sidebar-config";
+import type { SidebarItem } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,6 +27,7 @@ import {
   Calendar,
   BarChart3,
   Settings,
+  Settings2,
   HelpCircle,
   LogOut,
   PanelLeftClose,
@@ -34,7 +37,6 @@ import {
   Building2,
   Building,
   BookOpen,
-  Cloud,
   ShieldCheck,
   TrendingUp,
   Radio,
@@ -50,6 +52,8 @@ import {
   Package,
   Tag,
   Image,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 
@@ -70,11 +74,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeW
   Calendar,
   BarChart3,
   Settings,
+  Settings2,
   MessageCircle,
   Building2,
   Building,
   BookOpen,
-  Cloud,
   ShieldCheck,
   TrendingUp,
   Radio,
@@ -116,7 +120,28 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
   const pathname = usePathname();
   const { isCollapsed, isMobileOpen, toggleSidebar, setMobileOpen } =
     useSidebarStore();
-  const items = getSidebarItemsForRole(user.role);
+  const sections = getSidebarSectionsForRole(user.role);
+
+  // Track which sections are collapsed
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  // Track which items have children expanded
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Auto-expand item whose child is active
+  useEffect(() => {
+    for (const section of sections) {
+      for (const item of section.items) {
+        if (item.children) {
+          const childActive = item.children.some(
+            (c) => pathname === c.href || pathname.startsWith(c.href + "/")
+          );
+          if (childActive) {
+            setExpandedItems((prev) => new Set([...prev, item.id]));
+          }
+        }
+      }
+    }
+  }, [pathname, sections]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -133,6 +158,127 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [setMobileOpen]);
+
+  const toggleSection = useCallback((sectionId: string) => {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleItem = useCallback((itemId: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  }, []);
+
+  const renderItem = (item: SidebarItem, depth = 0) => {
+    const Icon = ICON_MAP[item.icon];
+    const isActive =
+      pathname === item.href ||
+      pathname.startsWith(item.href + "/");
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedItems.has(item.id);
+
+    return (
+      <li key={item.id}>
+        <div className="flex items-center">
+          <Link
+            href={item.href}
+            title={isCollapsed ? item.label : undefined}
+            className={cn(
+              "flex flex-1 items-center gap-3 rounded-[var(--radius)] px-3 py-2 text-sm transition-all duration-150",
+              depth > 0 && "ml-4 pl-3",
+              isActive
+                ? "border-l-[3px] border-l-[var(--accent-primary)] bg-[rgba(0,212,170,0.08)] font-medium text-[var(--accent-primary)]"
+                : "border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
+              isCollapsed && depth === 0 && "md:justify-center md:border-l-0 md:px-2"
+            )}
+          >
+            {Icon && (
+              <Icon
+                className={cn(
+                  "h-[18px] w-[18px] shrink-0",
+                  isActive ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"
+                )}
+                strokeWidth={1.5}
+              />
+            )}
+            <span className={cn("truncate", isCollapsed && depth === 0 && "md:hidden")}>
+              {item.label}
+            </span>
+          </Link>
+          {hasChildren && !isCollapsed && (
+            <button
+              onClick={() => toggleItem(item.id)}
+              className="mr-1 rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-secondary)]"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
+        </div>
+        {hasChildren && isExpanded && !isCollapsed && (
+          <ul className="mt-0.5 space-y-0.5">
+            {item.children!.filter((c) => c.roles.includes(user.role)).map((child) => renderItem(child, depth + 1))}
+          </ul>
+        )}
+      </li>
+    );
+  };
+
+  const renderSection = (section: SidebarSection) => {
+    const isSectionCollapsed = collapsedSections.has(section.id);
+    const hasLabel = section.label.length > 0;
+
+    return (
+      <div key={section.id} className={cn(hasLabel && "mt-4")}>
+        {/* Section header */}
+        {hasLabel && !isCollapsed && (
+          <button
+            onClick={() => section.collapsible && toggleSection(section.id)}
+            className={cn(
+              "flex w-full items-center justify-between px-3 py-1.5",
+              section.collapsible && "cursor-pointer hover:opacity-80"
+            )}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--text-muted)]">
+              {section.label}
+            </span>
+            {section.collapsible && (
+              <ChevronDown
+                className={cn(
+                  "h-3 w-3 text-[var(--text-muted)] transition-transform duration-200",
+                  isSectionCollapsed && "-rotate-90"
+                )}
+              />
+            )}
+          </button>
+        )}
+
+        {/* Section items */}
+        {(!isSectionCollapsed || !hasLabel) && (
+          <ul className="space-y-0.5">
+            {section.items.map((item) => renderItem(item))}
+          </ul>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -203,7 +349,6 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
               {user.name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          {/* On mobile always show text; on desktop hide when collapsed */}
           <div className={cn("min-w-0 flex-1", isCollapsed && "md:hidden")}>
             <p className="truncate text-sm font-medium text-[var(--text-primary)]">
               {user.name}
@@ -217,46 +362,9 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation — grouped sections */}
         <nav className="flex-1 overflow-y-auto p-2">
-          <ul className="space-y-0.5">
-            {items.map((item) => {
-              const Icon = ICON_MAP[item.icon];
-              const isActive =
-                pathname === item.href ||
-                pathname.startsWith(item.href + "/");
-
-              return (
-                <li key={item.id}>
-                  <Link
-                    href={item.href}
-                    title={isCollapsed ? item.label : undefined}
-                    className={cn(
-                      "flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm transition-all duration-150",
-                      isActive
-                        ? "border-l-[3px] border-l-[var(--accent-primary)] bg-[rgba(0,212,170,0.08)] font-medium text-[var(--accent-primary)]"
-                        : "border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] hover:translate-x-0.5",
-                      isCollapsed && "md:justify-center md:border-l-0 md:px-2"
-                    )}
-                  >
-                    {Icon && (
-                      <Icon
-                        className={cn(
-                          "h-5 w-5 shrink-0",
-                          isActive ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"
-                        )}
-                        strokeWidth={1.5}
-                      />
-                    )}
-                    {/* On mobile always show label; on desktop hide when collapsed */}
-                    <span className={cn(isCollapsed && "md:hidden")}>
-                      {item.label}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          {sections.map(renderSection)}
         </nav>
 
         {/* Bottom section */}
@@ -271,11 +379,11 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
                   href={item.href}
                   title={isCollapsed ? item.label : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
+                    "flex items-center gap-3 rounded-[var(--radius)] px-3 py-2 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
                     isCollapsed && "md:justify-center md:px-2"
                   )}
                 >
-                  <item.icon className="h-5 w-5 shrink-0 text-[var(--text-muted)]" strokeWidth={1.5} />
+                  <item.icon className="h-[18px] w-[18px] shrink-0 text-[var(--text-muted)]" strokeWidth={1.5} />
                   <span className={cn(isCollapsed && "md:hidden")}>
                     {item.label}
                   </span>
@@ -287,11 +395,11 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
                 onClick={onSignOut}
                 title={isCollapsed ? "Logout" : undefined}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[rgba(239,68,68,0.1)] hover:text-[var(--status-error)]",
+                  "flex w-full items-center gap-3 rounded-[var(--radius)] px-3 py-2 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[rgba(239,68,68,0.1)] hover:text-[var(--status-error)]",
                   isCollapsed && "md:justify-center md:px-2"
                 )}
               >
-                <LogOut className="h-5 w-5 shrink-0 text-[var(--text-muted)]" strokeWidth={1.5} />
+                <LogOut className="h-[18px] w-[18px] shrink-0 text-[var(--text-muted)]" strokeWidth={1.5} />
                 <span className={cn(isCollapsed && "md:hidden")}>Logout</span>
               </button>
             </li>
