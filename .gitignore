@@ -33,7 +33,9 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Environment files
-.env*
+.env
+.env.*
+!.env.template
 
 # Vercel
 .vercel
