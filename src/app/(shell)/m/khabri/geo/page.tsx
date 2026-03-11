@@ -94,14 +94,14 @@ export default function KhabriGeoPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1A1A1A] flex items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
             <Globe2 className="h-5 w-5 text-emerald-600" /> Geo Intelligence
           </h1>
-          <p className="text-sm text-[#6B7280]">Geographic hotspot analysis and country-level intelligence</p>
+          <p className="text-sm text-[var(--text-secondary)]">Geographic hotspot analysis and country-level intelligence</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Time Range Selector */}
-          <div className="flex rounded-lg border border-[#E5E7EB] overflow-hidden">
+          <div className="flex rounded-lg border border-[var(--border-subtle)] overflow-hidden">
             {[6, 12, 24, 48].map((h) => (
               <button
                 key={h}
@@ -109,8 +109,8 @@ export default function KhabriGeoPage() {
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium transition-colors",
                   hours === h
-                    ? "bg-[#2E86AB] text-white"
-                    : "bg-white text-[#6B7280] hover:bg-[#F8F9FA]"
+                    ? "bg-[var(--accent-primary)] text-white"
+                    : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
                 )}
               >
                 {h}h
@@ -125,12 +125,12 @@ export default function KhabriGeoPage() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-[#2E86AB]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-primary)]" />
         </div>
       ) : (
         <div className="space-y-2">
           {hotspots.length === 0 ? (
-            <div className="rounded-xl border border-[#E5E7EB] bg-white px-5 py-12 text-center text-sm text-[#9CA3AF]">
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-5 py-12 text-center text-sm text-[var(--text-muted)]">
               No geo hotspots detected in the last {hours} hours
             </div>
           ) : (
@@ -142,22 +142,22 @@ export default function KhabriGeoPage() {
                 <div
                   key={hotspot.countryCode}
                   className={cn(
-                    "rounded-xl border bg-white transition-colors",
-                    isExpanded ? "border-emerald-300" : "border-[#E5E7EB]"
+                    "rounded-xl border bg-[var(--bg-surface)] transition-colors",
+                    isExpanded ? "border-emerald-300" : "border-[var(--border-subtle)]"
                   )}
                 >
                   <div
-                    className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-[#F8F9FA] transition-colors"
+                    className="flex items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-[var(--bg-surface)] transition-colors"
                     onClick={() => toggleCountry(hotspot.countryCode)}
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[rgba(16,185,129,0.15)] text-xs font-bold text-emerald-700">
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span className="text-sm font-medium text-[#1A1A1A]">{hotspot.country || getCountryName(hotspot.countryCode)}</span>
-                        <span className="text-xs text-[#9CA3AF]">({hotspot.countryCode})</span>
+                        <span className="text-sm font-medium text-[var(--text-primary)]">{hotspot.country || getCountryName(hotspot.countryCode)}</span>
+                        <span className="text-xs text-[var(--text-muted)]">({hotspot.countryCode})</span>
                       </div>
                       {/* Handle both topCategory (string) and topCategories (array) from API */}
                       {(hotspot.topCategories && hotspot.topCategories.length > 0) ? (
@@ -174,20 +174,20 @@ export default function KhabriGeoPage() {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="hidden sm:flex items-center gap-2 w-32">
-                        <div className="flex-1 h-2 rounded-full bg-[#F0F2F5] overflow-hidden">
+                        <div className="flex-1 h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-emerald-500"
+                            className="h-full rounded-full bg-[rgba(16,185,129,0.1)]0"
                             style={{ width: `${barWidth}%` }}
                           />
                         </div>
                       </div>
-                      <span className="flex items-center gap-1 text-sm font-semibold text-[#1A1A1A]">
-                        <Radio className="h-3 w-3 text-[#9CA3AF]" /> {hotspot.signalCount}
+                      <span className="flex items-center gap-1 text-sm font-semibold text-[var(--text-primary)]">
+                        <Radio className="h-3 w-3 text-[var(--text-muted)]" /> {hotspot.signalCount}
                       </span>
                       {isExpanded ? (
-                        <ChevronUp className="h-4 w-4 text-[#9CA3AF]" />
+                        <ChevronUp className="h-4 w-4 text-[var(--text-muted)]" />
                       ) : (
-                        <ChevronDown className="h-4 w-4 text-[#9CA3AF]" />
+                        <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />
                       )}
                     </div>
                   </div>
@@ -202,29 +202,29 @@ export default function KhabriGeoPage() {
                       ) : countryIntel ? (
                         <div className="space-y-3">
                           {countryIntel.briefing && (
-                            <div className="rounded-lg bg-emerald-50 p-3">
+                            <div className="rounded-lg bg-[rgba(16,185,129,0.1)] p-3">
                               <p className="text-xs font-medium text-emerald-800 mb-1">AI Briefing</p>
                               <p className="text-sm text-emerald-900 leading-relaxed">{countryIntel.briefing}</p>
                             </div>
                           )}
 
                           {countryIntel.sentiment && (
-                            <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+                            <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                               Overall sentiment:
                               {countryIntel.sentiment.label === "POSITIVE" && <ThumbsUp className="h-4 w-4 text-emerald-500" />}
                               {countryIntel.sentiment.label === "NEGATIVE" && <ThumbsDown className="h-4 w-4 text-red-500" />}
                               {countryIntel.sentiment.label === "NEUTRAL" && <Minus className="h-4 w-4 text-gray-400" />}
-                              <strong className="text-[#1A1A1A]">{countryIntel.sentiment.label}</strong>
+                              <strong className="text-[var(--text-primary)]">{countryIntel.sentiment.label}</strong>
                               <span>({countryIntel.sentiment.score.toFixed(2)})</span>
                             </div>
                           )}
 
                           {countryIntel.topTopics && countryIntel.topTopics.length > 0 && (
                             <div>
-                              <p className="text-xs font-medium text-[#6B7280] mb-1.5">Top Topics</p>
+                              <p className="text-xs font-medium text-[var(--text-secondary)] mb-1.5">Top Topics</p>
                               <div className="flex flex-wrap gap-1.5">
                                 {countryIntel.topTopics.map((topic) => (
-                                  <span key={topic} className="rounded-full bg-[#F0F2F5] px-2.5 py-0.5 text-xs text-[#6B7280]">
+                                  <span key={topic} className="rounded-full bg-[var(--bg-elevated)] px-2.5 py-0.5 text-xs text-[var(--text-secondary)]">
                                     {topic}
                                   </span>
                                 ))}
@@ -233,7 +233,7 @@ export default function KhabriGeoPage() {
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs text-[#9CA3AF]">No detailed intelligence available</p>
+                        <p className="text-xs text-[var(--text-muted)]">No detailed intelligence available</p>
                       )}
                     </div>
                   )}

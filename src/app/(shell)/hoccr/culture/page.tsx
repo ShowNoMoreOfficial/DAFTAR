@@ -59,11 +59,11 @@ interface DeptEngagement {
 // ─── Constants ──────────────────────────────────────────
 
 const CATEGORY_COLORS: Record<string, string> = {
-  kudos: "bg-yellow-100 text-yellow-700",
-  teamwork: "bg-blue-100 text-blue-700",
-  innovation: "bg-purple-100 text-purple-700",
-  quality: "bg-emerald-100 text-emerald-700",
-  leadership: "bg-pink-100 text-pink-700",
+  kudos: "bg-[rgba(234,179,8,0.15)] text-yellow-700",
+  teamwork: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  innovation: "bg-[rgba(168,85,247,0.15)] text-purple-700",
+  quality: "bg-[rgba(16,185,129,0.15)] text-emerald-700",
+  leadership: "bg-[rgba(236,72,153,0.15)] text-pink-700",
 };
 
 const CATEGORIES = ["kudos", "teamwork", "innovation", "quality", "leadership"];
@@ -76,7 +76,7 @@ export default function CulturePage() {
   return (
     <div className="h-full overflow-y-auto">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-[#E5E7EB] bg-white px-6">
+      <div className="flex items-center gap-1 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6">
         {(
           [
             { key: "sentiment" as const, label: "Sentiment", icon: Smile },
@@ -90,8 +90,8 @@ export default function CulturePage() {
             className={cn(
               "flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm transition-colors",
               activeTab === tab.key
-                ? "border-[#2E86AB] font-medium text-[#2E86AB]"
-                : "border-transparent text-[#6B7280] hover:text-[#1A1A1A]"
+                ? "border-[#2E86AB] font-medium text-[var(--accent-primary)]"
+                : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             )}
           >
             <tab.icon className="h-4 w-4" />
@@ -160,7 +160,7 @@ function SentimentTab() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -169,8 +169,8 @@ function SentimentTab() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-[#1A1A1A]">Team Sentiment</h3>
-          <p className="text-xs text-[#9CA3AF]">Department-level mood and trends</p>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Team Sentiment</h3>
+          <p className="text-xs text-[var(--text-muted)]">Department-level mood and trends</p>
         </div>
         <Button size="sm" onClick={() => setPulseOpen(true)}>
           <Heart className="mr-1.5 h-3.5 w-3.5" />
@@ -181,16 +181,16 @@ function SentimentTab() {
       {/* Pulse dialog */}
       {pulseOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-sm rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">How are you feeling?</h3>
-              <button onClick={() => setPulseOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">How are you feeling?</h3>
+              <button onClick={() => setPulseOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="mb-4">
-              <label className="mb-2 block text-sm text-[#6B7280]">
-                Score: <span className="font-semibold text-[#1A1A1A]">{score}</span> / 5
+              <label className="mb-2 block text-sm text-[var(--text-secondary)]">
+                Score: <span className="font-semibold text-[var(--text-primary)]">{score}</span> / 5
               </label>
               <input
                 type="range"
@@ -201,7 +201,7 @@ function SentimentTab() {
                 onChange={(e) => setScore(parseInt(e.target.value))}
                 className="w-full accent-[#2E86AB]"
               />
-              <div className="flex justify-between text-[10px] text-[#9CA3AF]">
+              <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
                 <span>Very Low</span>
                 <span>Low</span>
                 <span>Neutral</span>
@@ -216,7 +216,7 @@ function SentimentTab() {
               rows={2}
               className="mb-3"
             />
-            <label className="mb-4 flex items-center gap-2 text-sm text-[#6B7280]">
+            <label className="mb-4 flex items-center gap-2 text-sm text-[var(--text-secondary)]">
               <input
                 type="checkbox"
                 checked={anonymous}
@@ -239,21 +239,21 @@ function SentimentTab() {
 
       {/* Department cards */}
       {data.length === 0 ? (
-        <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-8 text-center text-sm text-[#9CA3AF]">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
           No sentiment data yet. Submit a pulse to get started.
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-4">
           {data.map((dept) => (
-            <div key={dept.departmentId} className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+            <div key={dept.departmentId} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-sm font-medium text-[#1A1A1A]">{dept.departmentName}</h4>
+                <h4 className="text-sm font-medium text-[var(--text-primary)]">{dept.departmentName}</h4>
                 {dept.trend === "up" ? (
                   <TrendingUp className="h-4 w-4 text-emerald-500" />
                 ) : dept.trend === "down" ? (
                   <TrendingDown className="h-4 w-4 text-red-500" />
                 ) : (
-                  <Minus className="h-4 w-4 text-[#9CA3AF]" />
+                  <Minus className="h-4 w-4 text-[var(--text-muted)]" />
                 )}
               </div>
               <div className="mb-2 flex items-baseline gap-2">
@@ -261,7 +261,7 @@ function SentimentTab() {
                   className={cn(
                     "text-2xl font-bold",
                     dept.avgScore === null
-                      ? "text-[#9CA3AF]"
+                      ? "text-[var(--text-muted)]"
                       : dept.avgScore >= 4
                       ? "text-emerald-600"
                       : dept.avgScore >= 3
@@ -271,9 +271,9 @@ function SentimentTab() {
                 >
                   {dept.avgScore !== null ? dept.avgScore : "--"}
                 </span>
-                <span className="text-xs text-[#9CA3AF]">/ 5</span>
+                <span className="text-xs text-[var(--text-muted)]">/ 5</span>
               </div>
-              <p className="text-[10px] text-[#9CA3AF]">{dept.totalEntries} entries (4 weeks)</p>
+              <p className="text-[10px] text-[var(--text-muted)]">{dept.totalEntries} entries (4 weeks)</p>
 
               {/* Mini trend bar */}
               <div className="mt-3 flex items-end gap-1">
@@ -295,7 +295,7 @@ function SentimentTab() {
                   />
                 ))}
               </div>
-              <div className="mt-1 flex justify-between text-[9px] text-[#9CA3AF]">
+              <div className="mt-1 flex justify-between text-[9px] text-[var(--text-muted)]">
                 <span>4w ago</span>
                 <span>This week</span>
               </div>
@@ -374,7 +374,7 @@ function RecognitionTab() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -383,8 +383,8 @@ function RecognitionTab() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-[#1A1A1A]">Recognition Feed</h3>
-          <p className="text-xs text-[#9CA3AF]">Celebrate team achievements</p>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Recognition Feed</h3>
+          <p className="text-xs text-[var(--text-muted)]">Celebrate team achievements</p>
         </div>
         <Button size="sm" onClick={() => setGiveOpen(true)}>
           <Award className="mr-1.5 h-3.5 w-3.5" />
@@ -395,10 +395,10 @@ function RecognitionTab() {
       {/* Give recognition dialog */}
       {giveOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">Give Recognition</h3>
-              <button onClick={() => setGiveOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">Give Recognition</h3>
+              <button onClick={() => setGiveOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -406,7 +406,7 @@ function RecognitionTab() {
               <select
                 value={toUserId}
                 onChange={(e) => setToUserId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">Select team member</option>
                 {users.map((u) => (
@@ -418,7 +418,7 @@ function RecognitionTab() {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -432,7 +432,7 @@ function RecognitionTab() {
                 onChange={(e) => setMessage(e.target.value)}
                 rows={3}
               />
-              <label className="flex items-center gap-2 text-sm text-[#6B7280]">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                 <input
                   type="checkbox"
                   checked={isPublic}
@@ -458,31 +458,31 @@ function RecognitionTab() {
         {/* Feed */}
         <div className="col-span-2 space-y-3">
           {recognitions.length === 0 ? (
-            <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-8 text-center text-sm text-[#9CA3AF]">
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
               No recognitions yet. Be the first to recognize a teammate!
             </div>
           ) : (
             recognitions.map((r) => (
-              <div key={r.id} className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+              <div key={r.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
                 <div className="mb-2 flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2E86AB] text-[10px] font-medium text-white">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[10px] font-medium text-white">
                     {r.from.name.charAt(0)}
                   </div>
-                  <Send className="h-3 w-3 text-[#9CA3AF]" />
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#A23B72] text-[10px] font-medium text-white">
+                  <Send className="h-3 w-3 text-[var(--text-muted)]" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-secondary)] text-[10px] font-medium text-white">
                     {r.to.name.charAt(0)}
                   </div>
                   <div className="flex-1">
-                    <span className="text-sm font-medium text-[#1A1A1A]">{r.from.name}</span>
-                    <span className="mx-1.5 text-xs text-[#9CA3AF]">recognized</span>
-                    <span className="text-sm font-medium text-[#1A1A1A]">{r.to.name}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">{r.from.name}</span>
+                    <span className="mx-1.5 text-xs text-[var(--text-muted)]">recognized</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">{r.to.name}</span>
                   </div>
                   <Badge className={cn("text-[10px]", CATEGORY_COLORS[r.category] || "")}>
                     {r.category}
                   </Badge>
                 </div>
-                <p className="text-sm text-[#6B7280]">{r.message}</p>
-                <div className="mt-2 flex items-center gap-2 text-[10px] text-[#9CA3AF]">
+                <p className="text-sm text-[var(--text-secondary)]">{r.message}</p>
+                <div className="mt-2 flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
                   <span>
                     {new Date(r.createdAt).toLocaleDateString("en-IN", {
                       day: "numeric",
@@ -498,9 +498,9 @@ function RecognitionTab() {
 
         {/* Top Recognized */}
         <div>
-          <h4 className="mb-3 text-sm font-semibold text-[#1A1A1A]">Top Recognized (This Month)</h4>
+          <h4 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Top Recognized (This Month)</h4>
           {topRecognized.length === 0 ? (
-            <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-6 text-center text-xs text-[#9CA3AF]">
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-6 text-center text-xs text-[var(--text-muted)]">
               No data yet
             </div>
           ) : (
@@ -508,18 +508,18 @@ function RecognitionTab() {
               {topRecognized.map((t, i) => (
                 <div
                   key={t.user.id}
-                  className="flex items-center gap-3 rounded-lg border border-[#E5E7EB] bg-white p-3"
+                  className="flex items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3"
                 >
-                  <span className="text-sm font-bold text-[#A23B72]">#{i + 1}</span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#A23B72] text-[10px] font-medium text-white">
+                  <span className="text-sm font-bold text-[var(--accent-secondary)]">#{i + 1}</span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-secondary)] text-[10px] font-medium text-white">
                     {t.user.name.charAt(0)}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-[#1A1A1A]">{t.user.name}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{t.user.name}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Star className="h-3.5 w-3.5 text-yellow-500" />
-                    <span className="text-sm font-medium text-[#1A1A1A]">{t.count}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">{t.count}</span>
                   </div>
                 </div>
               ))}
@@ -572,7 +572,7 @@ function EngagementTab() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -581,8 +581,8 @@ function EngagementTab() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-[#1A1A1A]">Engagement Metrics</h3>
-          <p className="text-xs text-[#9CA3AF]">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Engagement Metrics</h3>
+          <p className="text-xs text-[var(--text-muted)]">
             Period: {period || "current month"}
           </p>
         </div>
@@ -597,16 +597,16 @@ function EngagementTab() {
       </div>
 
       {departments.length === 0 ? (
-        <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-8 text-center text-sm text-[#9CA3AF]">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
           No engagement data available. Click "Refresh Metrics" to compute.
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {departments.map((dept) => (
-            <div key={dept.departmentId} className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+            <div key={dept.departmentId} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-sm font-medium text-[#1A1A1A]">{dept.departmentName}</h4>
-                <span className="text-xs text-[#9CA3AF]">{dept.userCount} members</span>
+                <h4 className="text-sm font-medium text-[var(--text-primary)]">{dept.departmentName}</h4>
+                <span className="text-xs text-[var(--text-muted)]">{dept.userCount} members</span>
               </div>
 
               {/* Overall score */}
@@ -623,7 +623,7 @@ function EngagementTab() {
                 >
                   {dept.avgOverallScore}
                 </span>
-                <span className="text-xs text-[#9CA3AF]">/ 100 overall</span>
+                <span className="text-xs text-[var(--text-muted)]">/ 100 overall</span>
               </div>
 
               {/* Metric bars */}
@@ -655,17 +655,17 @@ function MetricBar({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-[#6B7280]">{label}</span>
-        <span className="font-medium text-[#1A1A1A]">
+        <span className="text-[var(--text-secondary)]">{label}</span>
+        <span className="font-medium text-[var(--text-primary)]">
           {value}
           {suffix}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[#F3F4F6]">
+      <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
         <div
           className={cn(
             "h-full rounded-full",
-            pct >= 70 ? "bg-emerald-500" : pct >= 40 ? "bg-yellow-500" : "bg-red-500"
+            pct >= 70 ? "bg-[rgba(16,185,129,0.1)]0" : pct >= 40 ? "bg-[rgba(234,179,8,0.1)]0" : "bg-[rgba(239,68,68,0.1)]0"
           )}
           style={{ width: `${pct}%` }}
         />

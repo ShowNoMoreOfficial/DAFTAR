@@ -59,7 +59,6 @@ export function GIAssistant() {
             timestamp: new Date(),
           },
         ];
-        // Show proactive insight if available
         if (data.proactiveInsight) {
           newMessages.push({
             role: "gi",
@@ -95,7 +94,8 @@ export function GIAssistant() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#2E86AB] to-[#A23B72] text-white shadow-lg transition-transform hover:scale-110"
+        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white shadow-[var(--shadow-lg)] transition-transform hover:scale-110"
+        style={{ boxShadow: "0 0 24px rgba(0, 212, 170, 0.3)" }}
         title="Open GI Assistant"
       >
         <Sparkles className="h-5 w-5" />
@@ -106,13 +106,13 @@ export function GIAssistant() {
   return (
     <div
       className={cn(
-        "fixed bottom-6 right-6 z-50 flex flex-col rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl transition-all",
+        "fixed bottom-6 right-6 z-50 flex flex-col rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-[var(--shadow-lg)] transition-all",
         minimized ? "h-12 w-72" : "h-[500px] w-[380px]"
       )}
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-[#2E86AB] to-[#A23B72] px-4 py-3 cursor-pointer"
+        className="flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] px-4 py-3 cursor-pointer"
         onClick={() => minimized && setMinimized(false)}
       >
         <div className="flex items-center gap-2">
@@ -146,8 +146,8 @@ export function GIAssistant() {
                   className={cn(
                     "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm",
                     msg.role === "user"
-                      ? "bg-[#2E86AB] text-white rounded-br-sm"
-                      : "bg-[#F0F2F5] text-[#1A1A1A] rounded-bl-sm"
+                      ? "bg-[var(--accent-primary)] text-[var(--text-inverse)] rounded-br-sm"
+                      : "bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-bl-sm border-l-2 border-l-[var(--accent-primary)]"
                   )}
                 >
                   <p className="whitespace-pre-line">{msg.content}</p>
@@ -158,7 +158,7 @@ export function GIAssistant() {
                         <button
                           key={s}
                           onClick={() => sendMessage(s)}
-                          className="rounded-full border border-[#2E86AB]/30 bg-white px-2.5 py-1 text-[10px] font-medium text-[#2E86AB] transition-colors hover:bg-[#2E86AB]/10"
+                          className="rounded-full border border-[var(--accent-primary)]/30 bg-[var(--bg-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--accent-primary)] transition-colors hover:bg-[rgba(0,212,170,0.1)]"
                         >
                           {s}
                         </button>
@@ -170,11 +170,11 @@ export function GIAssistant() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-sm bg-[#F0F2F5] px-4 py-3">
+                <div className="rounded-2xl rounded-bl-sm bg-[var(--bg-elevated)] px-4 py-3">
                   <div className="flex gap-1">
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#9CA3AF]" style={{ animationDelay: "0ms" }} />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#9CA3AF]" style={{ animationDelay: "150ms" }} />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#9CA3AF]" style={{ animationDelay: "300ms" }} />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--accent-primary)]" style={{ animationDelay: "0ms" }} />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--accent-primary)]" style={{ animationDelay: "150ms" }} />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--accent-primary)]" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </div>
@@ -183,14 +183,14 @@ export function GIAssistant() {
           </div>
 
           {/* Context indicator */}
-          <div className="border-t border-[#F0F2F5] px-3 py-1.5">
-            <span className="text-[10px] text-[#9CA3AF]">
+          <div className="border-t border-[var(--border-subtle)] px-3 py-1.5">
+            <span className="text-[10px] text-[var(--text-muted)]">
               Context: {context.currentModule} / {context.currentView}
             </span>
           </div>
 
           {/* Input */}
-          <div className="border-t border-[#E5E7EB] p-3">
+          <div className="border-t border-[var(--border-subtle)] p-3">
             <div className="flex gap-2">
               <Textarea
                 value={input}
@@ -198,13 +198,13 @@ export function GIAssistant() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask GI anything..."
                 rows={1}
-                className="min-h-[36px] resize-none text-sm"
+                className="min-h-[36px] resize-none border-[var(--border-default)] bg-[var(--bg-deep)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
               />
               <Button
                 size="sm"
                 onClick={() => sendMessage(input)}
                 disabled={loading || !input.trim()}
-                className="h-9 w-9 shrink-0 p-0"
+                className="h-9 w-9 shrink-0 rounded-full bg-[var(--accent-primary)] p-0 text-[var(--text-inverse)] hover:bg-[var(--accent-primary)]/90"
               >
                 <Send className="h-3.5 w-3.5" />
               </Button>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
 
 export async function GET(
   _req: NextRequest,
@@ -35,6 +35,7 @@ export async function POST(
   const session = await getAuthSession();
   if (!session) return unauthorized();
 
+  try {
   const { id } = await params;
   const { value, taskId } = await req.json();
 
@@ -87,4 +88,7 @@ export async function POST(
   }
 
   return NextResponse.json(entry, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

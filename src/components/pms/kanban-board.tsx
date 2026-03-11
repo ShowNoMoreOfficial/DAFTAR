@@ -62,7 +62,7 @@ export function KanbanBoard({ initialColumns }: KanbanBoardProps) {
     <div className="flex h-full flex-col">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-6 py-3">
-        <h2 className="text-base font-semibold text-[#1A1A1A]">Task Board</h2>
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">Task Board</h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={fetchBoard}>
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
@@ -81,7 +81,7 @@ export function KanbanBoard({ initialColumns }: KanbanBoardProps) {
           <div
             key={col.id}
             className={cn(
-              "flex w-[280px] min-w-[280px] flex-col rounded-lg border border-[#E5E7EB] border-t-4 bg-[#F8F9FA]",
+              "flex w-[280px] min-w-[280px] flex-col rounded-lg border border-[var(--border-subtle)] border-t-4 bg-[var(--bg-surface)]",
               COLUMN_COLORS[col.id]
             )}
             onDragOver={(e) => e.preventDefault()}
@@ -92,10 +92,10 @@ export function KanbanBoard({ initialColumns }: KanbanBoardProps) {
           >
             {/* Column header */}
             <div className="flex items-center justify-between px-3 py-2.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                 {col.title}
               </span>
-              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
+              <span className="rounded-full bg-[var(--bg-surface)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-muted)]">
                 {col.tasks.length}
               </span>
             </div>
@@ -118,7 +118,7 @@ export function KanbanBoard({ initialColumns }: KanbanBoardProps) {
                 </div>
               ))}
               {col.tasks.length === 0 && (
-                <p className="py-8 text-center text-xs text-[#D1D5DB]">
+                <p className="py-8 text-center text-xs text-[var(--text-muted)]">
                   No tasks
                 </p>
               )}

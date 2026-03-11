@@ -29,9 +29,9 @@ interface Product {
 }
 
 const PLAN_BADGES: Record<string, string> = {
-  STARTER: "bg-gray-100 text-gray-700",
-  PROFESSIONAL: "bg-[#2E86AB]/10 text-[#2E86AB]",
-  ENTERPRISE: "bg-[#A23B72]/10 text-[#A23B72]",
+  STARTER: "bg-[var(--bg-elevated)] text-gray-700",
+  PROFESSIONAL: "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]",
+  ENTERPRISE: "bg-[var(--accent-secondary)]/10 text-[var(--accent-secondary)]",
 };
 
 export default function SaaSDashboardPage() {
@@ -65,10 +65,10 @@ export default function SaaSDashboardPage() {
         <div className="h-8 w-48 animate-pulse rounded-lg bg-gray-200" />
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl border border-[#E5E7EB] bg-white" />
+            <div key={i} className="h-28 animate-pulse rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]" />
           ))}
         </div>
-        <div className="h-64 animate-pulse rounded-xl border border-[#E5E7EB] bg-white" />
+        <div className="h-64 animate-pulse rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]" />
       </div>
     );
   }
@@ -78,14 +78,14 @@ export default function SaaSDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">SaaS Dashboard</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">SaaS Dashboard</h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Multi-tenant overview across all organizations and products.
           </p>
         </div>
         <Link
           href="/admin/saas/onboarding"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2E86AB]/90"
+          className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-primary)]/90"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
           Onboard Organization
@@ -94,41 +94,41 @@ export default function SaaSDashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Total Orgs</p>
-          <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{totalOrgs}</p>
-          <p className="mt-1 text-xs text-[#6B7280]">{activeOrgs} active</p>
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Total Orgs</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{totalOrgs}</p>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">{activeOrgs} active</p>
         </div>
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Total Users</p>
-          <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{totalUsers}</p>
-          <p className="mt-1 text-xs text-[#6B7280]">across all orgs</p>
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Total Users</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{totalUsers}</p>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">across all orgs</p>
         </div>
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Subscriptions</p>
-          <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{totalSubscriptions}</p>
-          <p className="mt-1 text-xs text-[#6B7280]">active subscriptions</p>
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Subscriptions</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{totalSubscriptions}</p>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">active subscriptions</p>
         </div>
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">MRR</p>
-          <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">${totalMRR.toLocaleString()}</p>
-          <p className="mt-1 text-xs text-[#6B7280]">monthly recurring</p>
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">MRR</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">${totalMRR.toLocaleString()}</p>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">monthly recurring</p>
         </div>
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Products</p>
-          <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{products.length}</p>
-          <p className="mt-1 text-xs text-[#6B7280]">{products.filter((p) => p.status === "live").length} live</p>
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Products</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{products.length}</p>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">{products.filter((p) => p.status === "live").length} live</p>
         </div>
       </div>
 
       {/* Organization List */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white shadow-sm">
-        <div className="border-b border-[#E5E7EB] px-6 py-4">
-          <h2 className="text-sm font-semibold text-[#1A1A1A]">Organizations</h2>
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-sm">
+        <div className="border-b border-[var(--border-subtle)] px-6 py-4">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Organizations</h2>
         </div>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E5E7EB] text-left text-xs font-medium uppercase tracking-wider text-[#6B7280]">
+            <tr className="border-b border-[var(--border-subtle)] text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
               <th className="px-6 py-3">Organization</th>
               <th className="px-6 py-3">Plan</th>
               <th className="px-6 py-3">Users</th>
@@ -139,32 +139,32 @@ export default function SaaSDashboardPage() {
           </thead>
           <tbody className="divide-y divide-[#E5E7EB]">
             {orgs.map((org) => (
-              <tr key={org.id} className="hover:bg-[#F8F9FA]">
+              <tr key={org.id} className="hover:bg-[var(--bg-surface)]">
                 <td className="px-6 py-4">
                   <div>
-                    <p className="text-sm font-medium text-[#1A1A1A]">{org.name}</p>
-                    <p className="text-xs text-[#6B7280]">{org.domain || org.slug}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{org.name}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{org.domain || org.slug}</p>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${PLAN_BADGES[org.plan] || "bg-gray-100 text-gray-700"}`}>
+                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${PLAN_BADGES[org.plan] || "bg-[var(--bg-elevated)] text-gray-700"}`}>
                     {org.plan}
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="text-sm text-[#1A1A1A]">{org.userCount}</span>
-                  <span className="text-xs text-[#6B7280]"> / {org.maxUsers}</span>
+                  <span className="text-sm text-[var(--text-primary)]">{org.userCount}</span>
+                  <span className="text-xs text-[var(--text-secondary)]"> / {org.maxUsers}</span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="text-sm text-[#1A1A1A]">{org.subscriptionCount}</span>
+                  <span className="text-sm text-[var(--text-primary)]">{org.subscriptionCount}</span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${org.isActive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${org.isActive ? "bg-emerald-500" : "bg-red-500"}`} />
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${org.isActive ? "bg-[rgba(16,185,129,0.15)] text-emerald-700" : "bg-[rgba(239,68,68,0.15)] text-red-700"}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${org.isActive ? "bg-[rgba(16,185,129,0.1)]0" : "bg-[rgba(239,68,68,0.1)]0"}`} />
                     {org.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-xs text-[#6B7280]">
+                <td className="px-6 py-4 text-xs text-[var(--text-secondary)]">
                   {new Date(org.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 </td>
               </tr>
@@ -175,37 +175,37 @@ export default function SaaSDashboardPage() {
 
       {/* Product Cards */}
       <div>
-        <h2 className="mb-4 text-sm font-semibold text-[#1A1A1A]">Product Overview</h2>
+        <h2 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">Product Overview</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
-            <div key={product.id} className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
+            <div key={product.id} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-[#1A1A1A]">{product.name}</h3>
-                  <p className="mt-1 text-xs text-[#6B7280] line-clamp-2">{product.description}</p>
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">{product.name}</h3>
+                  <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2">{product.description}</p>
                 </div>
                 <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium uppercase ${
                   product.status === "live"
-                    ? "bg-emerald-100 text-emerald-700"
+                    ? "bg-[rgba(16,185,129,0.15)] text-emerald-700"
                     : product.status === "beta"
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-gray-100 text-gray-600"
+                      ? "bg-[rgba(245,158,11,0.15)] text-amber-700"
+                      : "bg-[var(--bg-elevated)] text-gray-600"
                 }`}>
                   {product.status}
                 </span>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-lg font-bold text-[#1A1A1A]">{product.activeOrgCount}</p>
-                  <p className="text-[10px] text-[#6B7280]">Active Orgs</p>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">{product.activeOrgCount}</p>
+                  <p className="text-[10px] text-[var(--text-secondary)]">Active Orgs</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#1A1A1A]">{product.subscriptionCount}</p>
-                  <p className="text-[10px] text-[#6B7280]">Subscriptions</p>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">{product.subscriptionCount}</p>
+                  <p className="text-[10px] text-[var(--text-secondary)]">Subscriptions</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#1A1A1A]">${product.mrr.toLocaleString()}</p>
-                  <p className="text-[10px] text-[#6B7280]">MRR</p>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">${product.mrr.toLocaleString()}</p>
+                  <p className="text-[10px] text-[var(--text-secondary)]">MRR</p>
                 </div>
               </div>
             </div>

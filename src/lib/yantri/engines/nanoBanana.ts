@@ -11,6 +11,7 @@
  */
 
 import { routeToModel } from "@/lib/yantri/model-router";
+import { getBrandColorPalette } from "@/lib/yantri/brand-voice";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -123,10 +124,15 @@ function buildVisualSystemPrompt(
     ? `\nRESEARCH DOSSIER (use these facts, stats, and timeline to inform visual choices and nano banana angles):\n${params.researchData.slice(0, 4000)}\n`
     : "";
 
+  const brandPalette = getBrandColorPalette(params.brandName);
+  const paletteBlock = brandPalette
+    ? `\nBRAND COLOR PALETTE ENFORCEMENT:\nColors: ${brandPalette.colors.join(", ")}\nStyle: ${brandPalette.description}\nALL visual prompts MUST use these brand colors as the primary palette. Do not deviate.\n`
+    : "";
+
   return `You are Nano Banana — the visual prompt architect and engagement strategist for ${params.brandName}. You generate highly detailed, production-ready text prompts for AI image generators AND high-engagement "nano banana" angles.
 
 You do NOT generate images. You generate the PROMPT TEXT that a designer or AI tool will use, PLUS provocative engagement angles tied to the drafted content.
-
+${paletteBlock}
 NARRATIVE ANGLE: ${params.narrativeAngle}
 PLATFORM: ${params.platform}
 BRAND: ${params.brandName}

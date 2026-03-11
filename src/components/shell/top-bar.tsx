@@ -119,24 +119,24 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E7EB] bg-white px-3 md:px-6">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-deep)] px-3 md:px-6">
         {/* Left: Hamburger (mobile) + Breadcrumb */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMobileOpen(true)}
-            className="rounded-lg p-1.5 text-[#6B7280] hover:bg-[#F0F2F5] md:hidden"
+            className="rounded-lg p-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] md:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>
           <nav className="hidden items-center gap-1.5 text-sm md:flex">
           {breadcrumb.map((crumb, i) => (
             <span key={crumb.href} className="flex items-center gap-1.5">
-              {i > 0 && <span className="text-[#9CA3AF]">/</span>}
+              {i > 0 && <span className="text-[var(--text-muted)]">/</span>}
               <span
                 className={
                   i === breadcrumb.length - 1
-                    ? "font-medium text-[#1A1A1A]"
-                    : "text-[#6B7280]"
+                    ? "font-medium text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)]"
                 }
               >
                 {crumb.label}
@@ -149,11 +149,11 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
         {/* Center: Search */}
         <button
           onClick={() => setSearchOpen(true)}
-          className="flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-[#F8F9FA] px-2 py-1.5 text-sm text-[#9CA3AF] transition-colors hover:bg-[#F0F2F5] md:px-3"
+          className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-elevated)] hover:border-[var(--accent-primary)] md:px-3"
         >
           <Search className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Search...</span>
-          <kbd className="ml-4 hidden rounded bg-[#E5E7EB] px-1.5 py-0.5 font-mono text-[10px] text-[#6B7280] sm:inline">
+          <kbd className="ml-4 hidden rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-muted)] sm:inline">
             Ctrl+K
           </kbd>
         </button>
@@ -164,29 +164,29 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger className="rounded-full outline-none">
-              <Avatar className="h-8 w-8 cursor-pointer">
+              <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-transparent hover:ring-[var(--accent-primary)] transition-all">
                 <AvatarImage src={user.image || undefined} alt={user.name} />
-                <AvatarFallback className="bg-[#2E86AB] text-white text-xs">
+                <AvatarFallback className="bg-[var(--accent-primary)] text-[var(--text-inverse)] text-xs font-semibold">
                   {user.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-48 bg-[var(--bg-overlay)] border-[var(--border-default)]">
               <div className="px-2 py-1.5">
-                <p className="text-sm font-medium">{user.name}</p>
-                <p className="text-xs text-[#6B7280]">{user.email}</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{user.name}</p>
+                <p className="text-xs text-[var(--text-secondary)]">{user.email}</p>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.location.href = "/settings"}>
+              <DropdownMenuSeparator className="bg-[var(--border-subtle)]" />
+              <DropdownMenuItem onClick={() => window.location.href = "/settings"} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] focus:bg-[var(--bg-elevated)] focus:text-[var(--text-primary)]">
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.location.href = "/settings"}>
+              <DropdownMenuItem onClick={() => window.location.href = "/settings"} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] focus:bg-[var(--bg-elevated)] focus:text-[var(--text-primary)]">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onSignOut} className="text-red-600">
+              <DropdownMenuSeparator className="bg-[var(--border-subtle)]" />
+              <DropdownMenuItem onClick={onSignOut} className="text-[var(--status-error)] focus:bg-[rgba(239,68,68,0.1)] focus:text-[var(--status-error)]">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>

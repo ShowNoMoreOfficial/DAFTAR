@@ -26,6 +26,17 @@ import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { CreateInvoiceDialog } from "@/components/finance/create-invoice-dialog";
 import { CreateExpenseDialog } from "@/components/finance/create-expense-dialog";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -77,11 +88,11 @@ interface SelectOption {
 // ─── Constants ───────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  SENT: "bg-blue-100 text-blue-700",
-  PAID: "bg-emerald-100 text-emerald-700",
-  OVERDUE: "bg-red-100 text-red-700",
-  CANCELLED: "bg-gray-100 text-gray-400",
+  DRAFT: "bg-[var(--bg-elevated)] text-gray-700",
+  SENT: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  PAID: "bg-[rgba(16,185,129,0.15)] text-emerald-700",
+  OVERDUE: "bg-[rgba(239,68,68,0.15)] text-red-700",
+  CANCELLED: "bg-[var(--bg-elevated)] text-gray-400",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -96,13 +107,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  SALARY: "bg-blue-500",
-  SOFTWARE: "bg-purple-500",
-  EQUIPMENT: "bg-amber-500",
-  TRAVEL: "bg-teal-500",
-  MARKETING: "bg-pink-500",
-  PRODUCTION: "bg-indigo-500",
-  OFFICE: "bg-orange-500",
+  SALARY: "bg-[rgba(59,130,246,0.1)]0",
+  SOFTWARE: "bg-[rgba(168,85,247,0.1)]0",
+  EQUIPMENT: "bg-[rgba(245,158,11,0.1)]0",
+  TRAVEL: "bg-[rgba(20,184,166,0.1)]0",
+  MARKETING: "bg-[rgba(236,72,153,0.1)]0",
+  PRODUCTION: "bg-[rgba(99,102,241,0.1)]0",
+  OFFICE: "bg-[rgba(249,115,22,0.1)]0",
   MISCELLANEOUS: "bg-gray-400",
 };
 
@@ -154,6 +165,9 @@ export default function FinancePage() {
   // Detail panel
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "invoice" | "expense"; id: string } | null>(null);
 
   const fetchOverview = useCallback(async () => {
     try {
@@ -248,12 +262,14 @@ export default function FinancePage() {
   };
 
   const deleteInvoice = async (id: string) => {
-    if (!confirm("Delete this draft invoice?")) return;
     const res = await fetch(`/api/finance/invoices/${id}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("Invoice deleted");
       fetchInvoices();
       fetchOverview();
       if (selectedInvoice?.id === id) setSelectedInvoice(null);
+    } else {
+      toast.error("Failed to delete invoice");
     }
   };
 
@@ -274,13 +290,25 @@ export default function FinancePage() {
   };
 
   const deleteExpense = async (id: string) => {
-    if (!confirm("Delete this expense?")) return;
     const res = await fetch(`/api/finance/expenses/${id}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("Expense deleted");
       fetchExpenses();
       fetchOverview();
       if (selectedExpense?.id === id) setSelectedExpense(null);
+    } else {
+      toast.error("Failed to delete expense");
     }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "invoice") {
+      await deleteInvoice(deleteTarget.id);
+    } else {
+      await deleteExpense(deleteTarget.id);
+    }
+    setDeleteTarget(null);
   };
 
   return (
@@ -288,8 +316,8 @@ export default function FinancePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">Finance</h1>
-          <p className="text-sm text-[#9CA3AF]">Financial overview and management</p>
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Finance</h1>
+          <p className="text-sm text-[var(--text-muted)]">Financial overview and management</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -317,22 +345,22 @@ export default function FinancePage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard
-          icon={<Wallet className="h-4 w-4 text-[#2E86AB]" />}
-          iconBg="bg-blue-50"
+          icon={<Wallet className="h-4 w-4 text-[var(--accent-primary)]" />}
+          iconBg="bg-[rgba(59,130,246,0.1)]"
           label="Monthly Revenue"
           value={overview ? formatCurrency(overview.totalRevenue) : "--"}
           subtitle="paid invoices"
         />
         <SummaryCard
           icon={<AlertTriangle className="h-4 w-4 text-amber-500" />}
-          iconBg="bg-amber-50"
+          iconBg="bg-[rgba(245,158,11,0.1)]"
           label="Outstanding Invoices"
           value={overview ? formatCurrency(overview.outstanding) : "--"}
           subtitle="sent + overdue"
         />
         <SummaryCard
           icon={<TrendingDown className="h-4 w-4 text-red-500" />}
-          iconBg="bg-red-50"
+          iconBg="bg-[rgba(239,68,68,0.1)]"
           label="Total Expenses"
           value={overview ? formatCurrency(overview.totalExpenses) : "--"}
           subtitle="all categories"
@@ -346,7 +374,7 @@ export default function FinancePage() {
               )}
             />
           }
-          iconBg={overview && overview.netProfit >= 0 ? "bg-emerald-50" : "bg-red-50"}
+          iconBg={overview && overview.netProfit >= 0 ? "bg-[rgba(16,185,129,0.1)]" : "bg-[rgba(239,68,68,0.1)]"}
           label="Net Profit"
           value={overview ? formatCurrency(overview.netProfit) : "--"}
           subtitle="revenue - expenses"
@@ -354,14 +382,14 @@ export default function FinancePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-lg border border-[#E5E7EB] bg-white p-0.5 w-fit">
+      <div className="flex gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0.5 w-fit">
         {(["overview", "invoices", "expenses"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
               "rounded-md px-4 py-1.5 text-xs font-medium capitalize transition-colors",
-              tab === t ? "bg-[#2E86AB] text-white" : "text-[#6B7280] hover:bg-[#F0F2F5]"
+              tab === t ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
             )}
           >
             {t}
@@ -371,7 +399,7 @@ export default function FinancePage() {
 
       {/* Tab Content */}
       {loading ? (
-        <div className="py-12 text-center text-sm text-[#9CA3AF]">Loading finance data...</div>
+        <div className="py-12 text-center text-sm text-[var(--text-muted)]">Loading finance data...</div>
       ) : tab === "overview" ? (
         <OverviewTab overview={overview} />
       ) : tab === "invoices" ? (
@@ -388,7 +416,7 @@ export default function FinancePage() {
           onDateToChange={setInvDateTo}
           onSelect={setSelectedInvoice}
           onUpdateStatus={updateInvoiceStatus}
-          onDelete={deleteInvoice}
+          onDelete={(id: string) => setDeleteTarget({ type: "invoice", id })}
         />
       ) : (
         <ExpensesTab
@@ -404,7 +432,7 @@ export default function FinancePage() {
           onDateToChange={setExpDateTo}
           onSelect={setSelectedExpense}
           onApprove={approveExpense}
-          onDelete={deleteExpense}
+          onDelete={(id: string) => setDeleteTarget({ type: "expense", id })}
         />
       )}
 
@@ -414,7 +442,7 @@ export default function FinancePage() {
           invoice={selectedInvoice}
           onClose={() => setSelectedInvoice(null)}
           onUpdateStatus={updateInvoiceStatus}
-          onDelete={deleteInvoice}
+          onDelete={(id: string) => setDeleteTarget({ type: "invoice", id })}
         />
       )}
 
@@ -424,7 +452,7 @@ export default function FinancePage() {
           expense={selectedExpense}
           onClose={() => setSelectedExpense(null)}
           onApprove={approveExpense}
-          onDelete={deleteExpense}
+          onDelete={(id: string) => setDeleteTarget({ type: "expense", id })}
         />
       )}
 
@@ -438,6 +466,24 @@ export default function FinancePage() {
         onOpenChange={setCreateExpenseOpen}
         onCreated={() => { fetchExpenses(); fetchOverview(); }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this {deleteTarget?.type}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -458,13 +504,13 @@ function SummaryCard({
   subtitle: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#E5E7EB] bg-white p-5">
+    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">{label}</p>
         <div className={cn("rounded-lg p-1.5", iconBg)}>{icon}</div>
       </div>
-      <p className="mt-2 text-2xl font-semibold text-[#1A1A1A]">{value}</p>
-      <p className="mt-1 text-xs text-[#9CA3AF]">{subtitle}</p>
+      <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">{value}</p>
+      <p className="mt-1 text-xs text-[var(--text-muted)]">{subtitle}</p>
     </div>
   );
 }
@@ -484,12 +530,12 @@ function OverviewTab({ overview }: { overview: OverviewData | null }) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* Monthly Revenue vs Expenses */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white p-5">
-        <h3 className="text-sm font-semibold text-[#1A1A1A]">Monthly Revenue vs Expenses</h3>
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Monthly Revenue vs Expenses</h3>
         <div className="mt-4 space-y-3">
           {overview.monthlyBreakdown.map((m) => (
             <div key={`${m.month}-${m.year}`} className="space-y-1">
-              <div className="flex items-center justify-between text-[10px] text-[#6B7280]">
+              <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)]">
                 <span>{m.month} {m.year}</span>
                 <span className="flex gap-3">
                   <span className="text-emerald-600">{formatCurrency(m.revenue)}</span>
@@ -509,7 +555,7 @@ function OverviewTab({ overview }: { overview: OverviewData | null }) {
             </div>
           ))}
         </div>
-        <div className="mt-3 flex items-center gap-4 text-[10px] text-[#9CA3AF]">
+        <div className="mt-3 flex items-center gap-4 text-[10px] text-[var(--text-muted)]">
           <span className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-emerald-400" /> Revenue
           </span>
@@ -520,23 +566,23 @@ function OverviewTab({ overview }: { overview: OverviewData | null }) {
       </div>
 
       {/* Top Clients by Revenue */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white p-5">
-        <h3 className="text-sm font-semibold text-[#1A1A1A]">Top Clients by Revenue</h3>
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Top Clients by Revenue</h3>
         <div className="mt-4 space-y-3">
           {overview.byClient.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#9CA3AF]">No client revenue data</p>
+            <p className="py-6 text-center text-sm text-[var(--text-muted)]">No client revenue data</p>
           ) : (
             overview.byClient.map((client, i) => (
               <div key={client.id} className="flex items-center gap-3">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2E86AB] text-[10px] font-bold text-white">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[10px] font-bold text-white">
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-medium text-[#1A1A1A]">
+                  <p className="truncate text-sm font-medium text-[var(--text-primary)]">
                     {client.company || client.name}
                   </p>
                 </div>
-                <span className="text-sm font-semibold text-[#1A1A1A]">
+                <span className="text-sm font-semibold text-[var(--text-primary)]">
                   {formatCurrency(client.revenue)}
                 </span>
               </div>
@@ -546,11 +592,11 @@ function OverviewTab({ overview }: { overview: OverviewData | null }) {
       </div>
 
       {/* Expenses by Category */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 lg:col-span-2">
-        <h3 className="text-sm font-semibold text-[#1A1A1A]">Expense Breakdown by Category</h3>
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 lg:col-span-2">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Expense Breakdown by Category</h3>
         <div className="mt-4 space-y-2.5">
           {Object.entries(overview.byCategory).length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#9CA3AF]">No expenses recorded</p>
+            <p className="py-6 text-center text-sm text-[var(--text-muted)]">No expenses recorded</p>
           ) : (
             Object.entries(overview.byCategory)
               .sort((a, b) => b[1] - a[1])
@@ -558,19 +604,19 @@ function OverviewTab({ overview }: { overview: OverviewData | null }) {
                 const pct = Math.round((amount / totalCategoryExpense) * 100);
                 return (
                   <div key={cat} className="flex items-center gap-3">
-                    <span className="w-20 text-xs text-[#6B7280]">
+                    <span className="w-20 text-xs text-[var(--text-secondary)]">
                       {CATEGORY_LABELS[cat] || cat}
                     </span>
                     <div className="flex-1">
-                      <div className="h-2.5 w-full rounded-full bg-[#F0F2F5]">
+                      <div className="h-2.5 w-full rounded-full bg-[var(--bg-elevated)]">
                         <div
-                          className={cn("h-2.5 rounded-full transition-all", CATEGORY_COLORS[cat] || "bg-[#A23B72]")}
+                          className={cn("h-2.5 rounded-full transition-all", CATEGORY_COLORS[cat] || "bg-[var(--accent-secondary)]")}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
-                    <span className="w-12 text-right text-xs text-[#9CA3AF]">{pct}%</span>
-                    <span className="w-24 text-right text-xs font-medium text-[#1A1A1A]">
+                    <span className="w-12 text-right text-xs text-[var(--text-muted)]">{pct}%</span>
+                    <span className="w-24 text-right text-xs font-medium text-[var(--text-primary)]">
                       {formatCurrency(amount)}
                     </span>
                   </div>
@@ -619,12 +665,12 @@ function InvoicesTab({
   return (
     <div className="space-y-4">
       {/* Filter Bar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white p-3">
-        <Filter className="h-4 w-4 text-[#9CA3AF]" />
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3">
+        <Filter className="h-4 w-4 text-[var(--text-muted)]" />
         <select
           value={statusFilter}
           onChange={(e) => onStatusFilterChange(e.target.value)}
-          className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs"
         >
           <option value="">All Statuses</option>
           <option value="DRAFT">Draft</option>
@@ -636,7 +682,7 @@ function InvoicesTab({
         <select
           value={clientFilter}
           onChange={(e) => onClientFilterChange(e.target.value)}
-          className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs"
         >
           <option value="">All Clients</option>
           {clients.map((c) => (
@@ -660,7 +706,7 @@ function InvoicesTab({
         {(statusFilter || clientFilter || dateFrom || dateTo) && (
           <button
             onClick={() => { onStatusFilterChange(""); onClientFilterChange(""); onDateFromChange(""); onDateToChange(""); }}
-            className="text-xs text-[#2E86AB] hover:underline"
+            className="text-xs text-[var(--accent-primary)] hover:underline"
           >
             Clear filters
           </button>
@@ -669,21 +715,21 @@ function InvoicesTab({
 
       {/* Table */}
       {invoices.length === 0 ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-8 text-center">
-          <FileText className="mx-auto h-12 w-12 text-[#D1D5DB]" />
-          <h3 className="mt-4 text-sm font-medium text-[#1A1A1A]">No Invoices Found</h3>
-          <p className="mt-2 text-sm text-[#9CA3AF]">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 text-center">
+          <FileText className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+          <h3 className="mt-4 text-sm font-medium text-[var(--text-primary)]">No Invoices Found</h3>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             {statusFilter || clientFilter || dateFrom || dateTo
               ? "Try adjusting your filters."
               : "Create your first invoice to start tracking payments."}
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[#E5E7EB] text-xs text-[#6B7280]">
+                <tr className="border-b border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
                   <th className="px-4 py-3 font-medium">Invoice #</th>
                   <th className="px-4 py-3 font-medium">Client</th>
                   <th className="px-4 py-3 font-medium">Brand</th>
@@ -699,17 +745,17 @@ function InvoicesTab({
                 {invoices.map((inv) => (
                   <tr
                     key={inv.id}
-                    className="hover:bg-[#F8F9FA] cursor-pointer"
+                    className="hover:bg-[var(--bg-surface)] cursor-pointer"
                     onClick={() => onSelect(inv)}
                   >
-                    <td className="px-4 py-3 font-medium text-[#2E86AB]">{inv.number}</td>
-                    <td className="px-4 py-3 text-[#6B7280]">
+                    <td className="px-4 py-3 font-medium text-[var(--accent-primary)]">{inv.number}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {inv.client?.company || inv.client?.name || "\u2014"}
                     </td>
-                    <td className="px-4 py-3 text-[#6B7280]">{inv.brand?.name || "\u2014"}</td>
-                    <td className="px-4 py-3 text-right text-[#1A1A1A]">{formatCurrency(inv.amount)}</td>
-                    <td className="px-4 py-3 text-right text-[#9CA3AF]">{formatCurrency(inv.tax)}</td>
-                    <td className="px-4 py-3 text-right font-medium text-[#1A1A1A]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{inv.brand?.name || "\u2014"}</td>
+                    <td className="px-4 py-3 text-right text-[var(--text-primary)]">{formatCurrency(inv.amount)}</td>
+                    <td className="px-4 py-3 text-right text-[var(--text-muted)]">{formatCurrency(inv.tax)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-[var(--text-primary)]">
                       {formatCurrency(inv.totalAmount)}
                     </td>
                     <td className="px-4 py-3">
@@ -717,14 +763,14 @@ function InvoicesTab({
                         {inv.status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-[#6B7280]">{formatDate(inv.dueDate)}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{formatDate(inv.dueDate)}</td>
                     <td className="px-4 py-3">
                       <div className="relative" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => setOpenMenu(openMenu === inv.id ? null : inv.id)}
-                          className="rounded p-1 hover:bg-[#F0F2F5]"
+                          className="rounded p-1 hover:bg-[var(--bg-elevated)]"
                         >
-                          <MoreHorizontal className="h-4 w-4 text-[#9CA3AF]" />
+                          <MoreHorizontal className="h-4 w-4 text-[var(--text-muted)]" />
                         </button>
                         {openMenu === inv.id && (
                           <InvoiceActionMenu
@@ -795,14 +841,14 @@ function InvoiceActionMenu({
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-8 z-50 min-w-[160px] rounded-lg border border-[#E5E7EB] bg-white py-1 shadow-lg">
+      <div className="absolute right-0 top-8 z-50 min-w-[160px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-1 shadow-lg">
         {actions.map((a) => (
           <button
             key={a.label}
             onClick={a.onClick}
             className={cn(
-              "flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-[#F8F9FA]",
-              a.danger ? "text-red-600" : "text-[#1A1A1A]"
+              "flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-[var(--bg-surface)]",
+              a.danger ? "text-red-600" : "text-[var(--text-primary)]"
             )}
           >
             {a.icon}
@@ -832,18 +878,18 @@ function InvoiceDetailPanel({
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
       <div
-        className="h-full w-full max-w-lg overflow-y-auto bg-white shadow-xl"
+        className="h-full w-full max-w-lg overflow-y-auto bg-[var(--bg-surface)] shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-[#E5E7EB] bg-white px-6 py-4">
+        <div className="sticky top-0 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-[#1A1A1A]">{invoice.number}</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">{invoice.number}</h2>
             <Badge className={cn("mt-1 text-[10px]", STATUS_STYLES[invoice.status])}>
               {invoice.status}
             </Badge>
           </div>
-          <button onClick={onClose} className="rounded p-1 hover:bg-[#F0F2F5]">
-            <X className="h-5 w-5 text-[#9CA3AF]" />
+          <button onClick={onClose} className="rounded p-1 hover:bg-[var(--bg-elevated)]">
+            <X className="h-5 w-5 text-[var(--text-muted)]" />
           </button>
         </div>
 
@@ -865,19 +911,19 @@ function InvoiceDetailPanel({
           {/* Description */}
           {invoice.description && (
             <div>
-              <p className="text-xs font-medium text-[#6B7280]">Description</p>
-              <p className="mt-1 text-sm text-[#1A1A1A]">{invoice.description}</p>
+              <p className="text-xs font-medium text-[var(--text-secondary)]">Description</p>
+              <p className="mt-1 text-sm text-[var(--text-primary)]">{invoice.description}</p>
             </div>
           )}
 
           {/* Line Items */}
           {items && items.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-[#6B7280]">Line Items</p>
-              <div className="mt-2 rounded-lg border border-[#E5E7EB]">
+              <p className="text-xs font-medium text-[var(--text-secondary)]">Line Items</p>
+              <div className="mt-2 rounded-lg border border-[var(--border-subtle)]">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#E5E7EB] text-xs text-[#6B7280]">
+                    <tr className="border-b border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
                       <th className="px-3 py-2 text-left font-medium">Description</th>
                       <th className="px-3 py-2 text-right font-medium">Amount</th>
                     </tr>
@@ -885,8 +931,8 @@ function InvoiceDetailPanel({
                   <tbody className="divide-y divide-[#F0F2F5]">
                     {items.map((item, i) => (
                       <tr key={i}>
-                        <td className="px-3 py-2 text-[#1A1A1A]">{item.description}</td>
-                        <td className="px-3 py-2 text-right text-[#1A1A1A]">{formatCurrency(item.amount)}</td>
+                        <td className="px-3 py-2 text-[var(--text-primary)]">{item.description}</td>
+                        <td className="px-3 py-2 text-right text-[var(--text-primary)]">{formatCurrency(item.amount)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -896,7 +942,7 @@ function InvoiceDetailPanel({
           )}
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-2 border-t border-[#E5E7EB] pt-4">
+          <div className="flex flex-wrap gap-2 border-t border-[var(--border-subtle)] pt-4">
             {invoice.status === "DRAFT" && (
               <Button size="sm" onClick={() => onUpdateStatus(invoice.id, "SENT")}>
                 <Send className="mr-1.5 h-3.5 w-3.5" /> Mark as Sent
@@ -911,7 +957,7 @@ function InvoiceDetailPanel({
               <Button
                 size="sm"
                 variant="outline"
-                className="text-red-600 hover:bg-red-50"
+                className="text-red-600 hover:bg-[rgba(239,68,68,0.1)]"
                 onClick={() => onDelete(invoice.id)}
               >
                 <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
@@ -960,12 +1006,12 @@ function ExpensesTab({
   return (
     <div className="space-y-4">
       {/* Filter Bar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white p-3">
-        <Filter className="h-4 w-4 text-[#9CA3AF]" />
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3">
+        <Filter className="h-4 w-4 text-[var(--text-muted)]" />
         <select
           value={categoryFilter}
           onChange={(e) => onCategoryFilterChange(e.target.value)}
-          className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs"
         >
           <option value="">All Categories</option>
           {Object.entries(CATEGORY_LABELS).map(([val, label]) => (
@@ -975,7 +1021,7 @@ function ExpensesTab({
         <select
           value={deptFilter}
           onChange={(e) => onDeptFilterChange(e.target.value)}
-          className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs"
         >
           <option value="">All Departments</option>
           {departments.map((d) => (
@@ -999,7 +1045,7 @@ function ExpensesTab({
         {(categoryFilter || deptFilter || dateFrom || dateTo) && (
           <button
             onClick={() => { onCategoryFilterChange(""); onDeptFilterChange(""); onDateFromChange(""); onDateToChange(""); }}
-            className="text-xs text-[#2E86AB] hover:underline"
+            className="text-xs text-[var(--accent-primary)] hover:underline"
           >
             Clear filters
           </button>
@@ -1008,21 +1054,21 @@ function ExpensesTab({
 
       {/* Table */}
       {expenses.length === 0 ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-8 text-center">
-          <Receipt className="mx-auto h-12 w-12 text-[#D1D5DB]" />
-          <h3 className="mt-4 text-sm font-medium text-[#1A1A1A]">No Expenses Found</h3>
-          <p className="mt-2 text-sm text-[#9CA3AF]">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 text-center">
+          <Receipt className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+          <h3 className="mt-4 text-sm font-medium text-[var(--text-primary)]">No Expenses Found</h3>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             {categoryFilter || deptFilter || dateFrom || dateTo
               ? "Try adjusting your filters."
               : "Start recording expenses to track spending."}
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[#E5E7EB] text-xs text-[#6B7280]">
+                <tr className="border-b border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
                   <th className="px-4 py-3 font-medium">Title</th>
                   <th className="px-4 py-3 font-medium">Category</th>
                   <th className="px-4 py-3 font-medium">Department</th>
@@ -1036,34 +1082,34 @@ function ExpensesTab({
                 {expenses.map((exp) => (
                   <tr
                     key={exp.id}
-                    className="hover:bg-[#F8F9FA] cursor-pointer"
+                    className="hover:bg-[var(--bg-surface)] cursor-pointer"
                     onClick={() => onSelect(exp)}
                   >
-                    <td className="px-4 py-3 font-medium text-[#1A1A1A]">{exp.title}</td>
+                    <td className="px-4 py-3 font-medium text-[var(--text-primary)]">{exp.title}</td>
                     <td className="px-4 py-3">
                       <Badge variant="secondary" className="text-[10px]">
                         {CATEGORY_LABELS[exp.category] || exp.category}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-[#6B7280]">{exp.department?.name || "\u2014"}</td>
-                    <td className="px-4 py-3 text-right font-medium text-[#1A1A1A]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{exp.department?.name || "\u2014"}</td>
+                    <td className="px-4 py-3 text-right font-medium text-[var(--text-primary)]">
                       {formatCurrency(exp.amount)}
                     </td>
-                    <td className="px-4 py-3 text-[#6B7280]">{formatDate(exp.date)}</td>
-                    <td className="px-4 py-3 text-[#6B7280]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">{formatDate(exp.date)}</td>
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {exp.approvedBy ? (
                         <span className="text-emerald-600">{exp.approvedBy}</span>
                       ) : (
-                        <span className="text-[#9CA3AF]">Pending</span>
+                        <span className="text-[var(--text-muted)]">Pending</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="relative" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => setOpenMenu(openMenu === exp.id ? null : exp.id)}
-                          className="rounded p-1 hover:bg-[#F0F2F5]"
+                          className="rounded p-1 hover:bg-[var(--bg-elevated)]"
                         >
-                          <MoreHorizontal className="h-4 w-4 text-[#9CA3AF]" />
+                          <MoreHorizontal className="h-4 w-4 text-[var(--text-muted)]" />
                         </button>
                         {openMenu === exp.id && (
                           <ExpenseActionMenu
@@ -1102,18 +1148,18 @@ function ExpenseActionMenu({
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-8 z-50 min-w-[160px] rounded-lg border border-[#E5E7EB] bg-white py-1 shadow-lg">
+      <div className="absolute right-0 top-8 z-50 min-w-[160px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-1 shadow-lg">
         {!expense.approvedBy && (
           <button
             onClick={() => { onApprove(expense.id); onClose(); }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#1A1A1A] hover:bg-[#F8F9FA]"
+            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--text-primary)] hover:bg-[var(--bg-surface)]"
           >
             <CheckCircle className="h-3.5 w-3.5" /> Approve
           </button>
         )}
         <button
           onClick={() => { onDelete(expense.id); onClose(); }}
-          className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-[#F8F9FA]"
+          className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-[var(--bg-surface)]"
         >
           <Trash2 className="h-3.5 w-3.5" /> Delete
         </button>
@@ -1138,18 +1184,18 @@ function ExpenseDetailPanel({
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
       <div
-        className="h-full w-full max-w-lg overflow-y-auto bg-white shadow-xl"
+        className="h-full w-full max-w-lg overflow-y-auto bg-[var(--bg-surface)] shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-[#E5E7EB] bg-white px-6 py-4">
+        <div className="sticky top-0 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-[#1A1A1A]">{expense.title}</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">{expense.title}</h2>
             <Badge variant="secondary" className="mt-1 text-[10px]">
               {CATEGORY_LABELS[expense.category] || expense.category}
             </Badge>
           </div>
-          <button onClick={onClose} className="rounded p-1 hover:bg-[#F0F2F5]">
-            <X className="h-5 w-5 text-[#9CA3AF]" />
+          <button onClick={onClose} className="rounded p-1 hover:bg-[var(--bg-elevated)]">
+            <X className="h-5 w-5 text-[var(--text-muted)]" />
           </button>
         </div>
 
@@ -1169,26 +1215,26 @@ function ExpenseDetailPanel({
 
           {expense.description && (
             <div>
-              <p className="text-xs font-medium text-[#6B7280]">Description</p>
-              <p className="mt-1 text-sm text-[#1A1A1A]">{expense.description}</p>
+              <p className="text-xs font-medium text-[var(--text-secondary)]">Description</p>
+              <p className="mt-1 text-sm text-[var(--text-primary)]">{expense.description}</p>
             </div>
           )}
 
           {expense.receiptUrl && (
             <div>
-              <p className="text-xs font-medium text-[#6B7280]">Receipt</p>
+              <p className="text-xs font-medium text-[var(--text-secondary)]">Receipt</p>
               <a
                 href={expense.receiptUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 inline-block text-sm text-[#2E86AB] hover:underline"
+                className="mt-1 inline-block text-sm text-[var(--accent-primary)] hover:underline"
               >
                 View Receipt
               </a>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 border-t border-[#E5E7EB] pt-4">
+          <div className="flex flex-wrap gap-2 border-t border-[var(--border-subtle)] pt-4">
             {!expense.approvedBy && (
               <Button size="sm" onClick={() => onApprove(expense.id)}>
                 <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Approve
@@ -1197,7 +1243,7 @@ function ExpenseDetailPanel({
             <Button
               size="sm"
               variant="outline"
-              className="text-red-600 hover:bg-red-50"
+              className="text-red-600 hover:bg-[rgba(239,68,68,0.1)]"
               onClick={() => onDelete(expense.id)}
             >
               <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
@@ -1222,8 +1268,8 @@ function DetailField({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium text-[#6B7280]">{label}</p>
-      <p className={cn("mt-0.5 text-sm", highlight ? "font-semibold text-[#1A1A1A]" : "text-[#1A1A1A]")}>
+      <p className="text-xs font-medium text-[var(--text-secondary)]">{label}</p>
+      <p className={cn("mt-0.5 text-sm", highlight ? "font-semibold text-[var(--text-primary)]" : "text-[var(--text-primary)]")}>
         {value}
       </p>
     </div>

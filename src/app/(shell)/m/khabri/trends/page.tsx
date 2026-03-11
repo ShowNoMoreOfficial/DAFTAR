@@ -70,8 +70,8 @@ function MiniSparkline({ points, color }: { points: { volume: number }[]; color:
 // ─── Severity Config ────────────────────────────────────
 
 const SEVERITY_CONFIG = {
-  CRITICAL: { label: "Critical", color: "bg-red-500 text-white", border: "border-red-300", glow: "shadow-[0_0_16px_rgba(239,68,68,0.2)]" },
-  HIGH: { label: "High", color: "bg-amber-500 text-white", border: "border-amber-300", glow: "shadow-[0_0_12px_rgba(245,158,11,0.15)]" },
+  CRITICAL: { label: "Critical", color: "bg-[rgba(239,68,68,0.1)]0 text-white", border: "border-red-300", glow: "shadow-[0_0_16px_rgba(239,68,68,0.2)]" },
+  HIGH: { label: "High", color: "bg-[rgba(245,158,11,0.1)]0 text-white", border: "border-amber-300", glow: "shadow-[0_0_12px_rgba(245,158,11,0.15)]" },
   ELEVATED: { label: "Elevated", color: "bg-yellow-400 text-yellow-900", border: "border-yellow-300", glow: "" },
 };
 
@@ -124,7 +124,7 @@ export default function KhabriTrendsPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -134,10 +134,10 @@ export default function KhabriTrendsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1A1A1A] flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-[#2E86AB]" /> Trend Anomaly Dashboard
+          <h1 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-[var(--accent-primary)]" /> Trend Anomaly Dashboard
           </h1>
-          <p className="text-sm text-[#6B7280]">Real-time keyword volume tracking and anomaly detection</p>
+          <p className="text-sm text-[var(--text-secondary)]">Real-time keyword volume tracking and anomaly detection</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
           <RefreshCw className={cn("mr-2 h-3.5 w-3.5", loading && "animate-spin")} /> Refresh
@@ -149,8 +149,8 @@ export default function KhabriTrendsPage() {
         <div>
           <div className="mb-3 flex items-center gap-2">
             <Zap className="h-4 w-4 text-red-500" />
-            <h2 className="text-sm font-bold text-[#1A1A1A] uppercase tracking-wider">Breaking Anomalies</h2>
-            <Badge className="bg-red-100 text-red-700 text-[10px]">{anomalies.length} detected</Badge>
+            <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Breaking Anomalies</h2>
+            <Badge className="bg-[rgba(239,68,68,0.15)] text-red-700 text-[10px]">{anomalies.length} detected</Badge>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {anomalies.map((anomaly) => {
@@ -170,13 +170,13 @@ export default function KhabriTrendsPage() {
                         <AlertTriangle className="mr-1 h-2.5 w-2.5" />
                         {cfg.label}
                       </Badge>
-                      <span className="text-[10px] text-[#9CA3AF]">
+                      <span className="text-[10px] text-[var(--text-muted)]">
                         {new Date(anomaly.detectedAt).toLocaleString("en-IN", {
                           hour: "2-digit", minute: "2-digit",
                         })}
                       </span>
                     </div>
-                    <CardTitle className="text-base font-bold text-[#1A1A1A] mt-1">
+                    <CardTitle className="text-base font-bold text-[var(--text-primary)] mt-1">
                       {anomaly.keyword}
                     </CardTitle>
                   </CardHeader>
@@ -186,7 +186,7 @@ export default function KhabriTrendsPage() {
                         <p className="text-2xl font-black text-red-600">
                           +{anomaly.spikePercent}%
                         </p>
-                        <p className="text-[10px] text-[#9CA3AF] mt-0.5">
+                        <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
                           {anomaly.baselineVolume} &rarr; {anomaly.currentVolume} vol/h
                         </p>
                       </div>
@@ -209,7 +209,7 @@ export default function KhabriTrendsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
-                <BarChart3 className="h-4 w-4 text-[#2E86AB]" />
+                <BarChart3 className="h-4 w-4 text-[var(--accent-primary)]" />
                 Keyword Volume — 48h
               </CardTitle>
               <CardDescription className="text-xs">
@@ -226,7 +226,7 @@ export default function KhabriTrendsPage() {
                 size="sm"
                 className={cn(
                   "h-7 text-xs",
-                  selectedSeries?.keyword === series.keyword && "bg-[#2E86AB] hover:bg-[#2E86AB]/90 text-white"
+                  selectedSeries?.keyword === series.keyword && "bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90 text-white"
                 )}
                 onClick={() => setSelectedSeries(series)}
               >
@@ -239,10 +239,10 @@ export default function KhabriTrendsPage() {
           {selectedSeries ? (
             <div className="space-y-3">
               {/* Large chart area */}
-              <div className="relative rounded-lg border border-[#E5E7EB] bg-[#FAFBFC] p-4">
+              <div className="relative rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-[#1A1A1A]">{selectedSeries.keyword}</span>
-                  <span className="text-xs text-[#9CA3AF]">
+                  <span className="text-sm font-semibold text-[var(--text-primary)]">{selectedSeries.keyword}</span>
+                  <span className="text-xs text-[var(--text-muted)]">
                     Peak: {Math.max(...selectedSeries.points.map((p) => p.volume)).toLocaleString()} vol/h
                   </span>
                 </div>
@@ -308,7 +308,7 @@ export default function KhabriTrendsPage() {
                   </svg>
                 </div>
                 {/* Time axis */}
-                <div className="flex justify-between mt-1 text-[10px] text-[#9CA3AF]">
+                <div className="flex justify-between mt-1 text-[10px] text-[var(--text-muted)]">
                   <span>48h ago</span>
                   <span>36h</span>
                   <span>24h</span>
@@ -318,7 +318,7 @@ export default function KhabriTrendsPage() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-[#9CA3AF]">
+            <div className="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
               <BarChart3 className="h-10 w-10 mb-2" />
               <p className="text-sm">Select a keyword above to view its trend line</p>
             </div>
@@ -343,10 +343,10 @@ export default function KhabriTrendsPage() {
                 return (
                   <div
                     key={series.keyword}
-                    className="flex items-center gap-4 px-5 py-3 hover:bg-[#F8F9FA] cursor-pointer transition-colors"
+                    className="flex items-center gap-4 px-5 py-3 hover:bg-[var(--bg-surface)] cursor-pointer transition-colors"
                     onClick={() => setSelectedSeries(series)}
                   >
-                    <span className="text-sm font-medium text-[#1A1A1A] w-40 shrink-0">{series.keyword}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)] w-40 shrink-0">{series.keyword}</span>
                     <MiniSparkline
                       points={series.points.slice(-24)}
                       color={change > 100 ? "#EF4444" : change > 0 ? "#2E86AB" : "#9CA3AF"}
@@ -355,16 +355,16 @@ export default function KhabriTrendsPage() {
                       {change > 0 ? (
                         <ArrowUp className={cn("h-3.5 w-3.5", change > 100 ? "text-red-500" : "text-emerald-500")} />
                       ) : (
-                        <ArrowDown className="h-3.5 w-3.5 text-[#9CA3AF]" />
+                        <ArrowDown className="h-3.5 w-3.5 text-[var(--text-muted)]" />
                       )}
                       <span className={cn(
                         "text-xs font-bold tabular-nums",
-                        change > 100 ? "text-red-600" : change > 0 ? "text-emerald-600" : "text-[#6B7280]"
+                        change > 100 ? "text-red-600" : change > 0 ? "text-emerald-600" : "text-[var(--text-secondary)]"
                       )}>
                         {change > 0 ? "+" : ""}{change.toFixed(0)}%
                       </span>
                     </div>
-                    <span className="text-xs text-[#9CA3AF] tabular-nums w-20 text-right">
+                    <span className="text-xs text-[var(--text-muted)] tabular-nums w-20 text-right">
                       Peak: {peak.toLocaleString()}
                     </span>
                   </div>
@@ -379,19 +379,19 @@ export default function KhabriTrendsPage() {
       {trends.length > 0 && (
         <>
           <div className="flex items-center gap-2 pt-2">
-            <h2 className="text-sm font-bold text-[#1A1A1A] uppercase tracking-wider">Ranked Trends</h2>
+            <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Ranked Trends</h2>
             <Badge variant="outline" className="text-[10px]">Live from Khabri</Badge>
           </div>
 
-          <div className="rounded-xl border border-[#E5E7EB] bg-white overflow-hidden">
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#E5E7EB] bg-[#F8F9FA] text-left">
-                  <th className="px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider w-12">Rank</th>
-                  <th className="px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Topic</th>
-                  <th className="px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Category</th>
-                  <th className="px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Region</th>
-                  <th className="px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider text-right">Score</th>
+                <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] text-left">
+                  <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider w-12">Rank</th>
+                  <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Topic</th>
+                  <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Category</th>
+                  <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Region</th>
+                  <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider text-right">Score</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F0F2F5]">
@@ -399,41 +399,41 @@ export default function KhabriTrendsPage() {
                   <tr
                     key={trend.id}
                     className={cn(
-                      "hover:bg-[#F8F9FA] transition-colors cursor-pointer",
-                      selectedTrend?.id === trend.id && "bg-[#2E86AB]/5"
+                      "hover:bg-[var(--bg-surface)] transition-colors cursor-pointer",
+                      selectedTrend?.id === trend.id && "bg-[var(--accent-primary)]/5"
                     )}
                     onClick={() => setSelectedTrend(selectedTrend?.id === trend.id ? null : trend)}
                   >
                     <td className="px-5 py-3">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2E86AB]/10 text-xs font-bold text-[#2E86AB]">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-primary)]/10 text-xs font-bold text-[var(--accent-primary)]">
                         {trend.rank}
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <p className="text-sm font-medium text-[#1A1A1A]">{trend.topic}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{trend.topic}</p>
                     </td>
                     <td className="px-5 py-3">
                       {trend.category ? (
                         <Badge variant="outline" className="text-xs">{trend.category}</Badge>
                       ) : (
-                        <span className="text-xs text-[#9CA3AF]">—</span>
+                        <span className="text-xs text-[var(--text-muted)]">—</span>
                       )}
                     </td>
                     <td className="px-5 py-3">
-                      <span className="text-sm text-[#6B7280]">{trend.region || "—"}</span>
+                      <span className="text-sm text-[var(--text-secondary)]">{trend.region || "—"}</span>
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="inline-flex items-center gap-1">
                         {trend.score >= 80 ? (
                           <ArrowUp className="h-3.5 w-3.5 text-emerald-500" />
                         ) : trend.score >= 50 ? (
-                          <ArrowUp className="h-3.5 w-3.5 text-[#2E86AB]" />
+                          <ArrowUp className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
                         ) : (
-                          <ArrowDown className="h-3.5 w-3.5 text-[#9CA3AF]" />
+                          <ArrowDown className="h-3.5 w-3.5 text-[var(--text-muted)]" />
                         )}
                         <span className={cn(
                           "text-sm font-semibold",
-                          trend.score >= 80 ? "text-emerald-600" : trend.score >= 50 ? "text-[#2E86AB]" : "text-[#6B7280]"
+                          trend.score >= 80 ? "text-emerald-600" : trend.score >= 50 ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"
                         )}>
                           {trend.score}
                         </span>
@@ -447,14 +447,14 @@ export default function KhabriTrendsPage() {
 
           {/* Detail Panel */}
           {selectedTrend && (
-            <div className="rounded-xl border border-[#2E86AB]/20 bg-[#2E86AB]/5 p-5">
-              <h3 className="text-sm font-semibold text-[#1A1A1A]">{selectedTrend.topic}</h3>
-              <div className="mt-2 flex flex-wrap gap-3 text-xs text-[#6B7280]">
-                <span>Score: <strong className="text-[#1A1A1A]">{selectedTrend.score}</strong></span>
-                {selectedTrend.category && <span>Category: <strong className="text-[#1A1A1A]">{selectedTrend.category}</strong></span>}
-                {selectedTrend.region && <span>Region: <strong className="text-[#1A1A1A]">{selectedTrend.region}</strong></span>}
-                {selectedTrend.momentum !== undefined && <span>Momentum: <strong className="text-[#1A1A1A]">{selectedTrend.momentum}</strong></span>}
-                {selectedTrend.sourceCount !== undefined && <span>Sources: <strong className="text-[#1A1A1A]">{selectedTrend.sourceCount}</strong></span>}
+            <div className="rounded-xl border border-[#2E86AB]/20 bg-[var(--accent-primary)]/5 p-5">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">{selectedTrend.topic}</h3>
+              <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--text-secondary)]">
+                <span>Score: <strong className="text-[var(--text-primary)]">{selectedTrend.score}</strong></span>
+                {selectedTrend.category && <span>Category: <strong className="text-[var(--text-primary)]">{selectedTrend.category}</strong></span>}
+                {selectedTrend.region && <span>Region: <strong className="text-[var(--text-primary)]">{selectedTrend.region}</strong></span>}
+                {selectedTrend.momentum !== undefined && <span>Momentum: <strong className="text-[var(--text-primary)]">{selectedTrend.momentum}</strong></span>}
+                {selectedTrend.sourceCount !== undefined && <span>Sources: <strong className="text-[var(--text-primary)]">{selectedTrend.sourceCount}</strong></span>}
               </div>
             </div>
           )}
@@ -462,7 +462,7 @@ export default function KhabriTrendsPage() {
           {/* Pagination */}
           {meta && (
             <div className="flex items-center justify-between">
-              <p className="text-xs text-[#9CA3AF]">
+              <p className="text-xs text-[var(--text-muted)]">
                 Page {meta.page} &middot; {meta.total} total trends
               </p>
               <div className="flex gap-2">

@@ -76,13 +76,13 @@ interface CalendarEvent {
 }
 
 const platformColors: Record<string, string> = {
-  youtube: "bg-red-100 text-red-700",
-  instagram: "bg-pink-100 text-pink-700",
-  x: "bg-gray-100 text-gray-700",
-  twitter: "bg-blue-100 text-blue-700",
-  linkedin: "bg-blue-100 text-blue-800",
+  youtube: "bg-[rgba(239,68,68,0.15)] text-red-700",
+  instagram: "bg-[rgba(236,72,153,0.15)] text-pink-700",
+  x: "bg-[var(--bg-elevated)] text-gray-700",
+  twitter: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  linkedin: "bg-[rgba(59,130,246,0.15)] text-blue-800",
   facebook: "bg-indigo-100 text-indigo-700",
-  tiktok: "bg-purple-100 text-purple-700",
+  tiktok: "bg-[rgba(168,85,247,0.15)] text-purple-700",
 };
 
 function formatNumber(n: number): string {
@@ -161,7 +161,7 @@ export default function BrandDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -169,10 +169,10 @@ export default function BrandDetailPage() {
   if (!data) {
     return (
       <div className="space-y-4">
-        <Link href="/brands" className="inline-flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1A1A1A]">
+        <Link href="/brands" className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
           <ArrowLeft className="h-4 w-4" /> Back to Brands
         </Link>
-        <p className="py-12 text-center text-sm text-[#9CA3AF]">
+        <p className="py-12 text-center text-sm text-[var(--text-muted)]">
           Unable to load brand data. You may not have access to this brand.
         </p>
       </div>
@@ -184,15 +184,15 @@ export default function BrandDetailPage() {
   return (
     <div className="space-y-6">
       {/* Back button */}
-      <Link href="/brands" className="inline-flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1A1A1A]">
+      <Link href="/brands" className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
         <ArrowLeft className="h-4 w-4" /> Back to Brands
       </Link>
 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">{brand.name}</h1>
-          <p className="text-sm text-[#9CA3AF]">{brand.client.name}</p>
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">{brand.name}</h1>
+          <p className="text-sm text-[var(--text-muted)]">{brand.client.name}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {brand.platforms.map((p) => (
@@ -200,7 +200,7 @@ export default function BrandDetailPage() {
               key={p.platform}
               className={cn(
                 "text-[10px] font-medium",
-                platformColors[p.platform.toLowerCase()] || "bg-gray-100 text-gray-700"
+                platformColors[p.platform.toLowerCase()] || "bg-[var(--bg-elevated)] text-gray-700"
               )}
             >
               <Globe className="mr-1 h-3 w-3" />
@@ -230,46 +230,46 @@ export default function BrandDetailPage() {
           { label: "Avg Engagement", value: metrics.avgEngagement.toFixed(1) + "%", icon: TrendingUp, color: "#A23B72" },
           { label: "Pending Deliverables", value: metrics.pendingDeliverables.toString(), icon: FileCheck, color: "#A23B72" },
         ].map((kpi) => (
-          <div key={kpi.label} className="rounded-xl border border-[#E5E7EB] bg-white p-5">
+          <div key={kpi.label} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
             <div className="mb-2 flex items-center gap-2">
               <kpi.icon className="h-4 w-4" style={{ color: kpi.color }} />
-              <span className="text-xs text-[#6B7280]">{kpi.label}</span>
+              <span className="text-xs text-[var(--text-secondary)]">{kpi.label}</span>
             </div>
-            <p className="text-2xl font-semibold text-[#1A1A1A]">{kpi.value}</p>
+            <p className="text-2xl font-semibold text-[var(--text-primary)]">{kpi.value}</p>
           </div>
         ))}
       </div>
 
       {/* Content Performance */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white">
-        <div className="border-b border-[#E5E7EB] px-5 py-4">
-          <h2 className="text-sm font-semibold text-[#1A1A1A]">Content Performance</h2>
-          <p className="text-xs text-[#9CA3AF]">Recent published content with analytics</p>
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <div className="border-b border-[var(--border-subtle)] px-5 py-4">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Content Performance</h2>
+          <p className="text-xs text-[var(--text-muted)]">Recent published content with analytics</p>
         </div>
         {recentPosts.length === 0 ? (
-          <p className="px-5 py-8 text-center text-sm text-[#9CA3AF]">No published content yet.</p>
+          <p className="px-5 py-8 text-center text-sm text-[var(--text-muted)]">No published content yet.</p>
         ) : (
           <div className="divide-y divide-[#E5E7EB]">
             {recentPosts.map((post) => (
               <div key={post.id} className="flex items-center justify-between px-5 py-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-medium text-[#1A1A1A]">{post.title}</p>
+                    <p className="truncate text-sm font-medium text-[var(--text-primary)]">{post.title}</p>
                     <Badge
                       className={cn(
                         "shrink-0 text-[10px]",
-                        platformColors[post.platform.toLowerCase()] || "bg-gray-100 text-gray-700"
+                        platformColors[post.platform.toLowerCase()] || "bg-[var(--bg-elevated)] text-gray-700"
                       )}
                     >
                       {post.platform}
                     </Badge>
                   </div>
                   {post.publishedAt && (
-                    <p className="text-[10px] text-[#9CA3AF]">{formatDate(post.publishedAt)}</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">{formatDate(post.publishedAt)}</p>
                   )}
                 </div>
                 {post.analytics && (
-                  <div className="ml-4 flex items-center gap-4 text-xs text-[#6B7280]">
+                  <div className="ml-4 flex items-center gap-4 text-xs text-[var(--text-secondary)]">
                     <span className="flex items-center gap-1">
                       <Eye className="h-3.5 w-3.5" />
                       {formatNumber(post.analytics.views)}
@@ -295,36 +295,36 @@ export default function BrandDetailPage() {
       </div>
 
       {/* Pending Deliverables */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white">
-        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-4">
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#1A1A1A]">Pending Deliverables</h2>
-            <p className="text-xs text-[#9CA3AF]">Items awaiting your review</p>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Pending Deliverables</h2>
+            <p className="text-xs text-[var(--text-muted)]">Items awaiting your review</p>
           </div>
           <Link href={`/brands/${brandId}/deliverables`}>
-            <Button variant="ghost" size="sm" className="text-xs text-[#2E86AB]">
+            <Button variant="ghost" size="sm" className="text-xs text-[var(--accent-primary)]">
               View All
             </Button>
           </Link>
         </div>
         {deliverables.length === 0 ? (
-          <p className="px-5 py-8 text-center text-sm text-[#9CA3AF]">No deliverables pending review.</p>
+          <p className="px-5 py-8 text-center text-sm text-[var(--text-muted)]">No deliverables pending review.</p>
         ) : (
           <div className="divide-y divide-[#E5E7EB]">
             {deliverables.slice(0, 5).map((d) => (
               <div key={d.id} className="flex items-center justify-between px-5 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-[#1A1A1A]">{d.title}</p>
+                  <p className="truncate text-sm font-medium text-[var(--text-primary)]">{d.title}</p>
                   <div className="mt-0.5 flex items-center gap-2">
                     <Badge variant="secondary" className="text-[10px]">{d.type}</Badge>
-                    <span className="text-[10px] text-[#9CA3AF]">{formatDate(d.createdAt)}</span>
+                    <span className="text-[10px] text-[var(--text-muted)]">{formatDate(d.createdAt)}</span>
                   </div>
                 </div>
                 <div className="ml-4 flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs text-[#A23B72] hover:bg-[#A23B72]/5"
+                    className="h-7 text-xs text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/5"
                     disabled={reviewingId === d.id}
                     onClick={() => {
                       const feedback = window.prompt("Revision feedback:");
@@ -336,7 +336,7 @@ export default function BrandDetailPage() {
                   </Button>
                   <Button
                     size="sm"
-                    className="h-7 bg-[#2E86AB] text-xs hover:bg-[#2E86AB]/90"
+                    className="h-7 bg-[var(--accent-primary)] text-xs hover:bg-[var(--accent-primary)]/90"
                     disabled={reviewingId === d.id}
                     onClick={() => handleReview(d.id, "approve")}
                   >
@@ -355,10 +355,10 @@ export default function BrandDetailPage() {
       </div>
 
       {/* Content Calendar */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white">
-        <div className="border-b border-[#E5E7EB] px-5 py-4">
-          <h2 className="text-sm font-semibold text-[#1A1A1A]">Upcoming Content</h2>
-          <p className="text-xs text-[#9CA3AF]">Scheduled posts for the next 7 days</p>
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <div className="border-b border-[var(--border-subtle)] px-5 py-4">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Upcoming Content</h2>
+          <p className="text-xs text-[var(--text-muted)]">Scheduled posts for the next 7 days</p>
         </div>
         <div className="grid grid-cols-7 divide-x divide-[#E5E7EB]">
           {upcomingDays.map((day) => {
@@ -372,7 +372,7 @@ export default function BrandDetailPage() {
                 <p
                   className={cn(
                     "mb-1 text-center text-[10px] font-medium",
-                    isToday ? "text-[#2E86AB]" : "text-[#6B7280]"
+                    isToday ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"
                   )}
                 >
                   {weekDayName(day)}
@@ -380,7 +380,7 @@ export default function BrandDetailPage() {
                 <p
                   className={cn(
                     "mb-2 text-center text-xs font-semibold",
-                    isToday ? "text-[#2E86AB]" : "text-[#1A1A1A]"
+                    isToday ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"
                   )}
                 >
                   {day.getDate()}
@@ -389,12 +389,12 @@ export default function BrandDetailPage() {
                   {dayEvents.map((e) => (
                     <div
                       key={e.id}
-                      className="rounded bg-[#2E86AB]/10 px-1.5 py-1"
+                      className="rounded bg-[var(--accent-primary)]/10 px-1.5 py-1"
                     >
-                      <p className="truncate text-[9px] font-medium text-[#2E86AB]">
+                      <p className="truncate text-[9px] font-medium text-[var(--accent-primary)]">
                         {e.title}
                       </p>
-                      <p className="text-[8px] text-[#6B7280]">{e.platform}</p>
+                      <p className="text-[8px] text-[var(--text-secondary)]">{e.platform}</p>
                     </div>
                   ))}
                 </div>
@@ -403,7 +403,7 @@ export default function BrandDetailPage() {
           })}
         </div>
         {calendar.length === 0 && (
-          <p className="px-5 py-4 text-center text-sm text-[#9CA3AF]">No scheduled content this week.</p>
+          <p className="px-5 py-4 text-center text-sm text-[var(--text-muted)]">No scheduled content this week.</p>
         )}
       </div>
     </div>

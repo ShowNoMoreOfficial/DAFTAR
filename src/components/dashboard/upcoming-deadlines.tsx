@@ -16,10 +16,10 @@ interface UpcomingTask {
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  URGENT: "bg-red-100 text-red-700",
-  HIGH: "bg-orange-100 text-orange-700",
-  MEDIUM: "bg-blue-100 text-blue-700",
-  LOW: "bg-gray-100 text-gray-600",
+  URGENT: "bg-[rgba(239,68,68,0.15)] text-[var(--status-error)]",
+  HIGH: "bg-[rgba(245,158,11,0.15)] text-[var(--accent-tertiary)]",
+  MEDIUM: "bg-[rgba(59,130,246,0.15)] text-[var(--status-info)]",
+  LOW: "bg-[var(--bg-elevated)] text-[var(--text-muted)]",
 };
 
 function formatDue(dateStr: string): { label: string; isOverdue: boolean; isSoon: boolean } {
@@ -68,27 +68,27 @@ export function UpcomingDeadlines() {
   }, []);
 
   return (
-    <div className="rounded-xl border border-[#E5E7EB] bg-white">
-      <div className="border-b border-[#E5E7EB] px-5 py-3">
-        <h2 className="text-sm font-semibold text-[#1A1A1A]">Upcoming Deadlines</h2>
+    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+      <div className="border-b border-[var(--border-subtle)] px-5 py-3">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)]">Upcoming Deadlines</h2>
       </div>
       <div className="p-4">
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex animate-pulse items-center gap-3">
-                <div className="h-4 w-4 rounded bg-[#F0F2F5]" />
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded skeleton-shimmer" />
                 <div className="flex-1">
-                  <div className="h-3 w-2/3 rounded bg-[#F0F2F5]" />
-                  <div className="mt-1.5 h-2 w-20 rounded bg-[#F0F2F5]" />
+                  <div className="h-3 w-2/3 rounded skeleton-shimmer" />
+                  <div className="mt-1.5 h-2 w-20 rounded skeleton-shimmer" />
                 </div>
               </div>
             ))}
           </div>
         ) : tasks.length === 0 ? (
           <div className="py-6 text-center">
-            <Calendar className="mx-auto h-8 w-8 text-[#D1D5DB]" />
-            <p className="mt-2 text-sm text-[#9CA3AF]">
+            <Calendar className="mx-auto h-8 w-8 text-[var(--text-muted)]" />
+            <p className="mt-2 text-sm text-[var(--text-muted)]">
               No upcoming deadlines. Tasks with due dates will appear here.
             </p>
           </div>
@@ -99,31 +99,31 @@ export function UpcomingDeadlines() {
               return (
                 <div
                   key={task.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[#F8F9FA]"
+                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[var(--bg-elevated)]"
                   onClick={() => router.push(`/pms?taskId=${task.id}`)}
                 >
                   {due.isOverdue ? (
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-[var(--status-error)]" />
                   ) : (
                     <Clock
                       className={cn(
                         "h-4 w-4 shrink-0",
-                        due.isSoon ? "text-amber-500" : "text-[#9CA3AF]"
+                        due.isSoon ? "text-[var(--accent-tertiary)]" : "text-[var(--text-muted)]"
                       )}
                     />
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-[#1A1A1A]">
+                    <p className="truncate text-xs font-medium text-[var(--text-primary)]">
                       {task.title}
                     </p>
-                    <p className="text-[10px] text-[#9CA3AF]">
+                    <p className="text-[10px] text-[var(--text-muted)]">
                       {task.assignee ? task.assignee.name : "Unassigned"}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Badge
                       className={cn(
-                        "text-[10px]",
+                        "text-[10px] border-0",
                         PRIORITY_COLORS[task.priority] ?? PRIORITY_COLORS.MEDIUM
                       )}
                     >
@@ -131,12 +131,12 @@ export function UpcomingDeadlines() {
                     </Badge>
                     <span
                       className={cn(
-                        "whitespace-nowrap text-[10px] font-medium",
+                        "whitespace-nowrap text-[10px] font-medium font-mono",
                         due.isOverdue
-                          ? "text-red-600"
+                          ? "text-[var(--status-error)]"
                           : due.isSoon
-                            ? "text-amber-600"
-                            : "text-[#9CA3AF]"
+                            ? "text-[var(--accent-tertiary)]"
+                            : "text-[var(--text-muted)]"
                       )}
                     >
                       {due.label}

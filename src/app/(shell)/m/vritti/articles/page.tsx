@@ -37,13 +37,13 @@ interface Article {
 }
 
 const statusBadgeClasses: Record<string, string> = {
-  IDEA: "bg-gray-50 text-gray-700",
-  DRAFTING: "bg-blue-50 text-blue-700",
-  EDITING: "bg-amber-50 text-amber-700",
-  REVIEW: "bg-purple-50 text-purple-700",
-  APPROVED: "bg-green-50 text-green-700",
-  PUBLISHED: "bg-emerald-50 text-emerald-700",
-  ARCHIVED: "bg-gray-100 text-gray-500",
+  IDEA: "bg-[var(--bg-elevated)] text-gray-700",
+  DRAFTING: "bg-[rgba(59,130,246,0.1)] text-blue-700",
+  EDITING: "bg-[rgba(245,158,11,0.1)] text-amber-700",
+  REVIEW: "bg-[rgba(168,85,247,0.1)] text-purple-700",
+  APPROVED: "bg-[rgba(34,197,94,0.1)] text-green-700",
+  PUBLISHED: "bg-[rgba(16,185,129,0.1)] text-emerald-700",
+  ARCHIVED: "bg-[var(--bg-elevated)] text-gray-500",
 };
 
 const ALL_STATUSES = ["IDEA", "DRAFTING", "EDITING", "REVIEW", "APPROVED", "PUBLISHED", "ARCHIVED"];
@@ -142,8 +142,8 @@ export default function ArticlesPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-[#6B7280]" />
-        <span className="ml-2 text-sm text-[#6B7280]">Loading...</span>
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--text-secondary)]" />
+        <span className="ml-2 text-sm text-[var(--text-secondary)]">Loading...</span>
       </div>
     );
   }
@@ -151,10 +151,10 @@ export default function ArticlesPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] bg-[#F8F9FA] px-6 py-4">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
         <div>
-          <h1 className="text-lg font-semibold text-[#1A1A1A]">Articles</h1>
-          <p className="text-sm text-[#6B7280]">
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Articles</h1>
+          <p className="text-sm text-[var(--text-secondary)]">
             {articles.length} article{articles.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -181,9 +181,9 @@ export default function ArticlesPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="flex items-center gap-3 border-b border-[#E5E7EB] bg-white px-6 py-3">
+      <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
           <Input
             placeholder="Search by title..."
             value={search}
@@ -202,11 +202,11 @@ export default function ArticlesPage() {
       </div>
 
       {showFilters && (
-        <div className="flex items-center gap-3 border-b border-[#E5E7EB] bg-white px-6 py-3">
+        <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-8 rounded-lg border border-[#E5E7EB] bg-white px-2.5 text-sm text-[#1A1A1A] outline-none focus:border-[#2E86AB]"
+            className="h-8 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#2E86AB]"
           >
             <option value="">All Statuses</option>
             {ALL_STATUSES.map((s) => (
@@ -218,7 +218,7 @@ export default function ArticlesPage() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="h-8 rounded-lg border border-[#E5E7EB] bg-white px-2.5 text-sm text-[#1A1A1A] outline-none focus:border-[#2E86AB]"
+            className="h-8 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#2E86AB]"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -244,9 +244,9 @@ export default function ArticlesPage() {
       {/* Table */}
       {articles.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center py-20">
-          <FileText className="h-10 w-10 text-[#9CA3AF]" />
-          <p className="mt-3 text-sm font-medium text-[#1A1A1A]">No articles found</p>
-          <p className="mt-1 text-sm text-[#6B7280]">
+          <FileText className="h-10 w-10 text-[var(--text-muted)]" />
+          <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">No articles found</p>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             {search || filterStatus || filterCategory
               ? "Try adjusting your filters"
               : "Create your first article from the Pipeline tab"}
@@ -256,31 +256,31 @@ export default function ArticlesPage() {
         <div className="flex-1 overflow-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#E5E7EB] bg-[#F8F9FA]">
+              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
                 <th className="w-10 px-3 py-2.5">
                   <input
                     type="checkbox"
                     checked={selectedIds.size === articles.length && articles.length > 0}
                     onChange={toggleSelectAll}
-                    className="h-3.5 w-3.5 rounded border-[#E5E7EB]"
+                    className="h-3.5 w-3.5 rounded border-[var(--border-subtle)]"
                   />
                 </th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-[#6B7280]">
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">
                   Title
                 </th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-[#6B7280]">
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">
                   Status
                 </th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-[#6B7280]">
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">
                   Category
                 </th>
-                <th className="px-3 py-2.5 text-left text-xs font-medium text-[#6B7280]">
+                <th className="px-3 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">
                   Author
                 </th>
-                <th className="px-3 py-2.5 text-right text-xs font-medium text-[#6B7280]">
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-[var(--text-secondary)]">
                   Words
                 </th>
-                <th className="px-3 py-2.5 text-right text-xs font-medium text-[#6B7280]">
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-[var(--text-secondary)]">
                   Updated
                 </th>
               </tr>
@@ -289,20 +289,20 @@ export default function ArticlesPage() {
               {articles.map((article) => (
                 <tr
                   key={article.id}
-                  className="border-b border-[#E5E7EB] transition-colors hover:bg-[#F8F9FA]"
+                  className="border-b border-[var(--border-subtle)] transition-colors hover:bg-[var(--bg-surface)]"
                 >
                   <td className="w-10 px-3 py-2.5">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(article.id)}
                       onChange={() => toggleSelect(article.id)}
-                      className="h-3.5 w-3.5 rounded border-[#E5E7EB]"
+                      className="h-3.5 w-3.5 rounded border-[var(--border-subtle)]"
                     />
                   </td>
                   <td className="px-3 py-2.5">
                     <a
                       href={`/m/vritti/articles/${article.id}`}
-                      className="text-sm font-medium text-[#1A1A1A] hover:text-[#2E86AB] hover:underline"
+                      className="text-sm font-medium text-[var(--text-primary)] hover:text-[var(--accent-primary)] hover:underline"
                     >
                       {article.title}
                     </a>
@@ -311,7 +311,7 @@ export default function ArticlesPage() {
                     <span
                       className={cn(
                         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                        statusBadgeClasses[article.status] || "bg-gray-50 text-gray-700"
+                        statusBadgeClasses[article.status] || "bg-[var(--bg-elevated)] text-gray-700"
                       )}
                     >
                       {article.status.charAt(0) + article.status.slice(1).toLowerCase()}
@@ -320,7 +320,7 @@ export default function ArticlesPage() {
                   <td className="px-3 py-2.5">
                     {article.category ? (
                       <span
-                        className="inline-flex items-center gap-1.5 text-xs text-[#6B7280]"
+                        className="inline-flex items-center gap-1.5 text-xs text-[var(--text-secondary)]"
                       >
                         <span
                           className="inline-block h-2 w-2 rounded-full"
@@ -329,18 +329,18 @@ export default function ArticlesPage() {
                         {article.category.name}
                       </span>
                     ) : (
-                      <span className="text-xs text-[#9CA3AF]">--</span>
+                      <span className="text-xs text-[var(--text-muted)]">--</span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-[#6B7280]">
-                    {article.author?.name || <span className="text-[#9CA3AF]">--</span>}
+                  <td className="px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+                    {article.author?.name || <span className="text-[var(--text-muted)]">--</span>}
                   </td>
-                  <td className="px-3 py-2.5 text-right text-xs text-[#6B7280]">
+                  <td className="px-3 py-2.5 text-right text-xs text-[var(--text-secondary)]">
                     {article.wordCount != null
                       ? article.wordCount.toLocaleString()
                       : "--"}
                   </td>
-                  <td className="px-3 py-2.5 text-right text-xs text-[#9CA3AF]">
+                  <td className="px-3 py-2.5 text-right text-xs text-[var(--text-muted)]">
                     {formatDate(article.updatedAt)}
                   </td>
                 </tr>

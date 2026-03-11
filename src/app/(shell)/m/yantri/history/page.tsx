@@ -120,7 +120,7 @@ export default function HistoryPage() {
                     <span className="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded text-[10px] font-black uppercase tracking-tighter border border-border">
                       {n.brand.name}
                     </span>
-                    <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded text-[10px] font-black uppercase tracking-tighter border border-indigo-500/20">
+                    <span className="px-2 py-0.5 bg-[rgba(99,102,241,0.1)]0/10 text-indigo-400 rounded text-[10px] font-black uppercase tracking-tighter border border-indigo-500/20">
                       {n.platform.replace(/_/g, " ")}
                     </span>
                   </div>

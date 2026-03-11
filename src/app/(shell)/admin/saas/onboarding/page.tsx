@@ -122,8 +122,8 @@ export default function OnboardingWizardPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold text-[#1A1A1A]">Onboard Organization</h1>
-        <p className="mt-1 text-sm text-[#6B7280]">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Onboard Organization</h1>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
           Set up a new tenant with profile, departments, and team invites.
         </p>
       </div>
@@ -134,10 +134,10 @@ export default function OnboardingWizardPage() {
           <div key={step.key} className="flex items-center gap-2">
             <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
               i < stepIndex
-                ? "bg-[#2E86AB] text-white"
+                ? "bg-[var(--accent-primary)] text-white"
                 : i === stepIndex
-                  ? "bg-[#2E86AB] text-white ring-4 ring-[#2E86AB]/20"
-                  : "bg-[#E5E7EB] text-[#6B7280]"
+                  ? "bg-[var(--accent-primary)] text-white ring-4 ring-[#2E86AB]/20"
+                  : "bg-[#E5E7EB] text-[var(--text-secondary)]"
             }`}>
               {i < stepIndex ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -145,60 +145,60 @@ export default function OnboardingWizardPage() {
                 i + 1
               )}
             </div>
-            <span className={`text-xs font-medium ${i <= stepIndex ? "text-[#1A1A1A]" : "text-[#6B7280]"}`}>
+            <span className={`text-xs font-medium ${i <= stepIndex ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}`}>
               {step.label}
             </span>
             {i < STEPS.length - 1 && (
-              <div className={`h-px w-8 ${i < stepIndex ? "bg-[#2E86AB]" : "bg-[#E5E7EB]"}`} />
+              <div className={`h-px w-8 ${i < stepIndex ? "bg-[var(--accent-primary)]" : "bg-[#E5E7EB]"}`} />
             )}
           </div>
         ))}
       </div>
 
       {/* Step Content */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
         {/* PROFILE STEP */}
         {currentStep === "profile" && (
           <div className="space-y-5">
-            <h2 className="text-sm font-semibold text-[#1A1A1A]">Organization Profile</h2>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Organization Profile</h2>
 
             <div>
-              <label className="text-sm font-medium text-[#1A1A1A]">Organization Name *</label>
+              <label className="text-sm font-medium text-[var(--text-primary)]">Organization Name *</label>
               <input
                 type="text"
                 value={orgName}
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Acme Corp"
-                className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
+                className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-[#1A1A1A]">Slug *</label>
+              <label className="text-sm font-medium text-[var(--text-primary)]">Slug *</label>
               <input
                 type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="acme-corp"
-                className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#1A1A1A] font-mono focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
+                className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] font-mono focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
               />
-              <p className="mt-1 text-xs text-[#9CA3AF]">URL-safe identifier, auto-generated from name</p>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">URL-safe identifier, auto-generated from name</p>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-[#1A1A1A]">Domain</label>
+              <label className="text-sm font-medium text-[var(--text-primary)]">Domain</label>
               <input
                 type="text"
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 placeholder="acme.com"
-                className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
+                className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
               />
-              <p className="mt-1 text-xs text-[#9CA3AF]">Optional. Used for SSO and email verification.</p>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">Optional. Used for SSO and email verification.</p>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-[#1A1A1A]">Plan *</label>
+              <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">Plan *</label>
               <div className="grid grid-cols-3 gap-3">
                 {PLANS.map((p) => (
                   <button
@@ -207,13 +207,13 @@ export default function OnboardingWizardPage() {
                     onClick={() => setPlan(p.value)}
                     className={`rounded-xl border-2 p-4 text-left transition-all ${
                       plan === p.value
-                        ? `${p.color} bg-[#F8F9FA] shadow-sm`
-                        : "border-[#E5E7EB] hover:border-[#D1D5DB]"
+                        ? `${p.color} bg-[var(--bg-surface)] shadow-sm`
+                        : "border-[var(--border-subtle)] hover:border-[#D1D5DB]"
                     }`}
                   >
-                    <p className="text-sm font-semibold text-[#1A1A1A]">{p.label}</p>
-                    <p className="mt-1 text-lg font-bold text-[#1A1A1A]">{p.price}</p>
-                    <p className="mt-1 text-xs text-[#6B7280]">{p.users}</p>
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">{p.label}</p>
+                    <p className="mt-1 text-lg font-bold text-[var(--text-primary)]">{p.price}</p>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">{p.users}</p>
                   </button>
                 ))}
               </div>
@@ -224,8 +224,8 @@ export default function OnboardingWizardPage() {
         {/* DEPARTMENTS STEP */}
         {currentStep === "departments" && (
           <div className="space-y-5">
-            <h2 className="text-sm font-semibold text-[#1A1A1A]">Department Setup</h2>
-            <p className="text-xs text-[#6B7280]">Add the departments for this organization. You can always add more later.</p>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Department Setup</h2>
+            <p className="text-xs text-[var(--text-secondary)]">Add the departments for this organization. You can always add more later.</p>
 
             <div className="flex gap-2">
               <input
@@ -234,12 +234,12 @@ export default function OnboardingWizardPage() {
                 onChange={(e) => setNewDept(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addDepartment())}
                 placeholder="Department name"
-                className="flex-1 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
+                className="flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
               />
               <button
                 type="button"
                 onClick={addDepartment}
-                className="rounded-lg bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2E86AB]/90"
+                className="rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-primary)]/90"
               >
                 Add
               </button>
@@ -247,8 +247,8 @@ export default function OnboardingWizardPage() {
 
             <div className="space-y-2">
               {departments.map((dept, i) => (
-                <div key={i} className="flex items-center justify-between rounded-lg border border-[#E5E7EB] bg-[#F8F9FA] px-4 py-2.5">
-                  <span className="text-sm text-[#1A1A1A]">{dept}</span>
+                <div key={i} className="flex items-center justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-2.5">
+                  <span className="text-sm text-[var(--text-primary)]">{dept}</span>
                   <button
                     type="button"
                     onClick={() => removeDepartment(i)}
@@ -259,7 +259,7 @@ export default function OnboardingWizardPage() {
                 </div>
               ))}
               {departments.length === 0 && (
-                <p className="py-6 text-center text-sm text-[#9CA3AF]">
+                <p className="py-6 text-center text-sm text-[var(--text-muted)]">
                   No departments added yet.
                 </p>
               )}
@@ -270,8 +270,8 @@ export default function OnboardingWizardPage() {
         {/* INVITE STEP */}
         {currentStep === "invite" && (
           <div className="space-y-5">
-            <h2 className="text-sm font-semibold text-[#1A1A1A]">Invite Team Members</h2>
-            <p className="text-xs text-[#6B7280]">Add team members by email. They will receive invitations after organization is created.</p>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Invite Team Members</h2>
+            <p className="text-xs text-[var(--text-secondary)]">Add team members by email. They will receive invitations after organization is created.</p>
 
             <div className="flex gap-2">
               <input
@@ -280,12 +280,12 @@ export default function OnboardingWizardPage() {
                 onChange={(e) => setInviteEmail(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInvite())}
                 placeholder="user@company.com"
-                className="flex-1 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
+                className="flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
               />
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#1A1A1A]"
+                className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 <option value="ADMIN">Admin</option>
                 <option value="HEAD_HR">Head HR</option>
@@ -295,7 +295,7 @@ export default function OnboardingWizardPage() {
               <button
                 type="button"
                 onClick={addInvite}
-                className="rounded-lg bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2E86AB]/90"
+                className="rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-primary)]/90"
               >
                 Add
               </button>
@@ -303,10 +303,10 @@ export default function OnboardingWizardPage() {
 
             <div className="space-y-2">
               {invites.map((inv, i) => (
-                <div key={i} className="flex items-center justify-between rounded-lg border border-[#E5E7EB] bg-[#F8F9FA] px-4 py-2.5">
+                <div key={i} className="flex items-center justify-between rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-2.5">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-[#1A1A1A]">{inv.email}</span>
-                    <span className="inline-flex rounded-full bg-[#2E86AB]/10 px-2 py-0.5 text-[10px] font-medium text-[#2E86AB]">
+                    <span className="text-sm text-[var(--text-primary)]">{inv.email}</span>
+                    <span className="inline-flex rounded-full bg-[var(--accent-primary)]/10 px-2 py-0.5 text-[10px] font-medium text-[var(--accent-primary)]">
                       {inv.role.replace("_", " ")}
                     </span>
                   </div>
@@ -320,7 +320,7 @@ export default function OnboardingWizardPage() {
                 </div>
               ))}
               {invites.length === 0 && (
-                <p className="py-6 text-center text-sm text-[#9CA3AF]">
+                <p className="py-6 text-center text-sm text-[var(--text-muted)]">
                   No invites added yet. You can skip this step and invite later.
                 </p>
               )}
@@ -331,11 +331,11 @@ export default function OnboardingWizardPage() {
         {/* COMPLETE STEP */}
         {currentStep === "complete" && (
           <div className="space-y-5 text-center py-8">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(16,185,129,0.15)]">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
-            <h2 className="text-lg font-semibold text-[#1A1A1A]">Organization Created</h2>
-            <p className="text-sm text-[#6B7280]">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Organization Created</h2>
+            <p className="text-sm text-[var(--text-secondary)]">
               <strong>{orgName}</strong> has been set up with the <strong>{plan}</strong> plan,{" "}
               {departments.length} department{departments.length !== 1 ? "s" : ""}, and{" "}
               {invites.length} pending invite{invites.length !== 1 ? "s" : ""}.
@@ -343,7 +343,7 @@ export default function OnboardingWizardPage() {
             <div className="flex justify-center gap-3 pt-2">
               <button
                 onClick={() => router.push("/admin/saas")}
-                className="rounded-lg bg-[#2E86AB] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2E86AB]/90"
+                className="rounded-lg bg-[var(--accent-primary)] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-primary)]/90"
               >
                 Go to SaaS Dashboard
               </button>
@@ -357,7 +357,7 @@ export default function OnboardingWizardPage() {
                   setDepartments(["Engineering", "Design", "Marketing"]);
                   setInvites([]);
                 }}
-                className="rounded-lg border border-[#E5E7EB] px-6 py-2 text-sm font-medium text-[#1A1A1A] transition-colors hover:bg-[#F8F9FA]"
+                className="rounded-lg border border-[var(--border-subtle)] px-6 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-surface)]"
               >
                 Onboard Another
               </button>
@@ -372,12 +372,12 @@ export default function OnboardingWizardPage() {
 
         {/* Navigation */}
         {currentStep !== "complete" && (
-          <div className="mt-6 flex items-center justify-between border-t border-[#E5E7EB] pt-4">
+          <div className="mt-6 flex items-center justify-between border-t border-[var(--border-subtle)] pt-4">
             {stepIndex > 0 ? (
               <button
                 type="button"
                 onClick={goBack}
-                className="rounded-lg border border-[#E5E7EB] px-4 py-2 text-sm font-medium text-[#1A1A1A] transition-colors hover:bg-[#F8F9FA]"
+                className="rounded-lg border border-[var(--border-subtle)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-surface)]"
               >
                 Back
               </button>
@@ -388,7 +388,7 @@ export default function OnboardingWizardPage() {
               type="button"
               onClick={goNext}
               disabled={saving}
-              className="rounded-lg bg-[#2E86AB] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2E86AB]/90 disabled:opacity-50"
+              className="rounded-lg bg-[var(--accent-primary)] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-primary)]/90 disabled:opacity-50"
             >
               {saving
                 ? "Creating..."

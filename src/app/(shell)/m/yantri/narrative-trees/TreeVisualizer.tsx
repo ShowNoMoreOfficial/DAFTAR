@@ -49,7 +49,7 @@ function RootNode({ data }: NodeProps) {
   const d = data as { label: string; status: string; hasDossier: boolean };
   return (
     <div className="px-5 py-4 bg-gradient-to-br from-indigo-900/80 to-indigo-950/80 border-2 border-indigo-500/40 rounded-2xl shadow-lg shadow-indigo-500/10 min-w-[200px] max-w-[280px]">
-      <Handle type="source" position={Position.Bottom} className="!bg-indigo-500 !w-3 !h-3 !border-2 !border-indigo-300" />
+      <Handle type="source" position={Position.Bottom} className="!bg-[rgba(99,102,241,0.1)]0 !w-3 !h-3 !border-2 !border-indigo-300" />
       <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">
         Root Trend
       </div>
@@ -57,11 +57,11 @@ function RootNode({ data }: NodeProps) {
         {d.label}
       </div>
       <div className="flex items-center gap-2 mt-2">
-        <Badge className="text-[9px] bg-indigo-500/20 text-indigo-300 border-indigo-500/30">
+        <Badge className="text-[9px] bg-[rgba(99,102,241,0.1)]0/20 text-indigo-300 border-indigo-500/30">
           {d.status}
         </Badge>
         {d.hasDossier && (
-          <Badge className="text-[9px] bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
+          <Badge className="text-[9px] bg-[rgba(16,185,129,0.1)]0/20 text-emerald-300 border-emerald-500/30">
             Dossier
           </Badge>
         )}
@@ -77,7 +77,7 @@ function SignalNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Top} className="!bg-zinc-500 !w-2.5 !h-2.5" />
       <Handle type="source" position={Position.Bottom} className="!bg-zinc-500 !w-2.5 !h-2.5" />
       <div className="flex items-center gap-2 mb-1">
-        <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+        <div className="w-2 h-2 rounded-full bg-[rgba(59,130,246,0.1)]0 shrink-0" />
         <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">
           Signal
         </span>
@@ -97,10 +97,10 @@ function HypothesisNode({ data }: NodeProps) {
   const d = data as { label: string; date: string };
   return (
     <div className="px-4 py-3 bg-amber-950/40 border border-amber-500/30 rounded-xl shadow-md min-w-[180px] max-w-[240px] border-dashed">
-      <Handle type="target" position={Position.Top} className="!bg-amber-500 !w-2.5 !h-2.5" />
-      <Handle type="source" position={Position.Bottom} className="!bg-amber-500 !w-2.5 !h-2.5" />
+      <Handle type="target" position={Position.Top} className="!bg-[rgba(245,158,11,0.1)]0 !w-2.5 !h-2.5" />
+      <Handle type="source" position={Position.Bottom} className="!bg-[rgba(245,158,11,0.1)]0 !w-2.5 !h-2.5" />
       <div className="flex items-center gap-2 mb-1">
-        <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+        <div className="w-2 h-2 rounded-full bg-[rgba(245,158,11,0.1)]0 shrink-0" />
         <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">
           What-If
         </span>
@@ -117,14 +117,14 @@ function ContentNode({ data }: NodeProps) {
   const d = data as { platform: string; status: string };
   return (
     <div className="px-4 py-3 bg-violet-950/40 border border-violet-500/30 rounded-xl shadow-md min-w-[140px]">
-      <Handle type="target" position={Position.Top} className="!bg-violet-500 !w-2.5 !h-2.5" />
+      <Handle type="target" position={Position.Top} className="!bg-[rgba(139,92,246,0.1)]0 !w-2.5 !h-2.5" />
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-violet-500 shrink-0" />
+        <div className="w-2 h-2 rounded-full bg-[rgba(139,92,246,0.1)]0 shrink-0" />
         <span className="text-[9px] font-bold text-violet-400 uppercase tracking-wider">
           {d.platform.replace(/_/g, " ")}
         </span>
       </div>
-      <Badge className="text-[9px] bg-violet-500/10 text-violet-300 border-violet-500/20 mt-1">
+      <Badge className="text-[9px] bg-[rgba(139,92,246,0.1)]0/10 text-violet-300 border-violet-500/20 mt-1">
         {d.status}
       </Badge>
     </div>
@@ -246,7 +246,7 @@ export default function TreeVisualizer({
         {onAddHypothesis && (
           <button
             onClick={onAddHypothesis}
-            className="px-3 py-1.5 text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg hover:bg-amber-500/20 transition-colors"
+            className="px-3 py-1.5 text-xs font-bold bg-[rgba(245,158,11,0.1)]0/10 text-amber-400 border border-amber-500/20 rounded-lg hover:bg-[rgba(245,158,11,0.1)]0/20 transition-colors"
           >
             + Add What-If Scenario
           </button>
@@ -273,7 +273,7 @@ export default function TreeVisualizer({
                 if (mergeTarget) onMerge(tree.id, mergeTarget);
               }}
               disabled={!mergeTarget}
-              className="px-3 py-1.5 text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors disabled:opacity-40"
+              className="px-3 py-1.5 text-xs font-bold bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-[rgba(59,130,246,0.1)]0/20 transition-colors disabled:opacity-40"
             >
               Merge
             </button>

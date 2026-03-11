@@ -32,13 +32,13 @@ type Signal = KhabriSignal;
 // ─── Sentiment Config ───────────────────────────────────
 
 const SENTIMENT_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  POSITIVE: { label: "Positive", color: "bg-emerald-100 text-emerald-700", icon: <ThumbsUp className="h-3 w-3" /> },
-  Positive: { label: "Positive", color: "bg-emerald-100 text-emerald-700", icon: <ThumbsUp className="h-3 w-3" /> },
-  NEGATIVE: { label: "Negative", color: "bg-red-100 text-red-700", icon: <ThumbsDown className="h-3 w-3" /> },
-  Negative: { label: "Negative", color: "bg-red-100 text-red-700", icon: <ThumbsDown className="h-3 w-3" /> },
-  NEUTRAL: { label: "Neutral", color: "bg-gray-100 text-gray-600", icon: <Minus className="h-3 w-3" /> },
-  Neutral: { label: "Neutral", color: "bg-gray-100 text-gray-600", icon: <Minus className="h-3 w-3" /> },
-  MIXED: { label: "Mixed", color: "bg-yellow-100 text-yellow-700", icon: <Minus className="h-3 w-3" /> },
+  POSITIVE: { label: "Positive", color: "bg-[rgba(16,185,129,0.15)] text-emerald-700", icon: <ThumbsUp className="h-3 w-3" /> },
+  Positive: { label: "Positive", color: "bg-[rgba(16,185,129,0.15)] text-emerald-700", icon: <ThumbsUp className="h-3 w-3" /> },
+  NEGATIVE: { label: "Negative", color: "bg-[rgba(239,68,68,0.15)] text-red-700", icon: <ThumbsDown className="h-3 w-3" /> },
+  Negative: { label: "Negative", color: "bg-[rgba(239,68,68,0.15)] text-red-700", icon: <ThumbsDown className="h-3 w-3" /> },
+  NEUTRAL: { label: "Neutral", color: "bg-[var(--bg-elevated)] text-gray-600", icon: <Minus className="h-3 w-3" /> },
+  Neutral: { label: "Neutral", color: "bg-[var(--bg-elevated)] text-gray-600", icon: <Minus className="h-3 w-3" /> },
+  MIXED: { label: "Mixed", color: "bg-[rgba(234,179,8,0.15)] text-yellow-700", icon: <Minus className="h-3 w-3" /> },
 };
 
 const ENTITY_ICONS: Record<string, React.ReactNode> = {
@@ -59,13 +59,13 @@ function SentimentBar({ score: rawScore }: { score: number }) {
   // score is -1 to 1, map to 0-100
   const pct = ((score + 1) / 2) * 100;
   const color =
-    score > 0.3 ? "bg-emerald-500" : score < -0.3 ? "bg-red-500" : "bg-gray-400";
+    score > 0.3 ? "bg-[rgba(16,185,129,0.1)]0" : score < -0.3 ? "bg-[rgba(239,68,68,0.1)]0" : "bg-gray-400";
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-12 rounded-full bg-gray-100">
+      <div className="h-1.5 w-12 rounded-full bg-[var(--bg-elevated)]">
         <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
       </div>
-      <span className={cn("text-xs font-medium tabular-nums", score > 0.3 ? "text-emerald-600" : score < -0.3 ? "text-red-600" : "text-[#6B7280]")}>
+      <span className={cn("text-xs font-medium tabular-nums", score > 0.3 ? "text-emerald-600" : score < -0.3 ? "text-red-600" : "text-[var(--text-secondary)]")}>
         {score > 0 ? "+" : ""}{score.toFixed(2)}
       </span>
     </div>
@@ -191,17 +191,17 @@ export default function KhabriSignalsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1A1A1A] flex items-center gap-2">
-            <Radio className="h-5 w-5 text-[#A23B72]" /> Signal Radar
+          <h1 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+            <Radio className="h-5 w-5 text-[var(--accent-secondary)]" /> Signal Radar
           </h1>
-          <p className="text-sm text-[#6B7280]">High-density signal monitoring with impact scoring</p>
+          <p className="text-sm text-[var(--text-secondary)]">High-density signal monitoring with impact scoring</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant={showFilters ? "default" : "outline"}
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className={showFilters ? "bg-[#2E86AB] hover:bg-[#2E86AB]/90 text-white" : ""}
+            className={showFilters ? "bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90 text-white" : ""}
           >
             <Filter className="mr-1.5 h-3.5 w-3.5" /> Filters
           </Button>
@@ -215,7 +215,7 @@ export default function KhabriSignalsPage() {
       <div className="space-y-3">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <Input
               placeholder="Search signals by text, entity, or keyword..."
               value={searchQuery}
@@ -224,7 +224,7 @@ export default function KhabriSignalsPage() {
               className="pl-9"
             />
           </div>
-          <Button onClick={handleSearch} size="sm" className="bg-[#2E86AB] hover:bg-[#2E86AB]/90 text-white">
+          <Button onClick={handleSearch} size="sm" className="bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90 text-white">
             Search
           </Button>
           {(activeSearch || sourceFilter) && (
@@ -240,13 +240,13 @@ export default function KhabriSignalsPage() {
 
         {/* Collapsible Filters */}
         {showFilters && (
-          <div className="flex flex-wrap items-center gap-4 rounded-lg border border-[#E5E7EB] bg-[#F8F9FA] px-4 py-3">
+          <div className="flex flex-wrap items-center gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-[#6B7280]">Source:</label>
+              <label className="text-xs font-medium text-[var(--text-secondary)]">Source:</label>
               <select
                 value={sourceFilter}
                 onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }}
-                className="rounded-md border border-[#E5E7EB] bg-white px-2 py-1 text-xs text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none"
+                className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 py-1 text-xs text-[var(--text-primary)] focus:border-[#2E86AB] focus:outline-none"
               >
                 <option value="">All Sources</option>
                 {[...new Set(signals.map((s) => s.source).filter(Boolean))].map((s) => (
@@ -255,7 +255,7 @@ export default function KhabriSignalsPage() {
               </select>
             </div>
             {sourceFilter && (
-              <Badge variant="outline" className="text-[10px] gap-1 text-[#A23B72]">
+              <Badge variant="outline" className="text-[10px] gap-1 text-[var(--accent-secondary)]">
                 Source: {sourceFilter}
               </Badge>
             )}
@@ -265,19 +265,19 @@ export default function KhabriSignalsPage() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-[#2E86AB]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-primary)]" />
         </div>
       ) : (
         <>
           {/* Signal Stats Bar */}
-          <div className="flex items-center gap-4 text-xs text-[#6B7280]">
+          <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)]">
             <span>{meta?.total ?? signals.length} total signals</span>
             <span>Showing {signals.length} on this page</span>
           </div>
 
           {/* Error State */}
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-lg border border-red-200 bg-[rgba(239,68,68,0.1)] px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
@@ -285,7 +285,7 @@ export default function KhabriSignalsPage() {
           {/* Signals List — Bloomberg Terminal Style */}
           <div className="space-y-2">
             {signals.length === 0 ? (
-              <div className="rounded-xl border border-[#E5E7EB] bg-white px-5 py-12 text-center text-sm text-[#9CA3AF]">
+              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-5 py-12 text-center text-sm text-[var(--text-muted)]">
                 {activeSearch ? `No signals found for "${activeSearch}"` : "No signals match current filters"}
               </div>
             ) : (
@@ -306,15 +306,15 @@ export default function KhabriSignalsPage() {
                   <div
                     key={signal.id}
                     className={cn(
-                      "rounded-xl border bg-white transition-all",
+                      "rounded-xl border bg-[var(--bg-surface)] transition-all",
                       isExpanded
                         ? "border-[#2E86AB]/30"
-                        : "border-[#E5E7EB]"
+                        : "border-[var(--border-subtle)]"
                     )}
                   >
                     {/* Signal Row */}
                     <div
-                      className="flex items-start gap-3 px-5 py-3.5 cursor-pointer hover:bg-[#F8F9FA] transition-colors"
+                      className="flex items-start gap-3 px-5 py-3.5 cursor-pointer hover:bg-[var(--bg-surface)] transition-colors"
                       onClick={() => setExpandedId(isExpanded ? null : signal.id)}
                     >
                       {/* Sentiment Score Column */}
@@ -322,16 +322,16 @@ export default function KhabriSignalsPage() {
                         {sentimentScore !== undefined ? (
                           <SentimentBar score={sentimentScore} />
                         ) : (
-                          <span className="text-xs text-[#D1D5DB]">—</span>
+                          <span className="text-xs text-[var(--text-muted)]">—</span>
                         )}
                       </div>
 
                       {/* Main Content */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#1A1A1A] leading-snug">{signal.title}</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)] leading-snug">{signal.title}</p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-2">
                           {signal.source && (
-                            <span className="text-xs font-medium text-[#6B7280]">{signal.source}</span>
+                            <span className="text-xs font-medium text-[var(--text-secondary)]">{signal.source}</span>
                           )}
                           {signal.category && (
                             <Badge variant="outline" className="text-[10px]">{signal.category}</Badge>
@@ -342,7 +342,7 @@ export default function KhabriSignalsPage() {
                             </Badge>
                           )}
                           {signal.publishedAt && (
-                            <span className="text-[10px] text-[#9CA3AF]">
+                            <span className="text-[10px] text-[var(--text-muted)]">
                               {new Date(signal.publishedAt).toLocaleString("en-IN", {
                                 day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
                               })}
@@ -360,7 +360,7 @@ export default function KhabriSignalsPage() {
                             "h-7 gap-1 text-[10px]",
                             isSent
                               ? "text-emerald-600 hover:text-emerald-700"
-                              : "text-[#A23B72] hover:text-[#A23B72]/80 hover:bg-[#A23B72]/5"
+                              : "text-[var(--accent-secondary)] hover:text-[var(--accent-secondary)]/80 hover:bg-[var(--accent-secondary)]/5"
                           )}
                           onClick={(e) => { e.stopPropagation(); handleSendToYantri(signal.id); }}
                           disabled={isSent}
@@ -377,7 +377,7 @@ export default function KhabriSignalsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="shrink-0 p-1.5 text-[#6B7280] hover:text-[#2E86AB] transition-colors"
+                            className="shrink-0 p-1.5 text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
                           </a>
@@ -389,19 +389,19 @@ export default function KhabriSignalsPage() {
                     {isExpanded && (
                       <div className="border-t border-[#F0F2F5] px-5 py-4 space-y-3">
                         {signal.content && (
-                          <p className="text-sm text-[#6B7280] leading-relaxed">{signal.content}</p>
+                          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{signal.content}</p>
                         )}
 
                         {signal.entities && signal.entities.length > 0 && (
                           <div>
-                            <p className="text-xs font-medium text-[#6B7280] mb-1.5">Entities</p>
+                            <p className="text-xs font-medium text-[var(--text-secondary)] mb-1.5">Entities</p>
                             <div className="flex flex-wrap gap-1.5">
                               {signal.entities.map((entity, i) => (
                                 <Badge key={i} variant="outline" className="text-xs gap-1">
                                   {ENTITY_ICONS[entity.type] || null}
                                   {entity.name}
                                   {typeof entity.salience === "number" && (
-                                    <span className="text-[#9CA3AF]">({(entity.salience * 100).toFixed(0)}%)</span>
+                                    <span className="text-[var(--text-muted)]">({(entity.salience * 100).toFixed(0)}%)</span>
                                   )}
                                 </Badge>
                               ))}
@@ -411,10 +411,10 @@ export default function KhabriSignalsPage() {
 
                         {signal.keywords && signal.keywords.length > 0 && (
                           <div>
-                            <p className="text-xs font-medium text-[#6B7280] mb-1.5">Keywords</p>
+                            <p className="text-xs font-medium text-[var(--text-secondary)] mb-1.5">Keywords</p>
                             <div className="flex flex-wrap gap-1.5">
                               {signal.keywords.map((kw, i) => (
-                                <span key={i} className="inline-flex items-center rounded-full bg-[#F0F2F5] px-2.5 py-0.5 text-xs text-[#6B7280]">
+                                <span key={i} className="inline-flex items-center rounded-full bg-[var(--bg-elevated)] px-2.5 py-0.5 text-xs text-[var(--text-secondary)]">
                                   {kw.keyword}
                                 </span>
                               ))}
@@ -424,7 +424,7 @@ export default function KhabriSignalsPage() {
 
                         {signal.locations && signal.locations.length > 0 && (
                           <div>
-                            <p className="text-xs font-medium text-[#6B7280] mb-1.5">Locations</p>
+                            <p className="text-xs font-medium text-[var(--text-secondary)] mb-1.5">Locations</p>
                             <div className="flex flex-wrap gap-1.5">
                               {signal.locations.map((loc, i) => (
                                 <Badge key={i} variant="outline" className="text-xs gap-1">
@@ -436,8 +436,8 @@ export default function KhabriSignalsPage() {
                         )}
 
                         {sentimentScore !== undefined && (
-                          <div className="flex items-center gap-2 text-xs text-[#6B7280]">
-                            Sentiment score: <strong className="text-[#1A1A1A]">{sentimentScore.toFixed(2)}</strong>
+                          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                            Sentiment score: <strong className="text-[var(--text-primary)]">{sentimentScore.toFixed(2)}</strong>
                           </div>
                         )}
                       </div>
@@ -451,7 +451,7 @@ export default function KhabriSignalsPage() {
           {/* Pagination */}
           {meta && (
             <div className="flex items-center justify-between">
-              <p className="text-xs text-[#9CA3AF]">
+              <p className="text-xs text-[var(--text-muted)]">
                 Page {meta.page} &middot; {meta.total} total signals
               </p>
               <div className="flex gap-2">

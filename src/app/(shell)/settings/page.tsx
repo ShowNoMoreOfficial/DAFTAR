@@ -70,8 +70,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-[#1A1A1A]">Settings</h1>
-        <p className="text-sm text-[#6B7280]">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Settings</h1>
+        <p className="text-sm text-[var(--text-secondary)]">
           Manage your profile and preferences
         </p>
       </div>
@@ -85,8 +85,8 @@ export default function SettingsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
                 activeTab === tab.id
-                  ? "bg-[#F0F2F5] font-medium text-[#1A1A1A]"
-                  : "text-[#6B7280] hover:bg-[#F8F9FA]"
+                  ? "bg-[var(--bg-elevated)] font-medium text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
               }`}
             >
               {tab.icon}
@@ -96,14 +96,14 @@ export default function SettingsPage() {
         </nav>
 
         {/* Content */}
-        <div className="flex-1 rounded-xl border border-[#E5E7EB] bg-white p-6">
+        <div className="flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6">
           {activeTab === "profile" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-sm font-semibold text-[#1A1A1A]">
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">
                   Profile
                 </h2>
-                <p className="text-xs text-[#9CA3AF]">
+                <p className="text-xs text-[var(--text-muted)]">
                   Your account information
                 </p>
               </div>
@@ -111,13 +111,13 @@ export default function SettingsPage() {
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={user.image || undefined} />
-                  <AvatarFallback className="bg-[#2E86AB] text-lg text-white">
+                  <AvatarFallback className="bg-[var(--accent-primary)] text-lg text-white">
                     {user.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-[#1A1A1A]">{user.name}</p>
-                  <p className="text-sm text-[#6B7280]">{user.email}</p>
+                  <p className="font-medium text-[var(--text-primary)]">{user.name}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
                   <div className="mt-1 flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       <Shield className="mr-1 h-3 w-3" />
@@ -131,7 +131,7 @@ export default function SettingsPage() {
 
               <div className="max-w-md space-y-4">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                  <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                     Display Name
                   </label>
                   <Input
@@ -140,17 +140,17 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                  <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                     Email
                   </label>
                   <Input value={user.email || ""} disabled />
-                  <p className="mt-1 text-[10px] text-[#9CA3AF]">
+                  <p className="mt-1 text-[10px] text-[var(--text-muted)]">
                     Email is managed by your OAuth provider
                   </p>
                 </div>
                 <Button
                   onClick={handleSaveProfile}
-                  className="bg-[#2E86AB] hover:bg-[#2E86AB]/90"
+                  className="bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90"
                 >
                   {saved ? (
                     <>
@@ -169,10 +169,10 @@ export default function SettingsPage() {
           {activeTab === "notifications" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-sm font-semibold text-[#1A1A1A]">
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">
                   Notification Preferences
                 </h2>
-                <p className="text-xs text-[#9CA3AF]">
+                <p className="text-xs text-[var(--text-muted)]">
                   Choose what notifications you receive
                 </p>
               </div>
@@ -207,13 +207,13 @@ export default function SettingsPage() {
                 ].map((item) => (
                   <div
                     key={item.key}
-                    className="flex items-center justify-between rounded-lg border border-[#E5E7EB] p-4"
+                    className="flex items-center justify-between rounded-lg border border-[var(--border-subtle)] p-4"
                   >
                     <div>
-                      <p className="text-sm font-medium text-[#1A1A1A]">
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
                         {item.label}
                       </p>
-                      <p className="text-xs text-[#9CA3AF]">{item.desc}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{item.desc}</p>
                     </div>
                     <button
                       onClick={() =>
@@ -223,11 +223,11 @@ export default function SettingsPage() {
                         }))
                       }
                       className={`relative h-6 w-11 rounded-full transition-colors ${
-                        notifPrefs[item.key] ? "bg-[#2E86AB]" : "bg-[#D1D5DB]"
+                        notifPrefs[item.key] ? "bg-[var(--accent-primary)]" : "bg-[#D1D5DB]"
                       }`}
                     >
                       <span
-                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-[var(--bg-surface)] shadow transition-transform ${
                           notifPrefs[item.key]
                             ? "translate-x-[22px]"
                             : "translate-x-0.5"
@@ -243,24 +243,24 @@ export default function SettingsPage() {
           {activeTab === "appearance" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-sm font-semibold text-[#1A1A1A]">
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">
                   Appearance
                 </h2>
-                <p className="text-xs text-[#9CA3AF]">
+                <p className="text-xs text-[var(--text-muted)]">
                   Customize how Daftar looks for you
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-xs font-medium text-[#6B7280]">
+                  <label className="mb-2 block text-xs font-medium text-[var(--text-secondary)]">
                     Sidebar
                   </label>
                   <div className="flex gap-3">
-                    <button className="rounded-lg border-2 border-[#2E86AB] bg-[#F8F9FA] px-4 py-3 text-sm font-medium text-[#1A1A1A]">
+                    <button className="rounded-lg border-2 border-[#2E86AB] bg-[var(--bg-surface)] px-4 py-3 text-sm font-medium text-[var(--text-primary)]">
                       Expanded
                     </button>
-                    <button className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-3 text-sm text-[#6B7280] hover:border-[#2E86AB]">
+                    <button className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--text-secondary)] hover:border-[#2E86AB]">
                       Collapsed
                     </button>
                   </div>
@@ -269,14 +269,14 @@ export default function SettingsPage() {
                 <Separator />
 
                 <div>
-                  <label className="mb-2 block text-xs font-medium text-[#6B7280]">
+                  <label className="mb-2 block text-xs font-medium text-[var(--text-secondary)]">
                     Density
                   </label>
                   <div className="flex gap-3">
-                    <button className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-3 text-sm text-[#6B7280] hover:border-[#2E86AB]">
+                    <button className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--text-secondary)] hover:border-[#2E86AB]">
                       Comfortable
                     </button>
-                    <button className="rounded-lg border-2 border-[#2E86AB] bg-[#F8F9FA] px-4 py-3 text-sm font-medium text-[#1A1A1A]">
+                    <button className="rounded-lg border-2 border-[#2E86AB] bg-[var(--bg-surface)] px-4 py-3 text-sm font-medium text-[var(--text-primary)]">
                       Compact
                     </button>
                   </div>

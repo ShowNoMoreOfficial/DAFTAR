@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, forbidden, badRequest, handleApiError } from "@/lib/api-utils";
 
 // GET /api/brands — List brands (filtered by user access)
 export async function GET() {
@@ -34,15 +34,19 @@ export async function POST(req: Request) {
   if (!session) return unauthorized();
   if (session.user.role !== "ADMIN") return forbidden();
 
-  const body = await req.json();
-  const { name, slug, clientId } = body;
-  if (!name || !slug || !clientId) {
-    return badRequest("name, slug, and clientId are required");
+  try {
+    const body = await req.json();
+    const { name, slug, clientId } = body;
+    if (!name || !slug || !clientId) {
+      return badRequest("name, slug, and clientId are required");
+    }
+
+    const brand = await prisma.brand.create({
+      data: { name, slug, clientId },
+    });
+
+    return NextResponse.json(brand, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
   }
-
-  const brand = await prisma.brand.create({
-    data: { name, slug, clientId },
-  });
-
-  return NextResponse.json(brand, { status: 201 });
 }

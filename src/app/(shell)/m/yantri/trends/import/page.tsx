@@ -132,8 +132,8 @@ export default function ImportTrendsPage() {
     return (
       <div className="max-w-2xl mx-auto py-12 animate-fade-in">
         <div className="glass-card rounded-3xl p-12 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500" />
-          <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+          <div className="absolute top-0 left-0 w-full h-1 bg-[rgba(16,185,129,0.1)]0" />
+          <div className="w-20 h-20 bg-[rgba(16,185,129,0.1)]0/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
             <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
             </svg>
@@ -211,7 +211,7 @@ export default function ImportTrendsPage() {
           </div>
         )}
         {fetchError && (
-          <div className="mt-4 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
+          <div className="mt-4 bg-[rgba(239,68,68,0.1)]0/10 border border-red-500/20 text-red-400 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -267,7 +267,7 @@ export default function ImportTrendsPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 font-black text-[10px] tracking-tighter">
+                          <Badge className="bg-[rgba(99,102,241,0.1)]0/10 text-indigo-400 border-indigo-500/20 hover:bg-[rgba(99,102,241,0.1)]0/20 font-black text-[10px] tracking-tighter">
                             SCORE {t.score}
                           </Badge>
                           <span className="font-bold text-foreground text-sm">{t.headline}</span>

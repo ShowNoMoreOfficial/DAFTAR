@@ -37,11 +37,11 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  rhythm: "bg-blue-100 text-blue-700",
-  preference: "bg-purple-100 text-purple-700",
-  pattern: "bg-green-100 text-green-700",
-  correction: "bg-amber-100 text-amber-700",
-  outcome: "bg-teal-100 text-teal-700",
+  rhythm: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  preference: "bg-[rgba(168,85,247,0.15)] text-purple-700",
+  pattern: "bg-[rgba(34,197,94,0.15)] text-green-700",
+  correction: "bg-[rgba(245,158,11,0.15)] text-amber-700",
+  outcome: "bg-[rgba(20,184,166,0.15)] text-teal-700",
 };
 
 export default function GILearningPage() {
@@ -74,8 +74,8 @@ export default function GILearningPage() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold text-[#1A1A1A]">Learning Log</h1>
-        <p className="mt-1 text-sm text-[#6B7280]">
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Learning Log</h1>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
           What GI has learned about your organization — rhythms, patterns, and preferences.
         </p>
       </div>
@@ -83,21 +83,21 @@ export default function GILearningPage() {
       {/* Stats */}
       {data?.stats && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-          <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Total Learnings</p>
-            <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{data.stats.totalLearnings}</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Total Learnings</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{data.stats.totalLearnings}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Categories</p>
-            <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{data.stats.categories}</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Categories</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{data.stats.categories}</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Avg Confidence</p>
-            <p className="mt-2 text-2xl font-bold text-[#2E86AB]">{data.stats.avgConfidence}%</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Avg Confidence</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--accent-primary)]">{data.stats.avgConfidence}%</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Total Observations</p>
-            <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{data.stats.totalObservations}</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Total Observations</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{data.stats.totalObservations}</p>
           </div>
         </div>
       )}
@@ -110,8 +110,8 @@ export default function GILearningPage() {
             onClick={() => setCategoryFilter(c)}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               categoryFilter === c
-                ? "bg-[#2E86AB] text-white"
-                : "bg-white border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F8F9FA]"
+                ? "bg-[var(--accent-primary)] text-white"
+                : "bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
             }`}
           >
             {c === "ALL" ? "All Categories" : CATEGORY_LABELS[c] || c}
@@ -123,47 +123,47 @@ export default function GILearningPage() {
       {loading ? (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-40 animate-pulse rounded-xl border border-[#E5E7EB] bg-white" />
+            <div key={i} className="h-40 animate-pulse rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]" />
           ))}
         </div>
       ) : displayCategories.length > 0 ? (
         <div className="space-y-6">
           {displayCategories.map((category) => {
             const items = groupedLearnings[category] || [];
-            const catColor = CATEGORY_COLORS[category] || "bg-gray-100 text-gray-600";
+            const catColor = CATEGORY_COLORS[category] || "bg-[var(--bg-elevated)] text-gray-600";
             return (
-              <div key={category} className="rounded-xl border border-[#E5E7EB] bg-white shadow-sm">
-                <div className="border-b border-[#E5E7EB] p-4 flex items-center justify-between">
+              <div key={category} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-sm">
+                <div className="border-b border-[var(--border-subtle)] p-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge className={catColor} variant="secondary">
                       {CATEGORY_LABELS[category] || category}
                     </Badge>
-                    <span className="text-xs text-[#9CA3AF]">{items.length} learnings</span>
+                    <span className="text-xs text-[var(--text-muted)]">{items.length} learnings</span>
                   </div>
                 </div>
                 <div className="divide-y divide-[#E5E7EB]">
                   {items.map((learning) => (
-                    <div key={learning.id} className="p-4 hover:bg-[#F8F9FA] transition-colors">
+                    <div key={learning.id} className="p-4 hover:bg-[var(--bg-surface)] transition-colors">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#1A1A1A]">{learning.pattern}</p>
-                          <p className="mt-0.5 text-xs text-[#9CA3AF] leading-relaxed">
+                          <p className="text-sm font-medium text-[var(--text-primary)]">{learning.pattern}</p>
+                          <p className="mt-0.5 text-xs text-[var(--text-muted)] leading-relaxed">
                             {learning.description}
                           </p>
-                          <div className="mt-2 flex items-center gap-3 text-xs text-[#9CA3AF]">
+                          <div className="mt-2 flex items-center gap-3 text-xs text-[var(--text-muted)]">
                             <span>{learning.observations} observations</span>
-                            <span className="text-[#D1D5DB]">&middot;</span>
+                            <span className="text-[var(--text-muted)]">&middot;</span>
                             <span>Last seen {new Date(learning.lastObserved).toLocaleDateString()}</span>
                           </div>
                         </div>
                         <div className="w-28 shrink-0">
-                          <div className="flex items-center justify-between text-xs text-[#6B7280] mb-1">
+                          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-1">
                             <span>Confidence</span>
                             <span className="font-medium">{Math.round(learning.confidence * 100)}%</span>
                           </div>
-                          <div className="h-2 w-full rounded-full bg-gray-100">
+                          <div className="h-2 w-full rounded-full bg-[var(--bg-elevated)]">
                             <div
-                              className="h-2 rounded-full bg-[#2E86AB] transition-all"
+                              className="h-2 rounded-full bg-[var(--accent-primary)] transition-all"
                               style={{ width: `${learning.confidence * 100}%` }}
                             />
                           </div>
@@ -177,8 +177,8 @@ export default function GILearningPage() {
           })}
         </div>
       ) : (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-8 shadow-sm text-center">
-          <p className="text-sm text-[#9CA3AF]">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 shadow-sm text-center">
+          <p className="text-sm text-[var(--text-muted)]">
             No learnings found{categoryFilter !== "ALL" ? ` in "${CATEGORY_LABELS[categoryFilter]}"` : ""}.
           </p>
         </div>

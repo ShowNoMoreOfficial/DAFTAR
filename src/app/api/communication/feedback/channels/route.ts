@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, forbidden, handleApiError } from "@/lib/api-utils";
 
 // GET /api/communication/feedback/channels — list active feedback channels
 export async function GET(_req: NextRequest) {
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     return forbidden();
   }
 
+  try {
   const { name, description, type, isAnonymous } = await req.json();
 
   if (!name) {
@@ -44,4 +45,7 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(channel, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

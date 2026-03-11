@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface CreateInvoiceDialogProps {
   open: boolean;
@@ -108,10 +109,16 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
         }),
       });
       if (res.ok) {
+        toast.success("Invoice created successfully");
         resetForm();
         onOpenChange(false);
         onCreated?.();
+      } else {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error?.message || data?.error || "Failed to create invoice");
       }
+    } catch {
+      toast.error("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -121,10 +128,10 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#1A1A1A]">Create Invoice</h2>
-          <button onClick={() => onOpenChange(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Create Invoice</h2>
+          <button onClick={() => onOpenChange(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -132,7 +139,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Invoice Number */}
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#6B7280]">Invoice Number</label>
+            <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Invoice Number</label>
             <Input
               value={number}
               onChange={(e) => setNumber(e.target.value)}
@@ -142,11 +149,11 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Client</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Client</label>
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">None</option>
                 {clients.map((c) => (
@@ -155,11 +162,11 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Brand</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Brand</label>
               <select
                 value={brandId}
                 onChange={(e) => setBrandId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">None</option>
                 {brands.map((b) => (
@@ -172,18 +179,18 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
           {/* Line Items */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-medium text-[#6B7280]">Line Items</label>
+              <label className="text-sm font-medium text-[var(--text-secondary)]">Line Items</label>
               <button
                 type="button"
                 onClick={addLineItem}
-                className="flex items-center gap-1 text-xs text-[#2E86AB] hover:underline"
+                className="flex items-center gap-1 text-xs text-[var(--accent-primary)] hover:underline"
               >
                 <Plus className="h-3 w-3" /> Add Item
               </button>
             </div>
             {lineItems.length > 0 && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-medium text-[#9CA3AF]">
+                <div className="flex items-center gap-2 text-[10px] font-medium text-[var(--text-muted)]">
                   <span className="flex-1">Description</span>
                   <span className="w-16 text-center">Qty</span>
                   <span className="w-24 text-center">Rate</span>
@@ -216,13 +223,13 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
                       placeholder="Rate"
                       className="w-24"
                     />
-                    <span className="w-24 text-right text-sm text-[#6B7280]">
+                    <span className="w-24 text-right text-sm text-[var(--text-secondary)]">
                       {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(item.amount)}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeLineItem(i)}
-                      className="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+                      className="rounded p-1 text-red-400 hover:bg-[rgba(239,68,68,0.1)] hover:text-red-600"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -236,7 +243,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
           {lineItems.length === 0 && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#6B7280]">Amount (INR) *</label>
+                <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Amount (INR) *</label>
                 <Input
                   type="number"
                   min="0"
@@ -248,7 +255,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#6B7280]">Tax (INR)</label>
+                <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Tax (INR)</label>
                 <Input
                   type="number"
                   min="0"
@@ -263,7 +270,7 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
 
           {lineItems.length > 0 && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Tax (INR)</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Tax (INR)</label>
               <Input
                 type="number"
                 min="0"
@@ -276,12 +283,12 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
           )}
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#6B7280]">Due Date *</label>
+            <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Due Date *</label>
             <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#6B7280]">Description</label>
+            <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Description</label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -292,28 +299,28 @@ export function CreateInvoiceDialog({ open, onOpenChange, onCreated }: CreateInv
 
           {/* Total Preview */}
           {effectiveAmount > 0 && (
-            <div className="rounded-lg bg-[#F8F9FA] p-3 text-sm">
+            <div className="rounded-lg bg-[var(--bg-surface)] p-3 text-sm">
               {lineItems.length > 0 && (
                 <div className="space-y-0.5 mb-1">
                   {lineItems.filter(i => i.description).map((item, i) => (
-                    <div key={i} className="flex justify-between text-xs text-[#9CA3AF]">
+                    <div key={i} className="flex justify-between text-xs text-[var(--text-muted)]">
                       <span>{item.description} {item.qty > 1 ? `(${item.qty} x ${new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(item.rate)})` : ""}</span>
                       <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(item.amount)}</span>
                     </div>
                   ))}
                 </div>
               )}
-              <div className="flex justify-between text-[#6B7280]">
+              <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Subtotal</span>
                 <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(effectiveAmount)}</span>
               </div>
               {taxAmount > 0 && (
-                <div className="flex justify-between text-[#6B7280]">
+                <div className="flex justify-between text-[var(--text-secondary)]">
                   <span>Tax</span>
                   <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(taxAmount)}</span>
                 </div>
               )}
-              <div className="mt-1 flex justify-between border-t border-[#E5E7EB] pt-1 font-semibold text-[#1A1A1A]">
+              <div className="mt-1 flex justify-between border-t border-[var(--border-subtle)] pt-1 font-semibold text-[var(--text-primary)]">
                 <span>Total</span>
                 <span>
                   {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(totalAmount)}

@@ -103,8 +103,8 @@ export default function MediaPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-[#6B7280]" />
-        <span className="ml-2 text-sm text-[#6B7280]">Loading...</span>
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--text-secondary)]" />
+        <span className="ml-2 text-sm text-[var(--text-secondary)]">Loading...</span>
       </div>
     );
   }
@@ -112,16 +112,16 @@ export default function MediaPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] bg-[#F8F9FA] px-6 py-4">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
         <div>
-          <h1 className="text-lg font-semibold text-[#1A1A1A]">Media Library</h1>
-          <p className="text-sm text-[#6B7280]">
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Media Library</h1>
+          <p className="text-sm text-[var(--text-secondary)]">
             {media.length} file{media.length !== 1 ? "s" : ""}
           </p>
         </div>
         <Button
           size="sm"
-          className="bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+          className="bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
           onClick={() => {
             // Mock upload — UI only
           }}
@@ -132,9 +132,9 @@ export default function MediaPage() {
       </div>
 
       {/* Search & Filters */}
-      <div className="flex items-center gap-3 border-b border-[#E5E7EB] bg-white px-6 py-3">
+      <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
           <Input
             placeholder="Search by filename..."
             value={search}
@@ -150,7 +150,7 @@ export default function MediaPage() {
               size="xs"
               className={cn(
                 filterType === ft.key &&
-                  "bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+                  "bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
               )}
               onClick={() => setFilterType(ft.key)}
             >
@@ -166,16 +166,16 @@ export default function MediaPage() {
         <div className="flex-1 overflow-y-auto p-6">
           {media.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <ImageIcon className="h-10 w-10 text-[#9CA3AF]" />
-              <p className="mt-3 text-sm font-medium text-[#1A1A1A]">No media files</p>
-              <p className="mt-1 text-sm text-[#6B7280]">
+              <ImageIcon className="h-10 w-10 text-[var(--text-muted)]" />
+              <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">No media files</p>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 {search || filterType
                   ? "Try adjusting your filters"
                   : "Upload your first media file to get started"}
               </p>
               <Button
                 size="sm"
-                className="mt-4 bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+                className="mt-4 bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
                 onClick={() => {}}
               >
                 <Upload className="h-3.5 w-3.5" />
@@ -191,15 +191,15 @@ export default function MediaPage() {
                   <div
                     key={item.id}
                     className={cn(
-                      "cursor-pointer rounded-xl border bg-white p-2 transition-all hover:shadow-sm",
+                      "cursor-pointer rounded-xl border bg-[var(--bg-surface)] p-2 transition-all hover:shadow-sm",
                       isSelected
                         ? "border-[#2E86AB] ring-1 ring-[#2E86AB]/30"
-                        : "border-[#E5E7EB]"
+                        : "border-[var(--border-subtle)]"
                     )}
                     onClick={() => setSelectedItem(isSelected ? null : item)}
                   >
                     {/* Thumbnail */}
-                    <div className="flex aspect-square items-center justify-center rounded-lg bg-[#F8F9FA]">
+                    <div className="flex aspect-square items-center justify-center rounded-lg bg-[var(--bg-surface)]">
                       {isImageType(item.fileType) ? (
                         <img
                           src={item.fileUrl}
@@ -208,23 +208,23 @@ export default function MediaPage() {
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = "none";
                             (e.target as HTMLImageElement).parentElement!.innerHTML =
-                              '<div class="flex items-center justify-center h-full w-full"><svg class="h-8 w-8 text-[#9CA3AF]" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
+                              '<div class="flex items-center justify-center h-full w-full"><svg class="h-8 w-8 text-[var(--text-muted)]" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>';
                           }}
                         />
                       ) : (
-                        <IconComponent className="h-8 w-8 text-[#9CA3AF]" />
+                        <IconComponent className="h-8 w-8 text-[var(--text-muted)]" />
                       )}
                     </div>
 
                     {/* Info */}
                     <div className="mt-2 px-1">
-                      <p className="truncate text-xs font-medium text-[#1A1A1A]">
+                      <p className="truncate text-xs font-medium text-[var(--text-primary)]">
                         {item.fileName}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-[#9CA3AF]">
+                      <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
                         {humanizeFileSize(item.fileSize)}
                       </p>
-                      <p className="text-[11px] text-[#9CA3AF]">
+                      <p className="text-[11px] text-[var(--text-muted)]">
                         {formatDate(item.createdAt)}
                       </p>
                     </div>
@@ -237,9 +237,9 @@ export default function MediaPage() {
 
         {/* Detail Panel */}
         {selectedItem && (
-          <div className="w-72 shrink-0 border-l border-[#E5E7EB] bg-white p-4 overflow-y-auto">
+          <div className="w-72 shrink-0 border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-[#1A1A1A]">Details</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Details</h3>
               <Button
                 variant="ghost"
                 size="icon-xs"
@@ -250,7 +250,7 @@ export default function MediaPage() {
             </div>
 
             {/* Preview */}
-            <div className="mb-4 flex aspect-video items-center justify-center rounded-lg bg-[#F8F9FA]">
+            <div className="mb-4 flex aspect-video items-center justify-center rounded-lg bg-[var(--bg-surface)]">
               {isImageType(selectedItem.fileType) ? (
                 <img
                   src={selectedItem.fileUrl}
@@ -260,52 +260,52 @@ export default function MediaPage() {
               ) : (
                 (() => {
                   const Icon = getFileIcon(selectedItem.fileType);
-                  return <Icon className="h-10 w-10 text-[#9CA3AF]" />;
+                  return <Icon className="h-10 w-10 text-[var(--text-muted)]" />;
                 })()
               )}
             </div>
 
             <div className="space-y-3">
               <div>
-                <p className="text-[11px] font-medium text-[#9CA3AF] uppercase">Filename</p>
-                <p className="text-sm text-[#1A1A1A] break-all">{selectedItem.fileName}</p>
+                <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase">Filename</p>
+                <p className="text-sm text-[var(--text-primary)] break-all">{selectedItem.fileName}</p>
               </div>
               <div>
-                <p className="text-[11px] font-medium text-[#9CA3AF] uppercase">Type</p>
-                <p className="text-sm text-[#1A1A1A]">{selectedItem.fileType}</p>
+                <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase">Type</p>
+                <p className="text-sm text-[var(--text-primary)]">{selectedItem.fileType}</p>
               </div>
               <div>
-                <p className="text-[11px] font-medium text-[#9CA3AF] uppercase">Size</p>
-                <p className="text-sm text-[#1A1A1A]">{humanizeFileSize(selectedItem.fileSize)}</p>
+                <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase">Size</p>
+                <p className="text-sm text-[var(--text-primary)]">{humanizeFileSize(selectedItem.fileSize)}</p>
               </div>
               {selectedItem.altText && (
                 <div>
-                  <p className="text-[11px] font-medium text-[#9CA3AF] uppercase">Alt Text</p>
-                  <p className="text-sm text-[#1A1A1A]">{selectedItem.altText}</p>
+                  <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase">Alt Text</p>
+                  <p className="text-sm text-[var(--text-primary)]">{selectedItem.altText}</p>
                 </div>
               )}
               {selectedItem.caption && (
                 <div>
-                  <p className="text-[11px] font-medium text-[#9CA3AF] uppercase">Caption</p>
-                  <p className="text-sm text-[#1A1A1A]">{selectedItem.caption}</p>
+                  <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase">Caption</p>
+                  <p className="text-sm text-[var(--text-primary)]">{selectedItem.caption}</p>
                 </div>
               )}
               {selectedItem.article && (
                 <div>
-                  <p className="text-[11px] font-medium text-[#9CA3AF] uppercase">
+                  <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase">
                     Associated Article
                   </p>
                   <a
                     href={`/m/vritti/articles/${selectedItem.article.id}`}
-                    className="text-sm text-[#2E86AB] hover:underline"
+                    className="text-sm text-[var(--accent-primary)] hover:underline"
                   >
                     {selectedItem.article.title}
                   </a>
                 </div>
               )}
               <div>
-                <p className="text-[11px] font-medium text-[#9CA3AF] uppercase">Uploaded</p>
-                <p className="text-sm text-[#1A1A1A]">{formatDate(selectedItem.createdAt)}</p>
+                <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase">Uploaded</p>
+                <p className="text-sm text-[var(--text-primary)]">{formatDate(selectedItem.createdAt)}</p>
               </div>
             </div>
           </div>

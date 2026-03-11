@@ -34,13 +34,13 @@ function platformColor(platform: string) {
     case "twitter":
       return "bg-sky-500/10 text-sky-400 border-sky-500/20";
     case "youtube":
-      return "bg-red-500/10 text-red-400 border-red-500/20";
+      return "bg-[rgba(239,68,68,0.1)]0/10 text-red-400 border-red-500/20";
     case "blog":
-      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      return "bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-emerald-500/20";
     case "meta":
-      return "bg-pink-500/10 text-pink-400 border-pink-500/20";
+      return "bg-[rgba(236,72,153,0.1)]0/10 text-pink-400 border-pink-500/20";
     case "linkedin":
-      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      return "bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border-blue-500/20";
     default:
       return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
   }
@@ -187,7 +187,7 @@ export default function PromptLibraryPage() {
               <CardContent className="p-5 flex flex-col h-full">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400 shrink-0 mt-0.5">
+                    <div className="p-1.5 bg-[rgba(99,102,241,0.1)]0/10 rounded-lg text-indigo-400 shrink-0 mt-0.5">
                       <FileText className="w-3.5 h-3.5" />
                     </div>
                     <Link

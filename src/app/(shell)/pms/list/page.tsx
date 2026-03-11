@@ -72,7 +72,7 @@ export default function PMSListPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-xs"
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-xs"
           >
             <option value="">All Statuses</option>
             {["CREATED", "ASSIGNED", "IN_PROGRESS", "REVIEW", "APPROVED", "DONE", "CANCELLED"].map((s) => (
@@ -82,7 +82,7 @@ export default function PMSListPage() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-xs"
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-xs"
           >
             <option value="">All Priorities</option>
             {["LOW", "MEDIUM", "HIGH", "URGENT"].map((p) => (
@@ -104,7 +104,7 @@ export default function PMSListPage() {
       <div className="flex-1 overflow-auto px-6">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#E5E7EB] text-left text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">
+            <tr className="border-b border-[var(--border-subtle)] text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
               <th className="pb-2 pr-4">
                 <div className="flex items-center gap-1">
                   Task <ArrowUpDown className="h-3 w-3" />
@@ -121,13 +121,13 @@ export default function PMSListPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-[#9CA3AF]">
+                <td colSpan={7} className="py-12 text-center text-[var(--text-muted)]">
                   Loading...
                 </td>
               </tr>
             ) : tasks.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-[#9CA3AF]">
+                <td colSpan={7} className="py-12 text-center text-[var(--text-muted)]">
                   No tasks found. Create one to get started.
                 </td>
               </tr>
@@ -138,14 +138,14 @@ export default function PMSListPage() {
                   <tr
                     key={task.id}
                     onClick={() => setSelectedTaskId(task.id)}
-                    className="cursor-pointer border-b border-[#F0F2F5] transition-colors hover:bg-[#F8F9FA]"
+                    className="cursor-pointer border-b border-[#F0F2F5] transition-colors hover:bg-[var(--bg-surface)]"
                   >
                     <td className="py-3 pr-4">
-                      <span className="font-medium text-[#1A1A1A]">{task.title}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{task.title}</span>
                       {task.tags.length > 0 && (
                         <div className="mt-1 flex gap-1">
                           {task.tags.map((t) => (
-                            <span key={t.name} className="rounded bg-[#F0F2F5] px-1.5 py-0.5 text-[10px] text-[#6B7280]">
+                            <span key={t.name} className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
                               {t.name}
                             </span>
                           ))}
@@ -165,30 +165,30 @@ export default function PMSListPage() {
                         <div className="flex items-center gap-1.5">
                           <Avatar className="h-5 w-5">
                             <AvatarImage src={task.assignee.avatar || undefined} />
-                            <AvatarFallback className="bg-[#2E86AB] text-[8px] text-white">
+                            <AvatarFallback className="bg-[var(--accent-primary)] text-[8px] text-white">
                               {task.assignee.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-xs">{task.assignee.name}</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-[#D1D5DB]">—</span>
+                        <span className="text-xs text-[var(--text-muted)]">—</span>
                       )}
                     </td>
-                    <td className="py-3 pr-4 text-xs text-[#6B7280]">
+                    <td className="py-3 pr-4 text-xs text-[var(--text-secondary)]">
                       {task.department?.name || "—"}
                     </td>
                     <td className="py-3 pr-4">
                       {task.dueDate ? (
-                        <span className={cn("flex items-center gap-1 text-xs", isOverdue ? "text-red-500" : "text-[#6B7280]")}>
+                        <span className={cn("flex items-center gap-1 text-xs", isOverdue ? "text-red-500" : "text-[var(--text-secondary)]")}>
                           <Calendar className="h-3 w-3" />
                           {new Date(task.dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                         </span>
                       ) : (
-                        <span className="text-xs text-[#D1D5DB]">—</span>
+                        <span className="text-xs text-[var(--text-muted)]">—</span>
                       )}
                     </td>
-                    <td className="py-3 text-xs text-[#9CA3AF]">{task.difficultyWeight}</td>
+                    <td className="py-3 text-xs text-[var(--text-muted)]">{task.difficultyWeight}</td>
                   </tr>
                 );
               })

@@ -168,25 +168,38 @@ export async function GET(req: NextRequest) {
     having: { departmentId: { _count: { gt: 1 } } },
   });
 
-  const sharedResources = await Promise.all(
-    multiDeptUsers.slice(0, 10).map(async (entry) => {
-      const user = await prisma.user.findUnique({
-        where: { id: entry.userId },
-        select: { id: true, name: true, avatar: true },
-      });
-      const depts = await prisma.departmentMember.findMany({
-        where: { userId: entry.userId },
-        select: {
-          department: { select: { id: true, name: true } },
-        },
-      });
-      return {
-        user: user ? { id: user.id, name: user.name, avatar: user.avatar } : null,
-        departments: depts.map((d) => ({ id: d.department.id, name: d.department.name })),
-        deptCount: entry._count.departmentId,
-      };
-    })
-  );
+  // Batch-load users and their departments in 2 queries instead of 2N
+  const multiDeptUserIds = multiDeptUsers.slice(0, 10).map((e) => e.userId);
+  const [multiDeptUserData, multiDeptMemberships] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: multiDeptUserIds } },
+      select: { id: true, name: true, avatar: true },
+    }),
+    prisma.departmentMember.findMany({
+      where: { userId: { in: multiDeptUserIds } },
+      select: {
+        userId: true,
+        department: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
+
+  const userMap = new Map(multiDeptUserData.map((u) => [u.id, u]));
+  const userDeptMap = new Map<string, { id: string; name: string }[]>();
+  for (const m of multiDeptMemberships) {
+    const existing = userDeptMap.get(m.userId) ?? [];
+    existing.push({ id: m.department.id, name: m.department.name });
+    userDeptMap.set(m.userId, existing);
+  }
+
+  const sharedResources = multiDeptUsers.slice(0, 10).map((entry) => {
+    const user = userMap.get(entry.userId) ?? null;
+    return {
+      user: user ? { id: user.id, name: user.name, avatar: user.avatar } : null,
+      departments: userDeptMap.get(entry.userId) ?? [],
+      deptCount: entry._count.departmentId,
+    };
+  });
 
   // Identify departments with least collaboration
   const leastCollaborating = departments

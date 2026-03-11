@@ -15,9 +15,9 @@ interface CalendarTask {
 }
 
 const PRIORITY_DOT: Record<string, string> = {
-  URGENT: "bg-red-500",
-  HIGH: "bg-orange-500",
-  MEDIUM: "bg-blue-500",
+  URGENT: "bg-[rgba(239,68,68,0.1)]0",
+  HIGH: "bg-[rgba(249,115,22,0.1)]0",
+  MEDIUM: "bg-[rgba(59,130,246,0.1)]0",
   LOW: "bg-gray-300",
 };
 
@@ -67,12 +67,12 @@ export default function CalendarPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-[#1A1A1A]">Calendar</h1>
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Calendar</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="min-w-[160px] text-center text-sm font-medium text-[#1A1A1A]">
+          <span className="min-w-[160px] text-center text-sm font-medium text-[var(--text-primary)]">
             {MONTHS[month]} {year}
           </span>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>
@@ -84,11 +84,11 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-[#E5E7EB] bg-white">
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
         {/* Header */}
-        <div className="grid grid-cols-7 border-b border-[#E5E7EB]">
+        <div className="grid grid-cols-7 border-b border-[var(--border-subtle)]">
           {DAYS.map((d) => (
-            <div key={d} className="py-2 text-center text-xs font-medium text-[#9CA3AF]">
+            <div key={d} className="py-2 text-center text-xs font-medium text-[var(--text-muted)]">
               {d}
             </div>
           ))}
@@ -111,7 +111,7 @@ export default function CalendarPage() {
                     <span
                       className={cn(
                         "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs",
-                        isToday(day) ? "bg-[#2E86AB] font-bold text-white" : "text-[#6B7280]"
+                        isToday(day) ? "bg-[var(--accent-primary)] font-bold text-white" : "text-[var(--text-secondary)]"
                       )}
                     >
                       {day}
@@ -120,14 +120,14 @@ export default function CalendarPage() {
                       {dayTasks.slice(0, 3).map((t) => (
                         <div
                           key={t.id}
-                          className="flex items-center gap-1 rounded px-1 py-0.5 text-[10px] text-[#6B7280] hover:bg-[#F0F2F5]"
+                          className="flex items-center gap-1 rounded px-1 py-0.5 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
                         >
                           <span className={cn("h-1.5 w-1.5 rounded-full", PRIORITY_DOT[t.priority])} />
                           <span className="truncate">{t.title}</span>
                         </div>
                       ))}
                       {dayTasks.length > 3 && (
-                        <span className="pl-1 text-[10px] text-[#2E86AB]">+{dayTasks.length - 3} more</span>
+                        <span className="pl-1 text-[10px] text-[var(--accent-primary)]">+{dayTasks.length - 3} more</span>
                       )}
                     </div>
                   </>

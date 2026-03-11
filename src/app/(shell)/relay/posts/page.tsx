@@ -49,12 +49,12 @@ interface ContentPost {
 // ─── Constants ──────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  DRAFT: { label: "Draft", color: "bg-gray-100 text-gray-700", icon: <FileText className="h-3 w-3" /> },
-  SCHEDULED: { label: "Scheduled", color: "bg-blue-100 text-blue-700", icon: <Clock className="h-3 w-3" /> },
-  PUBLISHING: { label: "Publishing", color: "bg-yellow-100 text-yellow-700", icon: <Loader2 className="h-3 w-3 animate-spin" /> },
-  PUBLISHED: { label: "Published", color: "bg-emerald-100 text-emerald-700", icon: <CheckCircle2 className="h-3 w-3" /> },
-  FAILED: { label: "Failed", color: "bg-red-100 text-red-700", icon: <AlertCircle className="h-3 w-3" /> },
-  CANCELLED: { label: "Cancelled", color: "bg-gray-100 text-gray-500", icon: <Ban className="h-3 w-3" /> },
+  DRAFT: { label: "Draft", color: "bg-[var(--bg-elevated)] text-gray-700", icon: <FileText className="h-3 w-3" /> },
+  SCHEDULED: { label: "Scheduled", color: "bg-[rgba(59,130,246,0.15)] text-blue-700", icon: <Clock className="h-3 w-3" /> },
+  PUBLISHING: { label: "Publishing", color: "bg-[rgba(234,179,8,0.15)] text-yellow-700", icon: <Loader2 className="h-3 w-3 animate-spin" /> },
+  PUBLISHED: { label: "Published", color: "bg-[rgba(16,185,129,0.15)] text-emerald-700", icon: <CheckCircle2 className="h-3 w-3" /> },
+  FAILED: { label: "Failed", color: "bg-[rgba(239,68,68,0.15)] text-red-700", icon: <AlertCircle className="h-3 w-3" /> },
+  CANCELLED: { label: "Cancelled", color: "bg-[var(--bg-elevated)] text-gray-500", icon: <Ban className="h-3 w-3" /> },
 };
 
 const PLATFORM_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
@@ -144,8 +144,8 @@ export default function PostsListPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#1A1A1A]">Content Posts</h2>
-          <p className="text-sm text-[#9CA3AF]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Content Posts</h2>
+          <p className="text-sm text-[var(--text-muted)]">
             Manage and distribute content across platforms
           </p>
         </div>
@@ -158,7 +158,7 @@ export default function PostsListPage() {
       {/* Filter bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
           <Input
             placeholder="Search posts..."
             value={searchQuery}
@@ -169,7 +169,7 @@ export default function PostsListPage() {
         <select
           value={platformFilter}
           onChange={(e) => setPlatformFilter(e.target.value)}
-          className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs text-[#6B7280]"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--text-secondary)]"
         >
           <option value="">All Platforms</option>
           {PLATFORMS.map((p) => (
@@ -179,7 +179,7 @@ export default function PostsListPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs text-[#6B7280]"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--text-secondary)]"
         >
           <option value="ALL">All Statuses</option>
           {STATUS_FILTERS.filter((s) => s !== "ALL").map((s) => (
@@ -189,7 +189,7 @@ export default function PostsListPage() {
         <select
           value={brandFilter}
           onChange={(e) => setBrandFilter(e.target.value)}
-          className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs text-[#6B7280]"
+          className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--text-secondary)]"
         >
           <option value="">All Brands</option>
           {brands.map((b) => (
@@ -204,7 +204,7 @@ export default function PostsListPage() {
             className="h-8 text-xs"
             placeholder="From"
           />
-          <span className="text-xs text-[#9CA3AF]">to</span>
+          <span className="text-xs text-[var(--text-muted)]">to</span>
           <Input
             type="date"
             value={dateTo}
@@ -218,28 +218,28 @@ export default function PostsListPage() {
       {/* Posts table */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
         </div>
       ) : posts.length === 0 ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-8 text-center">
-          <Send className="mx-auto h-12 w-12 text-[#D1D5DB]" />
-          <h3 className="mt-4 text-sm font-medium text-[#1A1A1A]">No Posts Found</h3>
-          <p className="mt-2 text-sm text-[#9CA3AF]">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 text-center">
+          <Send className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+          <h3 className="mt-4 text-sm font-medium text-[var(--text-primary)]">No Posts Found</h3>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             Create your first content post to start distributing.
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white overflow-hidden">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#E5E7EB] bg-[#FAFAFA]">
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-[#6B7280]">Title</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-[#6B7280]">Platform</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-[#6B7280]">Brand</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-[#6B7280]">Status</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-[#6B7280]">Date</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-[#6B7280]">Analytics</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-[#6B7280]">Actions</th>
+              <tr className="border-b border-[var(--border-subtle)] bg-[#FAFAFA]">
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">Title</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">Platform</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">Brand</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">Status</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">Date</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-[var(--text-secondary)]">Analytics</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-[var(--text-secondary)]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F0F2F5]">
@@ -249,7 +249,7 @@ export default function PostsListPage() {
                 return (
                   <tr key={post.id} className="hover:bg-[#FAFAFA] transition-colors">
                     <td className="px-4 py-3">
-                      <span className="font-medium text-[#1A1A1A]">{post.title}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{post.title}</span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -259,7 +259,7 @@ export default function PostsListPage() {
                         >
                           {platformCfg?.icon || "?"}
                         </div>
-                        <span className="text-xs text-[#6B7280]">{platformCfg?.label || post.platform}</span>
+                        <span className="text-xs text-[var(--text-secondary)]">{platformCfg?.label || post.platform}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -275,7 +275,7 @@ export default function PostsListPage() {
                         {statusCfg.label}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-xs text-[#6B7280]">
+                    <td className="px-4 py-3 text-xs text-[var(--text-secondary)]">
                       {post.publishedAt
                         ? new Date(post.publishedAt).toLocaleDateString("en-IN", {
                             day: "numeric", month: "short", year: "numeric",
@@ -290,7 +290,7 @@ export default function PostsListPage() {
                     </td>
                     <td className="px-4 py-3">
                       {post.analytics ? (
-                        <div className="flex items-center gap-3 text-xs text-[#6B7280]">
+                        <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
                           <span className="flex items-center gap-1">
                             <Eye className="h-3 w-3" />
                             {formatNumber(post.analytics.views)}
@@ -301,7 +301,7 @@ export default function PostsListPage() {
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-[#D1D5DB]">--</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">--</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -329,7 +329,7 @@ export default function PostsListPage() {
                         {(post.status === "DRAFT" || post.status === "SCHEDULED") && (
                           <button
                             onClick={() => handleDelete(post.id)}
-                            className="rounded p-1.5 text-[#9CA3AF] hover:bg-red-50 hover:text-red-500"
+                            className="rounded p-1.5 text-[var(--text-muted)] hover:bg-[rgba(239,68,68,0.1)] hover:text-red-500"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>

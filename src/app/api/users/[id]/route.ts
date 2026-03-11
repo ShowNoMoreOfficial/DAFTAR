@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, notFound } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, forbidden, notFound, handleApiError } from "@/lib/api-utils";
 
 // GET /api/users/:id
 export async function GET(
@@ -33,21 +33,25 @@ export async function PATCH(
   if (!session) return unauthorized();
   if (session.user.role !== "ADMIN") return forbidden();
 
-  const { id } = await params;
-  const body = await req.json();
-  const { name, role, primaryDeptId, isActive } = body;
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { name, role, primaryDeptId, isActive } = body;
 
-  const user = await prisma.user.update({
-    where: { id },
-    data: {
-      ...(name !== undefined && { name }),
-      ...(role !== undefined && { role }),
-      ...(primaryDeptId !== undefined && { primaryDeptId }),
-      ...(isActive !== undefined && { isActive }),
-    },
-  });
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(role !== undefined && { role }),
+        ...(primaryDeptId !== undefined && { primaryDeptId }),
+        ...(isActive !== undefined && { isActive }),
+      },
+    });
 
-  return NextResponse.json(user);
+    return NextResponse.json(user);
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 // DELETE /api/users/:id — Deactivate user (Admin only)
@@ -59,11 +63,15 @@ export async function DELETE(
   if (!session) return unauthorized();
   if (session.user.role !== "ADMIN") return forbidden();
 
-  const { id } = await params;
-  const user = await prisma.user.update({
-    where: { id },
-    data: { isActive: false },
-  });
+  try {
+    const { id } = await params;
+    const user = await prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
 
-  return NextResponse.json(user);
+    return NextResponse.json(user);
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

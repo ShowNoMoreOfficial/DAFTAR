@@ -46,15 +46,15 @@ const DEPT_TYPES = [
 ];
 
 const DEPT_TYPE_COLORS: Record<string, string> = {
-  MEDIA: "bg-blue-100 text-blue-700",
-  TECH: "bg-purple-100 text-purple-700",
-  MARKETING: "bg-pink-100 text-pink-700",
-  PRODUCTION: "bg-orange-100 text-orange-700",
-  PPC: "bg-yellow-100 text-yellow-700",
-  PHOTOGRAPHY: "bg-teal-100 text-teal-700",
-  HR_OPS: "bg-green-100 text-green-700",
-  FINANCE_DEPT: "bg-emerald-100 text-emerald-700",
-  CUSTOM: "bg-gray-100 text-gray-700",
+  MEDIA: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  TECH: "bg-[rgba(168,85,247,0.15)] text-purple-700",
+  MARKETING: "bg-[rgba(236,72,153,0.15)] text-pink-700",
+  PRODUCTION: "bg-[rgba(249,115,22,0.15)] text-orange-700",
+  PPC: "bg-[rgba(234,179,8,0.15)] text-yellow-700",
+  PHOTOGRAPHY: "bg-[rgba(20,184,166,0.15)] text-teal-700",
+  HR_OPS: "bg-[rgba(34,197,94,0.15)] text-green-700",
+  FINANCE_DEPT: "bg-[rgba(16,185,129,0.15)] text-emerald-700",
+  CUSTOM: "bg-[var(--bg-elevated)] text-gray-700",
 };
 
 export default function DepartmentsPage() {
@@ -139,8 +139,8 @@ export default function DepartmentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">Departments</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Departments</h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Manage organizational departments, assign heads, and configure teams.
           </p>
         </div>
@@ -160,7 +160,7 @@ export default function DepartmentsPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+                <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                   Name
                 </label>
                 <Input
@@ -171,13 +171,13 @@ export default function DepartmentsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+                <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                   Type
                 </label>
                 <select
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
                 >
                   {DEPT_TYPES.map((t) => (
                     <option key={t} value={t}>
@@ -187,7 +187,7 @@ export default function DepartmentsPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+                <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                   Description
                 </label>
                 <Textarea
@@ -200,13 +200,13 @@ export default function DepartmentsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+                <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                   Department Head
                 </label>
                 <select
                   value={form.headId}
                   onChange={(e) => setForm({ ...form, headId: e.target.value })}
-                  className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
                 >
                   <option value="">No head assigned</option>
                   {users.map((u) => (
@@ -216,7 +216,7 @@ export default function DepartmentsPage() {
                   ))}
                 </select>
               </div>
-              <Button type="submit" className="w-full bg-[#2E86AB] hover:bg-[#2E86AB]/90">
+              <Button type="submit" className="w-full bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90">
                 {editingDept ? "Save Changes" : "Create Department"}
               </Button>
             </form>
@@ -226,16 +226,16 @@ export default function DepartmentsPage() {
 
       {/* Department Cards */}
       {loading ? (
-        <p className="py-12 text-center text-sm text-[#9CA3AF]">
+        <p className="py-12 text-center text-sm text-[var(--text-muted)]">
           Loading departments...
         </p>
       ) : departments.length === 0 ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-8 text-center">
-          <Building2 className="mx-auto h-12 w-12 text-[#D1D5DB]" />
-          <h3 className="mt-4 text-sm font-medium text-[#1A1A1A]">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 text-center">
+          <Building2 className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+          <h3 className="mt-4 text-sm font-medium text-[var(--text-primary)]">
             No Departments
           </h3>
-          <p className="mt-2 text-sm text-[#9CA3AF]">
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             Create your first department to organize your team.
           </p>
         </div>
@@ -246,15 +246,15 @@ export default function DepartmentsPage() {
             return (
               <div
                 key={dept.id}
-                className="rounded-xl border border-[#E5E7EB] bg-white p-5 transition-shadow hover:shadow-md"
+                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 transition-shadow hover:shadow-md"
               >
                 <div className="mb-4 flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2E86AB]/10">
-                      <Building2 className="h-5 w-5 text-[#2E86AB]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-primary)]/10">
+                      <Building2 className="h-5 w-5 text-[var(--accent-primary)]" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-[#1A1A1A]">
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                         {dept.name}
                       </h3>
                       <Badge
@@ -269,40 +269,40 @@ export default function DepartmentsPage() {
                   </div>
                   <button
                     onClick={() => handleOpenEdit(dept)}
-                    className="rounded-md p-1.5 text-[#9CA3AF] transition-colors hover:bg-[#F0F2F5] hover:text-[#6B7280]"
+                    className="rounded-md p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-elevated)] hover:text-[var(--text-secondary)]"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                 </div>
 
                 {dept.description && (
-                  <p className="mb-3 text-xs text-[#6B7280] line-clamp-2">
+                  <p className="mb-3 text-xs text-[var(--text-secondary)] line-clamp-2">
                     {dept.description}
                   </p>
                 )}
 
                 {/* Head */}
                 {head ? (
-                  <div className="mb-3 flex items-center gap-2 rounded-lg bg-[#F8F9FA] p-2">
+                  <div className="mb-3 flex items-center gap-2 rounded-lg bg-[var(--bg-surface)] p-2">
                     <Avatar className="h-6 w-6">
                       <AvatarImage src={head.avatar || undefined} />
-                      <AvatarFallback className="bg-[#A23B72] text-[9px] text-white">
+                      <AvatarFallback className="bg-[var(--accent-secondary)] text-[9px] text-white">
                         {head.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-xs font-medium text-[#1A1A1A]">
+                      <p className="text-xs font-medium text-[var(--text-primary)]">
                         {head.name}
                       </p>
-                      <p className="text-[10px] text-[#9CA3AF]">
+                      <p className="text-[10px] text-[var(--text-muted)]">
                         Department Head
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="mb-3 flex items-center gap-2 rounded-lg border border-dashed border-[#E5E7EB] bg-[#FAFAFA] p-2">
-                    <UserCheck className="h-4 w-4 text-[#D1D5DB]" />
-                    <span className="text-xs text-[#9CA3AF]">
+                  <div className="mb-3 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] bg-[#FAFAFA] p-2">
+                    <UserCheck className="h-4 w-4 text-[var(--text-muted)]" />
+                    <span className="text-xs text-[var(--text-muted)]">
                       No head assigned
                     </span>
                   </div>
@@ -311,14 +311,14 @@ export default function DepartmentsPage() {
                 {/* Stats */}
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5 text-[#9CA3AF]" />
-                    <span className="text-xs text-[#6B7280]">
+                    <Users className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                    <span className="text-xs text-[var(--text-secondary)]">
                       {dept._count.primaryUsers} primary
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Settings2 className="h-3.5 w-3.5 text-[#9CA3AF]" />
-                    <span className="text-xs text-[#6B7280]">
+                    <Settings2 className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                    <span className="text-xs text-[var(--text-secondary)]">
                       {dept._count.members} total
                     </span>
                   </div>

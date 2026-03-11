@@ -3,6 +3,7 @@
  */
 
 import { routeToModel } from "@/lib/yantri/model-router";
+import { getBrandVoiceBlock } from "@/lib/yantri/brand-voice";
 
 export interface CarouselSlide {
   position: number;
@@ -46,6 +47,8 @@ LANGUAGE: ${params.language}
 
 RESEARCH DOSSIER:
 ${params.researchResults}
+
+${getBrandVoiceBlock(params.brandName, params.voiceRules, params.brandTone, params.language)}
 
 CAROUSEL ARCHITECTURE — 8-12 SLIDES:
 1. SCROLLSTOPPER HOOK (Slide 1): Stop the scroll INSTANTLY.

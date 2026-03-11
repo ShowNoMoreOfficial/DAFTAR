@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, forbidden, badRequest, handleApiError } from "@/lib/api-utils";
 
 // GET /api/invites — list all invites (admin/HR only)
 export async function GET() {
@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
   if (!session) return unauthorized();
   if (!["ADMIN", "HEAD_HR"].includes(session.user.role)) return forbidden();
 
+  try {
   const body = await req.json();
   const { email, role, departmentId } = body;
 
@@ -74,6 +75,9 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(invite, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 // PATCH /api/invites — revoke an invite

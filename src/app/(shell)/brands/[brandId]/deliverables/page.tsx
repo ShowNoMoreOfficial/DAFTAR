@@ -43,18 +43,18 @@ const STATUS_OPTIONS = [
 ];
 
 const statusStyles: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  ready_for_review: "bg-blue-100 text-blue-800",
-  approved: "bg-green-100 text-green-800",
-  revision_requested: "bg-orange-100 text-orange-800",
-  final: "bg-emerald-100 text-emerald-800",
+  pending: "bg-[rgba(234,179,8,0.15)] text-yellow-800",
+  ready_for_review: "bg-[rgba(59,130,246,0.15)] text-blue-800",
+  approved: "bg-[rgba(34,197,94,0.15)] text-green-800",
+  revision_requested: "bg-[rgba(249,115,22,0.15)] text-orange-800",
+  final: "bg-[rgba(16,185,129,0.15)] text-emerald-800",
 };
 
 const typeStyles: Record<string, string> = {
-  video: "bg-purple-100 text-purple-700",
+  video: "bg-[rgba(168,85,247,0.15)] text-purple-700",
   article: "bg-sky-100 text-sky-700",
-  graphic: "bg-pink-100 text-pink-700",
-  report: "bg-teal-100 text-teal-700",
+  graphic: "bg-[rgba(236,72,153,0.15)] text-pink-700",
+  report: "bg-[rgba(20,184,166,0.15)] text-teal-700",
   social_post: "bg-indigo-100 text-indigo-700",
 };
 
@@ -118,7 +118,7 @@ export default function BrandDeliverablesPage() {
       {/* Navigation */}
       <Link
         href={`/brands/${brandId}`}
-        className="inline-flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1A1A1A]"
+        className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Brand Dashboard
       </Link>
@@ -126,11 +126,11 @@ export default function BrandDeliverablesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">Deliverables</h1>
-          <p className="text-sm text-[#9CA3AF]">Review and manage deliverables for this brand</p>
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Deliverables</h1>
+          <p className="text-sm text-[var(--text-muted)]">Review and manage deliverables for this brand</p>
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-[#6B7280]" />
+          <Filter className="h-4 w-4 text-[var(--text-secondary)]" />
           <div className="flex flex-wrap gap-1.5">
             {STATUS_OPTIONS.map((opt) => (
               <button
@@ -139,8 +139,8 @@ export default function BrandDeliverablesPage() {
                 className={cn(
                   "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                   statusFilter === opt.value
-                    ? "bg-[#2E86AB] text-white"
-                    : "bg-[#F8F9FA] text-[#6B7280] hover:bg-[#E5E7EB]"
+                    ? "bg-[var(--accent-primary)] text-white"
+                    : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[#E5E7EB]"
                 )}
               >
                 {opt.label}
@@ -153,10 +153,10 @@ export default function BrandDeliverablesPage() {
       {/* Deliverables list */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
         </div>
       ) : deliverables.length === 0 ? (
-        <p className="py-16 text-center text-sm text-[#9CA3AF]">
+        <p className="py-16 text-center text-sm text-[var(--text-muted)]">
           No deliverables found{statusFilter ? ` with status "${statusLabel(statusFilter)}"` : ""}.
         </p>
       ) : (
@@ -164,7 +164,7 @@ export default function BrandDeliverablesPage() {
           {deliverables.map((d) => (
             <div
               key={d.id}
-              className="rounded-xl border border-[#E5E7EB] bg-white p-5"
+              className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5"
             >
               <div className="flex items-start gap-4">
                 {/* Thumbnail */}
@@ -172,11 +172,11 @@ export default function BrandDeliverablesPage() {
                   <img
                     src={d.thumbnailUrl}
                     alt={d.title}
-                    className="h-16 w-16 shrink-0 rounded-lg border border-[#E5E7EB] object-cover"
+                    className="h-16 w-16 shrink-0 rounded-lg border border-[var(--border-subtle)] object-cover"
                   />
                 ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[#F8F9FA]">
-                    <ImageIcon className="h-6 w-6 text-[#9CA3AF]" />
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-surface)]">
+                    <ImageIcon className="h-6 w-6 text-[var(--text-muted)]" />
                   </div>
                 )}
 
@@ -184,16 +184,16 @@ export default function BrandDeliverablesPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="text-sm font-semibold text-[#1A1A1A]">{d.title}</h3>
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">{d.title}</h3>
                       {d.description && (
-                        <p className="mt-0.5 line-clamp-2 text-xs text-[#6B7280]">{d.description}</p>
+                        <p className="mt-0.5 line-clamp-2 text-xs text-[var(--text-secondary)]">{d.description}</p>
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <Badge
                         className={cn(
                           "text-[10px] font-medium",
-                          typeStyles[d.type] || "bg-gray-100 text-gray-700"
+                          typeStyles[d.type] || "bg-[var(--bg-elevated)] text-gray-700"
                         )}
                       >
                         {d.type.replace(/_/g, " ")}
@@ -201,7 +201,7 @@ export default function BrandDeliverablesPage() {
                       <Badge
                         className={cn(
                           "text-[10px] font-medium",
-                          statusStyles[d.status] || "bg-gray-100 text-gray-700"
+                          statusStyles[d.status] || "bg-[var(--bg-elevated)] text-gray-700"
                         )}
                       >
                         {statusLabel(d.status)}
@@ -209,14 +209,14 @@ export default function BrandDeliverablesPage() {
                     </div>
                   </div>
 
-                  <div className="mt-2 flex items-center gap-3 text-[10px] text-[#9CA3AF]">
+                  <div className="mt-2 flex items-center gap-3 text-[10px] text-[var(--text-muted)]">
                     <span>Created {formatDate(d.createdAt)}</span>
                     {d.approvedAt && <span>Approved {formatDate(d.approvedAt)}</span>}
                   </div>
 
                   {/* Existing feedback */}
                   {d.feedback && d.status === "revision_requested" && (
-                    <div className="mt-2 rounded-lg bg-orange-50 px-3 py-2 text-xs text-orange-800">
+                    <div className="mt-2 rounded-lg bg-[rgba(249,115,22,0.1)] px-3 py-2 text-xs text-orange-800">
                       <span className="font-medium">Revision feedback:</span> {d.feedback}
                     </div>
                   )}
@@ -234,7 +234,7 @@ export default function BrandDeliverablesPage() {
                           />
                           <Button
                             size="sm"
-                            className="h-8 bg-[#A23B72] text-xs hover:bg-[#A23B72]/90"
+                            className="h-8 bg-[var(--accent-secondary)] text-xs hover:bg-[var(--accent-secondary)]/90"
                             disabled={!feedbackText.trim() || reviewingId === d.id}
                             onClick={() =>
                               handleReview(d.id, "request_revision", feedbackText.trim())
@@ -264,7 +264,7 @@ export default function BrandDeliverablesPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs text-[#A23B72] hover:bg-[#A23B72]/5"
+                            className="h-7 text-xs text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/5"
                             disabled={reviewingId === d.id}
                             onClick={() => setFeedbackId(d.id)}
                           >
@@ -273,7 +273,7 @@ export default function BrandDeliverablesPage() {
                           </Button>
                           <Button
                             size="sm"
-                            className="h-7 bg-[#2E86AB] text-xs hover:bg-[#2E86AB]/90"
+                            className="h-7 bg-[var(--accent-primary)] text-xs hover:bg-[var(--accent-primary)]/90"
                             disabled={reviewingId === d.id}
                             onClick={() => handleReview(d.id, "approve")}
                           >
@@ -291,7 +291,7 @@ export default function BrandDeliverablesPage() {
                               rel="noopener noreferrer"
                               className="ml-auto"
                             >
-                              <Button size="sm" variant="ghost" className="h-7 text-xs text-[#2E86AB]">
+                              <Button size="sm" variant="ghost" className="h-7 text-xs text-[var(--accent-primary)]">
                                 <FileCheck className="mr-1 h-3 w-3" />
                                 View File
                               </Button>

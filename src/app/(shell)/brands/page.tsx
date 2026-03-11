@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Globe, Palette, ArrowRight } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Brand {
   id: string;
@@ -27,33 +28,33 @@ export default function BrandsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-[#1A1A1A]">My Brands</h1>
-        <p className="text-sm text-[#9CA3AF]">Brands you have access to</p>
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">My Brands</h1>
+        <p className="text-sm text-[var(--text-muted)]">Brands you have access to</p>
       </div>
 
       {loading ? (
-        <p className="py-12 text-center text-sm text-[#9CA3AF]">Loading brands...</p>
+        <p className="py-12 text-center text-sm text-[var(--text-muted)]">Loading brands...</p>
       ) : brands.length === 0 ? (
-        <p className="py-12 text-center text-sm text-[#9CA3AF]">No brands assigned to you.</p>
+        <EmptyState icon={Palette} title="No brands assigned" description="You don't have any brands assigned to you yet." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {brands.map((brand) => (
             <Link
               key={brand.id}
               href={`/brands/${brand.id}`}
-              className="group rounded-xl border border-[#E5E7EB] bg-white p-5 transition-shadow hover:shadow-md"
+              className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 transition-shadow hover:shadow-md"
             >
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2E86AB]/10">
-                    <Palette className="h-5 w-5 text-[#2E86AB]" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-primary)]/10">
+                    <Palette className="h-5 w-5 text-[var(--accent-primary)]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-[#1A1A1A]">{brand.name}</h3>
-                    <p className="text-[10px] text-[#9CA3AF]">{brand.client.name}</p>
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">{brand.name}</h3>
+                    <p className="text-[10px] text-[var(--text-muted)]">{brand.client.name}</p>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-[#9CA3AF] opacity-0 transition-opacity group-hover:opacity-100" />
+                <ArrowRight className="h-4 w-4 text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {brand.platforms.map((p) => (
@@ -67,7 +68,7 @@ export default function BrandsPage() {
                   </Badge>
                 ))}
                 {brand.platforms.length === 0 && (
-                  <span className="text-[10px] text-[#D1D5DB]">No platforms configured</span>
+                  <span className="text-[10px] text-[var(--text-muted)]">No platforms configured</span>
                 )}
               </div>
             </Link>

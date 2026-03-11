@@ -187,12 +187,12 @@ export default function CategoriesPage() {
     rows.push(
       <div
         key={cat.id}
-        className="flex items-center gap-3 border-b border-[#E5E7EB] bg-white px-6 py-3 transition-colors hover:bg-[#F8F9FA]"
+        className="flex items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3 transition-colors hover:bg-[var(--bg-surface)]"
       >
         {/* Indentation */}
         {depth > 0 && <div style={{ width: depth * 24 }} className="shrink-0" />}
         {depth > 0 && (
-          <ChevronRight className="h-3 w-3 shrink-0 text-[#9CA3AF]" />
+          <ChevronRight className="h-3 w-3 shrink-0 text-[var(--text-muted)]" />
         )}
 
         {/* Color Swatch */}
@@ -203,16 +203,16 @@ export default function CategoriesPage() {
 
         {/* Name & Description */}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-[#1A1A1A]">{cat.name}</p>
+          <p className="text-sm font-medium text-[var(--text-primary)]">{cat.name}</p>
           {cat.description && (
-            <p className="mt-0.5 truncate text-xs text-[#6B7280]">
+            <p className="mt-0.5 truncate text-xs text-[var(--text-secondary)]">
               {cat.description}
             </p>
           )}
         </div>
 
         {/* Article Count */}
-        <span className="shrink-0 text-xs text-[#9CA3AF]">
+        <span className="shrink-0 text-xs text-[var(--text-muted)]">
           {articleCount} article{articleCount !== 1 ? "s" : ""}
         </span>
 
@@ -223,14 +223,14 @@ export default function CategoriesPage() {
             size="icon-xs"
             onClick={() => startEdit(cat)}
           >
-            <Pencil className="h-3 w-3 text-[#6B7280]" />
+            <Pencil className="h-3 w-3 text-[var(--text-secondary)]" />
           </Button>
           <Button
             variant="ghost"
             size="icon-xs"
             onClick={() => handleDelete(cat.id)}
           >
-            <Trash2 className="h-3 w-3 text-[#6B7280]" />
+            <Trash2 className="h-3 w-3 text-[var(--text-secondary)]" />
           </Button>
         </div>
       </div>
@@ -248,8 +248,8 @@ export default function CategoriesPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-[#6B7280]" />
-        <span className="ml-2 text-sm text-[#6B7280]">Loading...</span>
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--text-secondary)]" />
+        <span className="ml-2 text-sm text-[var(--text-secondary)]">Loading...</span>
       </div>
     );
   }
@@ -257,16 +257,16 @@ export default function CategoriesPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] bg-[#F8F9FA] px-6 py-4">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
         <div>
-          <h1 className="text-lg font-semibold text-[#1A1A1A]">Categories</h1>
-          <p className="text-sm text-[#6B7280]">
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Categories</h1>
+          <p className="text-sm text-[var(--text-secondary)]">
             {categories.length} categor{categories.length !== 1 ? "ies" : "y"}
           </p>
         </div>
         <Button
           size="sm"
-          className="bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+          className="bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
           onClick={() => {
             resetForm();
             setShowForm(true);
@@ -279,10 +279,10 @@ export default function CategoriesPage() {
 
       {/* Create/Edit Form */}
       {showForm && (
-        <div className="border-b border-[#E5E7EB] bg-white px-6 py-4">
-          <div className="mx-auto max-w-lg rounded-xl border border-[#E5E7EB] bg-white p-4">
+        <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
+          <div className="mx-auto max-w-lg rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[#1A1A1A]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                 {editingId ? "Edit Category" : "New Category"}
               </h3>
               <Button variant="ghost" size="icon-xs" onClick={resetForm}>
@@ -291,7 +291,7 @@ export default function CategoriesPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                   Name
                 </label>
                 <Input
@@ -301,7 +301,7 @@ export default function CategoriesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                   Slug
                 </label>
                 <Input
@@ -314,7 +314,7 @@ export default function CategoriesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                   Description
                 </label>
                 <Input
@@ -324,13 +324,13 @@ export default function CategoriesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                   Parent Category
                 </label>
                 <select
                   value={formParentId}
                   onChange={(e) => setFormParentId(e.target.value)}
-                  className="h-8 w-full rounded-lg border border-[#E5E7EB] bg-white px-2.5 text-sm text-[#1A1A1A] outline-none focus:border-[#2E86AB]"
+                  className="h-8 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#2E86AB]"
                 >
                   <option value="">None (top-level)</option>
                   {categories
@@ -343,7 +343,7 @@ export default function CategoriesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                   Color
                 </label>
                 <div className="flex flex-wrap items-center gap-2">
@@ -372,7 +372,7 @@ export default function CategoriesPage() {
               <div className="flex items-center gap-2 pt-1">
                 <Button
                   size="sm"
-                  className="bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+                  className="bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
                   onClick={handleSave}
                 >
                   {editingId ? "Update" : "Create"}
@@ -389,14 +389,14 @@ export default function CategoriesPage() {
       {/* Category List */}
       {categories.length === 0 && !showForm ? (
         <div className="flex flex-1 flex-col items-center justify-center py-20">
-          <Tag className="h-10 w-10 text-[#9CA3AF]" />
-          <p className="mt-3 text-sm font-medium text-[#1A1A1A]">No categories yet</p>
-          <p className="mt-1 text-sm text-[#6B7280]">
+          <Tag className="h-10 w-10 text-[var(--text-muted)]" />
+          <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">No categories yet</p>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Create your first category to organize articles
           </p>
           <Button
             size="sm"
-            className="mt-4 bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+            className="mt-4 bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
             onClick={() => {
               resetForm();
               setShowForm(true);

@@ -105,9 +105,9 @@ interface NarrativeTreeDetail {
 function treeStatusColor(status: string) {
   switch (status) {
     case "ACTIVE":
-      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      return "bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-emerald-500/20";
     case "MERGED":
-      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      return "bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border-blue-500/20";
     case "ARCHIVED":
       return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
     default:
@@ -120,15 +120,15 @@ function contentStatusColor(status: string) {
     case "PLANNED":
       return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
     case "RESEARCHING":
-      return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      return "bg-[rgba(245,158,11,0.1)]0/10 text-amber-400 border-amber-500/20";
     case "DRAFTED":
-      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      return "bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border-blue-500/20";
     case "APPROVED":
-      return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+      return "bg-[rgba(99,102,241,0.1)]0/10 text-indigo-400 border-indigo-500/20";
     case "RELAYED":
-      return "bg-violet-500/10 text-violet-400 border-violet-500/20";
+      return "bg-[rgba(139,92,246,0.1)]0/10 text-violet-400 border-violet-500/20";
     case "PUBLISHED":
-      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      return "bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-emerald-500/20";
     case "KILLED":
       return "bg-rose-500/10 text-rose-400 border-rose-500/20";
     default:
@@ -365,7 +365,7 @@ export default function NarrativeTreeDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400 shrink-0">
+            <div className="p-2 bg-[rgba(99,102,241,0.1)]0/10 rounded-lg text-indigo-400 shrink-0">
               <GitBranch className="w-5 h-5" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground leading-snug">
@@ -409,7 +409,7 @@ export default function NarrativeTreeDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+              className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-[rgba(16,185,129,0.1)]0/10"
               disabled={statusUpdating}
               onClick={() => updateStatus("ACTIVE")}
             >
@@ -481,7 +481,7 @@ export default function NarrativeTreeDetailPage() {
               <Signal className="w-10 h-10" />
             </div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400">
+              <div className="p-1.5 bg-[rgba(99,102,241,0.1)]0/10 rounded-lg text-indigo-400">
                 <Signal className="w-4 h-4" />
               </div>
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Signals</span>
@@ -496,7 +496,7 @@ export default function NarrativeTreeDetailPage() {
               <BookOpen className="w-10 h-10 text-emerald-400" />
             </div>
             <div className="flex items-center gap-2 mb-3">
-              <div className={`p-1.5 rounded-lg ${tree.dossier ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-800/50 text-zinc-500"}`}>
+              <div className={`p-1.5 rounded-lg ${tree.dossier ? "bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400" : "bg-zinc-800/50 text-zinc-500"}`}>
                 <BookOpen className="w-4 h-4" />
               </div>
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Dossier</span>
@@ -513,7 +513,7 @@ export default function NarrativeTreeDetailPage() {
               <FileText className="w-10 h-10 text-blue-400" />
             </div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
+              <div className="p-1.5 bg-[rgba(59,130,246,0.1)]0/10 rounded-lg text-blue-400">
                 <FileText className="w-4 h-4" />
               </div>
               <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Content</span>
@@ -530,7 +530,7 @@ export default function NarrativeTreeDetailPage() {
             onClick={() => setViewMode("list")}
             className={`px-4 py-2 text-xs font-bold rounded-md transition-all ${
               viewMode === "list"
-                ? "bg-white/10 text-white"
+                ? "bg-[var(--bg-surface)]/10 text-white"
                 : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
@@ -540,7 +540,7 @@ export default function NarrativeTreeDetailPage() {
             onClick={() => setViewMode("graph")}
             className={`px-4 py-2 text-xs font-bold rounded-md transition-all ${
               viewMode === "graph"
-                ? "bg-white/10 text-white"
+                ? "bg-[var(--bg-surface)]/10 text-white"
                 : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
@@ -571,7 +571,7 @@ export default function NarrativeTreeDetailPage() {
               <Button
                 onClick={addHypothesis}
                 disabled={addingHypothesis || !hypothesisInput.trim()}
-                className="gap-2 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold"
+                className="gap-2 bg-[rgba(245,158,11,0.1)]0 hover:bg-amber-600 text-zinc-950 font-bold"
                 size="sm"
               >
                 {addingHypothesis && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -644,7 +644,7 @@ export default function NarrativeTreeDetailPage() {
             <div className="space-y-0">
               {/* Root indicator */}
               <div className="flex items-center gap-3 mb-4 px-1">
-                <div className="w-4 h-4 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] shrink-0" />
+                <div className="w-4 h-4 rounded-full bg-[rgba(99,102,241,0.1)]0 shadow-[0_0_10px_rgba(99,102,241,0.5)] shrink-0" />
                 <div>
                   <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Root Trend</div>
                   <div className="text-sm font-bold text-foreground leading-snug">{tree.title}</div>
@@ -816,7 +816,7 @@ export default function NarrativeTreeDetailPage() {
                             </div>
                             <div className="space-y-1.5">
                               {nanoBananaAngles.map((angle, i) => (
-                                <div key={i} className="flex items-start gap-2 text-xs bg-amber-500/5 rounded-lg px-3 py-2 border border-amber-500/10">
+                                <div key={i} className="flex items-start gap-2 text-xs bg-[rgba(245,158,11,0.1)]0/5 rounded-lg px-3 py-2 border border-amber-500/10">
                                   <Badge variant="outline" className="text-[9px] font-bold border-amber-500/20 text-amber-400 shrink-0 mt-0.5">
                                     {angle.type}
                                   </Badge>
@@ -838,10 +838,10 @@ export default function NarrativeTreeDetailPage() {
                               {thumbnailPrompt && (
                                 <details className="group">
                                   <summary className="cursor-pointer text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(139,92,246,0.1)]0 shrink-0" />
                                     Thumbnail Prompt
                                   </summary>
-                                  <p className="text-xs text-zinc-500 leading-relaxed mt-1.5 ml-3 bg-violet-500/5 rounded-lg px-3 py-2 border border-violet-500/10">
+                                  <p className="text-xs text-zinc-500 leading-relaxed mt-1.5 ml-3 bg-[rgba(139,92,246,0.1)]0/5 rounded-lg px-3 py-2 border border-violet-500/10">
                                     {thumbnailPrompt}
                                   </p>
                                 </details>
@@ -849,10 +849,10 @@ export default function NarrativeTreeDetailPage() {
                               {socialCardPrompt && (
                                 <details className="group">
                                   <summary className="cursor-pointer text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(139,92,246,0.1)]0 shrink-0" />
                                     Social Card Prompt
                                   </summary>
-                                  <p className="text-xs text-zinc-500 leading-relaxed mt-1.5 ml-3 bg-violet-500/5 rounded-lg px-3 py-2 border border-violet-500/10">
+                                  <p className="text-xs text-zinc-500 leading-relaxed mt-1.5 ml-3 bg-[rgba(139,92,246,0.1)]0/5 rounded-lg px-3 py-2 border border-violet-500/10">
                                     {socialCardPrompt}
                                   </p>
                                 </details>
@@ -924,7 +924,7 @@ function DossierView({ dossier }: { dossier: FactDossier }) {
                 const text = typeof fact === "string" ? fact : fact.claim;
                 return (
                   <li key={i} className="flex items-start gap-3 text-sm text-zinc-300 leading-relaxed">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[rgba(99,102,241,0.1)]0 mt-2 shrink-0" />
                     {text}
                   </li>
                 );
@@ -992,7 +992,7 @@ function DossierView({ dossier }: { dossier: FactDossier }) {
               {data.timeline.map((entry, i) => (
                 <div key={i} className="flex items-start gap-4">
                   <div className="flex flex-col items-center shrink-0">
-                    <div className={`w-2.5 h-2.5 rounded-full ${i === 0 ? "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.4)]" : "bg-zinc-700"}`} />
+                    <div className={`w-2.5 h-2.5 rounded-full ${i === 0 ? "bg-[rgba(245,158,11,0.1)]0 shadow-[0_0_6px_rgba(245,158,11,0.4)]" : "bg-zinc-700"}`} />
                     {i < data.timeline!.length - 1 && (
                       <div className="w-px h-full min-h-[24px] bg-zinc-800 mt-1" />
                     )}

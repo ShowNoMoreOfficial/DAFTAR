@@ -358,7 +358,7 @@ export default function PromptEditorPage() {
                 <Button
                   onClick={handleTest}
                   disabled={testing || !systemPrompt.trim()}
-                  className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold"
+                  className="w-full gap-2 bg-[rgba(245,158,11,0.1)]0 hover:bg-amber-600 text-zinc-950 font-bold"
                 >
                   {testing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -376,7 +376,7 @@ export default function PromptEditorPage() {
             <Card className="rounded-2xl border-border animate-fade-in">
               <CardContent className="p-5">
                 <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
+                  <Badge className="bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-emerald-500/20 text-[10px]">
                     Result
                   </Badge>
                 </h3>

@@ -116,7 +116,7 @@ export default function RelayCalendarPage() {
             <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="min-w-[160px] text-center text-sm font-semibold text-[#1A1A1A]">
+            <span className="min-w-[160px] text-center text-sm font-semibold text-[var(--text-primary)]">
               {MONTHS[month]} {year}
             </span>
             <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>
@@ -137,22 +137,22 @@ export default function RelayCalendarPage() {
           {Object.entries(PLATFORM_DOTS).map(([platform, color]) => (
             <div key={platform} className="flex items-center gap-1.5">
               <div className={cn("h-2.5 w-2.5 rounded-full", color)} />
-              <span className="text-xs text-[#6B7280]">{PLATFORM_LABELS[platform]}</span>
+              <span className="text-xs text-[var(--text-secondary)]">{PLATFORM_LABELS[platform]}</span>
             </div>
           ))}
         </div>
 
         {/* Calendar */}
-        <div className="rounded-xl border border-[#E5E7EB] bg-white">
-          <div className="grid grid-cols-7 border-b border-[#E5E7EB]">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+          <div className="grid grid-cols-7 border-b border-[var(--border-subtle)]">
             {DAYS.map((d) => (
-              <div key={d} className="py-2 text-center text-xs font-medium text-[#9CA3AF]">{d}</div>
+              <div key={d} className="py-2 text-center text-xs font-medium text-[var(--text-muted)]">{d}</div>
             ))}
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-24">
-              <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+              <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
             </div>
           ) : (
             <div className="grid grid-cols-7">
@@ -175,7 +175,7 @@ export default function RelayCalendarPage() {
                         <span
                           className={cn(
                             "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs",
-                            isToday(day) ? "bg-[#2E86AB] font-bold text-white" : "text-[#6B7280]"
+                            isToday(day) ? "bg-[var(--accent-primary)] font-bold text-white" : "text-[var(--text-secondary)]"
                           )}
                         >
                           {day}
@@ -194,7 +194,7 @@ export default function RelayCalendarPage() {
                               />
                             ))}
                             {dayEntries.length > 6 && (
-                              <span className="text-[9px] text-[#9CA3AF]">+{dayEntries.length - 6}</span>
+                              <span className="text-[9px] text-[var(--text-muted)]">+{dayEntries.length - 6}</span>
                             )}
                           </div>
                         )}
@@ -204,7 +204,7 @@ export default function RelayCalendarPage() {
                             <div
                               key={entry.id}
                               className={cn(
-                                "truncate rounded border-l-2 px-1 py-0.5 text-[10px] text-[#6B7280]",
+                                "truncate rounded border-l-2 px-1 py-0.5 text-[10px] text-[var(--text-secondary)]",
                                 STATUS_COLORS[entry.status] || "border-l-gray-300"
                               )}
                             >
@@ -212,7 +212,7 @@ export default function RelayCalendarPage() {
                             </div>
                           ))}
                           {dayEntries.length > 2 && (
-                            <span className="pl-1 text-[10px] text-[#2E86AB]">
+                            <span className="pl-1 text-[10px] text-[var(--accent-primary)]">
                               +{dayEntries.length - 2} more
                             </span>
                           )}
@@ -229,47 +229,47 @@ export default function RelayCalendarPage() {
 
       {/* Side panel for selected day */}
       {selectedDay !== null && (
-        <div className="w-80 border-l border-[#E5E7EB] bg-white p-4 overflow-y-auto">
+        <div className="w-80 border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 overflow-y-auto">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
               {MONTHS[month]} {selectedDay}, {year}
             </h3>
-            <button onClick={() => setSelectedDay(null)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+            <button onClick={() => setSelectedDay(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {selectedDayEntries.length === 0 ? (
-            <p className="text-xs text-[#9CA3AF]">No posts for this day.</p>
+            <p className="text-xs text-[var(--text-muted)]">No posts for this day.</p>
           ) : (
             <div className="space-y-3">
               {selectedDayEntries.map((entry) => (
                 <div
                   key={entry.id}
                   className={cn(
-                    "rounded-lg border border-[#E5E7EB] p-3 border-l-4",
+                    "rounded-lg border border-[var(--border-subtle)] p-3 border-l-4",
                     STATUS_COLORS[entry.status] || "border-l-gray-300"
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <div className={cn("h-2.5 w-2.5 rounded-full", PLATFORM_DOTS[entry.platform] || "bg-gray-400")} />
-                    <span className="text-[10px] font-medium text-[#6B7280] uppercase">
+                    <span className="text-[10px] font-medium text-[var(--text-secondary)] uppercase">
                       {PLATFORM_LABELS[entry.platform] || entry.platform}
                     </span>
                     <span className={cn(
                       "ml-auto rounded px-1.5 py-0.5 text-[9px] font-medium",
-                      entry.status === "PUBLISHED" ? "bg-emerald-100 text-emerald-700" :
-                      entry.status === "SCHEDULED" ? "bg-blue-100 text-blue-700" :
-                      entry.status === "DRAFT" ? "bg-gray-100 text-gray-600" :
-                      entry.status === "FAILED" ? "bg-red-100 text-red-700" :
-                      "bg-gray-100 text-gray-600"
+                      entry.status === "PUBLISHED" ? "bg-[rgba(16,185,129,0.15)] text-emerald-700" :
+                      entry.status === "SCHEDULED" ? "bg-[rgba(59,130,246,0.15)] text-blue-700" :
+                      entry.status === "DRAFT" ? "bg-[var(--bg-elevated)] text-gray-600" :
+                      entry.status === "FAILED" ? "bg-[rgba(239,68,68,0.15)] text-red-700" :
+                      "bg-[var(--bg-elevated)] text-gray-600"
                     )}>
                       {entry.status}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-[#1A1A1A]">{entry.title}</p>
-                  <p className="mt-0.5 text-[10px] text-[#9CA3AF]">{entry.brandName}</p>
-                  <p className="mt-0.5 text-[10px] text-[#9CA3AF]">
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{entry.title}</p>
+                  <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{entry.brandName}</p>
+                  <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">
                     {new Date(entry.date).toLocaleTimeString("en-IN", {
                       hour: "2-digit",
                       minute: "2-digit",

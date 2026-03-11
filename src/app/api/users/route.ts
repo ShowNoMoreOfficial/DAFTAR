@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, forbidden, badRequest, handleApiError } from "@/lib/api-utils";
 
 // GET /api/users — List users (Admin, HEAD_HR only)
 export async function GET() {
@@ -25,27 +25,31 @@ export async function POST(req: Request) {
   if (!session) return unauthorized();
   if (session.user.role !== "ADMIN") return forbidden();
 
-  const body = await req.json();
-  const { email, name, role, primaryDeptId } = body;
+  try {
+    const body = await req.json();
+    const { email, name, role, primaryDeptId } = body;
 
-  if (!email || !name || !role) {
-    return badRequest("email, name, and role are required");
+    if (!email || !name || !role) {
+      return badRequest("email, name, and role are required");
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return badRequest("User with this email already exists");
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        role,
+        primaryDeptId: primaryDeptId || null,
+        isActive: false, // Activated on first OAuth login
+      },
+    });
+
+    return NextResponse.json(user, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
   }
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return badRequest("User with this email already exists");
-  }
-
-  const user = await prisma.user.create({
-    data: {
-      email,
-      name,
-      role,
-      primaryDeptId: primaryDeptId || null,
-      isActive: false, // Activated on first OAuth login
-    },
-  });
-
-  return NextResponse.json(user, { status: 201 });
 }

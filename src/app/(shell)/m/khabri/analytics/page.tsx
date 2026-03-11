@@ -77,21 +77,21 @@ export default function KhabriAnalyticsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1A1A1A] flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-[#2E86AB]" /> Analytics
+          <h1 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-[var(--accent-primary)]" /> Analytics
           </h1>
-          <p className="text-sm text-[#6B7280]">Signal volume, category distribution, and sentiment analysis</p>
+          <p className="text-sm text-[var(--text-secondary)]">Signal volume, category distribution, and sentiment analysis</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Time Range */}
-          <div className="flex rounded-lg border border-[#E5E7EB] overflow-hidden">
+          <div className="flex rounded-lg border border-[var(--border-subtle)] overflow-hidden">
             {[6, 12, 24, 48, 72].map((h) => (
               <button
                 key={h}
                 onClick={() => setHours(h)}
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium transition-colors",
-                  hours === h ? "bg-[#2E86AB] text-white" : "bg-white text-[#6B7280] hover:bg-[#F8F9FA]"
+                  hours === h ? "bg-[var(--accent-primary)] text-white" : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
                 )}
               >
                 {h}h
@@ -99,14 +99,14 @@ export default function KhabriAnalyticsPage() {
             ))}
           </div>
           {/* Interval */}
-          <div className="flex rounded-lg border border-[#E5E7EB] overflow-hidden">
+          <div className="flex rounded-lg border border-[var(--border-subtle)] overflow-hidden">
             {(["hour", "day"] as const).map((int) => (
               <button
                 key={int}
                 onClick={() => setInterval(int)}
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium transition-colors capitalize",
-                  interval === int ? "bg-[#A23B72] text-white" : "bg-white text-[#6B7280] hover:bg-[#F8F9FA]"
+                  interval === int ? "bg-[var(--accent-secondary)] text-white" : "bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
                 )}
               >
                 {int}
@@ -121,19 +121,19 @@ export default function KhabriAnalyticsPage() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-[#2E86AB]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-primary)]" />
         </div>
       ) : (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <SummaryCard
-              icon={<Activity className="h-5 w-5 text-[#2E86AB]" />}
+              icon={<Activity className="h-5 w-5 text-[var(--accent-primary)]" />}
               label="Total Signals"
               value={totalVolume.toLocaleString()}
             />
             <SummaryCard
-              icon={<BarChart3 className="h-5 w-5 text-[#A23B72]" />}
+              icon={<BarChart3 className="h-5 w-5 text-[var(--accent-secondary)]" />}
               label="Categories"
               value={categories.length}
             />
@@ -150,15 +150,15 @@ export default function KhabriAnalyticsPage() {
           </div>
 
           {/* Signal Volume Chart (bar chart) */}
-          <div className="rounded-xl border border-[#E5E7EB] bg-white">
-            <div className="border-b border-[#E5E7EB] px-5 py-4">
-              <h2 className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-[#2E86AB]" /> Signal Volume
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+            <div className="border-b border-[var(--border-subtle)] px-5 py-4">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-[var(--accent-primary)]" /> Signal Volume
               </h2>
             </div>
             <div className="px-5 py-4">
               {volume.length === 0 ? (
-                <p className="text-center text-sm text-[#9CA3AF] py-8">No volume data available</p>
+                <p className="text-center text-sm text-[var(--text-muted)] py-8">No volume data available</p>
               ) : (
                 <div className="flex items-end gap-1 h-40">
                   {volume.map((point, i) => {
@@ -166,7 +166,7 @@ export default function KhabriAnalyticsPage() {
                     return (
                       <div key={i} className="group relative flex-1 flex flex-col items-center justify-end h-full">
                         <div
-                          className="w-full rounded-t bg-[#2E86AB]/70 hover:bg-[#2E86AB] transition-colors min-h-[2px]"
+                          className="w-full rounded-t bg-[var(--accent-primary)]/70 hover:bg-[var(--accent-primary)] transition-colors min-h-[2px]"
                           style={{ height: `${Math.max(height, 1)}%` }}
                         />
                         {/* Tooltip */}
@@ -189,26 +189,26 @@ export default function KhabriAnalyticsPage() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Category Distribution */}
-            <div className="rounded-xl border border-[#E5E7EB] bg-white">
-              <div className="border-b border-[#E5E7EB] px-5 py-4">
-                <h2 className="text-sm font-semibold text-[#1A1A1A]">Category Distribution</h2>
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+              <div className="border-b border-[var(--border-subtle)] px-5 py-4">
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">Category Distribution</h2>
               </div>
               <div className="px-5 py-4 space-y-3">
                 {categories.length === 0 ? (
-                  <p className="text-center text-sm text-[#9CA3AF] py-4">No category data</p>
+                  <p className="text-center text-sm text-[var(--text-muted)] py-4">No category data</p>
                 ) : (
                   categories.map((cat) => {
                     const barWidth = (cat.count / maxCategoryCount) * 100;
                     return (
                       <div key={cat.category} className="flex items-center gap-3">
-                        <span className="text-sm text-[#1A1A1A] w-28 truncate shrink-0">{cat.category}</span>
-                        <div className="flex-1 h-5 rounded-full bg-[#F0F2F5] overflow-hidden">
+                        <span className="text-sm text-[var(--text-primary)] w-28 truncate shrink-0">{cat.category}</span>
+                        <div className="flex-1 h-5 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-[#2E86AB]/70"
+                            className="h-full rounded-full bg-[var(--accent-primary)]/70"
                             style={{ width: `${barWidth}%` }}
                           />
                         </div>
-                        <span className="text-xs text-[#6B7280] w-14 text-right shrink-0">
+                        <span className="text-xs text-[var(--text-secondary)] w-14 text-right shrink-0">
                           {cat.count} ({cat.percentage.toFixed(0)}%)
                         </span>
                       </div>
@@ -219,20 +219,20 @@ export default function KhabriAnalyticsPage() {
             </div>
 
             {/* Sentiment Timeline */}
-            <div className="rounded-xl border border-[#E5E7EB] bg-white">
-              <div className="border-b border-[#E5E7EB] px-5 py-4">
-                <h2 className="text-sm font-semibold text-[#1A1A1A]">Sentiment Over Time</h2>
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+              <div className="border-b border-[var(--border-subtle)] px-5 py-4">
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">Sentiment Over Time</h2>
               </div>
               <div className="px-5 py-4 space-y-2">
                 {sentiment.length === 0 ? (
-                  <p className="text-center text-sm text-[#9CA3AF] py-4">No sentiment data</p>
+                  <p className="text-center text-sm text-[var(--text-muted)] py-4">No sentiment data</p>
                 ) : (
                   sentiment.map((point, i) => {
                     const total = point.positive + point.negative + point.neutral + point.mixed;
                     if (total === 0) return null;
                     return (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-[10px] text-[#9CA3AF] w-16 shrink-0">
+                        <span className="text-[10px] text-[var(--text-muted)] w-16 shrink-0">
                           {new Date(point.timestamp).toLocaleString(undefined, {
                             month: "short", day: "numeric", hour: "2-digit"
                           })}
@@ -245,7 +245,7 @@ export default function KhabriAnalyticsPage() {
                         </div>
                         <span className={cn(
                           "text-xs font-medium w-10 text-right shrink-0",
-                          point.avgScore > 0 ? "text-emerald-600" : point.avgScore < 0 ? "text-red-600" : "text-[#6B7280]"
+                          point.avgScore > 0 ? "text-emerald-600" : point.avgScore < 0 ? "text-red-600" : "text-[var(--text-secondary)]"
                         )}>
                           {point.avgScore > 0 ? "+" : ""}{point.avgScore.toFixed(1)}
                         </span>
@@ -254,7 +254,7 @@ export default function KhabriAnalyticsPage() {
                   })
                 )}
                 {/* Legend */}
-                <div className="flex items-center justify-center gap-4 pt-2 text-xs text-[#9CA3AF]">
+                <div className="flex items-center justify-center gap-4 pt-2 text-xs text-[var(--text-muted)]">
                   <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" /> Positive</span>
                   <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300" /> Neutral</span>
                   <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400" /> Mixed</span>
@@ -273,11 +273,11 @@ export default function KhabriAnalyticsPage() {
 
 function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white p-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F0F2F5]">{icon}</div>
+    <div className="flex items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-elevated)]">{icon}</div>
       <div>
-        <p className="text-xl font-bold text-[#1A1A1A]">{value}</p>
-        <p className="text-xs text-[#6B7280]">{label}</p>
+        <p className="text-xl font-bold text-[var(--text-primary)]">{value}</p>
+        <p className="text-xs text-[var(--text-secondary)]">{label}</p>
       </div>
     </div>
   );

@@ -35,9 +35,9 @@ export function GISlot({ name, entityId, entityType }: GISlotProps) {
   if (!content || dismissed) return null;
 
   const bgColors = {
-    info: "bg-blue-50 border-blue-200 text-blue-700",
-    warning: "bg-amber-50 border-amber-200 text-amber-700",
-    suggestion: "bg-purple-50 border-purple-200 text-purple-700",
+    info: "bg-[rgba(59,130,246,0.1)] border-blue-200 text-blue-700",
+    warning: "bg-[rgba(245,158,11,0.1)] border-amber-200 text-amber-700",
+    suggestion: "bg-[rgba(168,85,247,0.1)] border-purple-200 text-purple-700",
   };
 
   return (

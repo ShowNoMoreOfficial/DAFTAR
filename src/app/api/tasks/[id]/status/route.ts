@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, notFound, badRequest, handleApiError } from "@/lib/api-utils";
 import type { TaskStatus } from "@prisma/client";
 import { notifyTaskStatusChanged, notifyDeliverableReady } from "@/lib/notifications";
 import { recordActivity, checkTaskAchievements, checkSpeedAchievements, checkQualityAchievements } from "@/lib/gamification";
@@ -23,6 +23,7 @@ export async function PATCH(
   const session = await getAuthSession();
   if (!session) return unauthorized();
 
+  try {
   const { id } = await params;
   const { status } = await req.json();
 
@@ -206,4 +207,7 @@ export async function PATCH(
   }
 
   return NextResponse.json(updated);
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

@@ -54,9 +54,9 @@ const ROLES: Role[] = [
 ];
 
 const INVITE_STATUS_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
-  PENDING: { bg: "bg-amber-100 text-amber-700", icon: <Clock className="h-3 w-3" /> },
-  ACCEPTED: { bg: "bg-emerald-100 text-emerald-700", icon: <CheckCircle className="h-3 w-3" /> },
-  REVOKED: { bg: "bg-red-100 text-red-700", icon: <XCircle className="h-3 w-3" /> },
+  PENDING: { bg: "bg-[rgba(245,158,11,0.15)] text-amber-700", icon: <Clock className="h-3 w-3" /> },
+  ACCEPTED: { bg: "bg-[rgba(16,185,129,0.15)] text-emerald-700", icon: <CheckCircle className="h-3 w-3" /> },
+  REVOKED: { bg: "bg-[rgba(239,68,68,0.15)] text-red-700", icon: <XCircle className="h-3 w-3" /> },
 };
 
 export default function UsersPage() {
@@ -124,15 +124,15 @@ export default function UsersPage() {
   }
 
   if (loading) {
-    return <p className="text-sm text-[#6B7280]">Loading users...</p>;
+    return <p className="text-sm text-[var(--text-secondary)]">Loading users...</p>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">Users & Roles</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Users & Roles</h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Manage team members, send invites, and assign roles.
           </p>
         </div>
@@ -150,7 +150,7 @@ export default function UsersPage() {
             </DialogHeader>
             <form onSubmit={sendInvite} className="space-y-4 pt-2">
               <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Email *</label>
+                <label className="text-sm font-medium text-[var(--text-primary)]">Email *</label>
                 <Input
                   type="email"
                   value={form.email}
@@ -161,11 +161,11 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-[#1A1A1A]">Role</label>
+                  <label className="text-sm font-medium text-[var(--text-primary)]">Role</label>
                   <select
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
-                    className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>
@@ -175,11 +175,11 @@ export default function UsersPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#1A1A1A]">Department</label>
+                  <label className="text-sm font-medium text-[var(--text-primary)]">Department</label>
                   <select
                     value={form.departmentId}
                     onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
                   >
                     <option value="">None</option>
                     {departments.map((d) => (
@@ -194,7 +194,7 @@ export default function UsersPage() {
               <Button type="submit" className="w-full" disabled={inviting || !form.email}>
                 {inviting ? "Sending..." : "Send Invitation"}
               </Button>
-              <p className="text-[10px] text-[#9CA3AF] text-center">
+              <p className="text-[10px] text-[var(--text-muted)] text-center">
                 The user will be able to sign in via Google or Microsoft OAuth. Invite expires in 7 days.
               </p>
             </form>
@@ -203,12 +203,12 @@ export default function UsersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-lg border border-[#E5E7EB] bg-white p-0.5 w-fit">
+      <div className="flex gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0.5 w-fit">
         <button
           onClick={() => setTab("users")}
           className={cn(
             "rounded-md px-4 py-1.5 text-xs font-medium transition-colors",
-            tab === "users" ? "bg-[#2E86AB] text-white" : "text-[#6B7280] hover:bg-[#F0F2F5]"
+            tab === "users" ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
           )}
         >
           Users ({users.length})
@@ -217,7 +217,7 @@ export default function UsersPage() {
           onClick={() => setTab("invites")}
           className={cn(
             "rounded-md px-4 py-1.5 text-xs font-medium transition-colors",
-            tab === "invites" ? "bg-[#2E86AB] text-white" : "text-[#6B7280] hover:bg-[#F0F2F5]"
+            tab === "invites" ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
           )}
         >
           Invites ({invites.filter((i) => i.status === "PENDING").length} pending)
@@ -225,10 +225,10 @@ export default function UsersPage() {
       </div>
 
       {tab === "users" ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#E5E7EB] text-left text-xs font-medium uppercase tracking-wider text-[#6B7280]">
+              <tr className="border-b border-[var(--border-subtle)] text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                 <th className="px-6 py-3">User</th>
                 <th className="px-6 py-3">Role</th>
                 <th className="px-6 py-3">Department</th>
@@ -237,18 +237,18 @@ export default function UsersPage() {
             </thead>
             <tbody className="divide-y divide-[#E5E7EB]">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-[#F8F9FA]">
+                <tr key={user.id} className="hover:bg-[var(--bg-surface)]">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user.avatar || undefined} />
-                        <AvatarFallback className="bg-[#2E86AB] text-white text-xs">
+                        <AvatarFallback className="bg-[var(--accent-primary)] text-white text-xs">
                           {user.name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium text-[#1A1A1A]">{user.name}</p>
-                        <p className="text-xs text-[#6B7280]">{user.email}</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">{user.name}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">{user.email}</p>
                       </div>
                     </div>
                   </td>
@@ -258,7 +258,7 @@ export default function UsersPage() {
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-[#6B7280]">
+                    <span className="text-sm text-[var(--text-secondary)]">
                       {user.primaryDepartment?.name || "—"}
                     </span>
                   </td>
@@ -271,7 +271,7 @@ export default function UsersPage() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-[#9CA3AF]">
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-[var(--text-muted)]">
                     No users yet. Click &quot;Invite User&quot; to add team members.
                   </td>
                 </tr>
@@ -280,10 +280,10 @@ export default function UsersPage() {
           </table>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#E5E7EB] text-left text-xs font-medium uppercase tracking-wider text-[#6B7280]">
+              <tr className="border-b border-[var(--border-subtle)] text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                 <th className="px-6 py-3">Email</th>
                 <th className="px-6 py-3">Role</th>
                 <th className="px-6 py-3">Department</th>
@@ -296,19 +296,19 @@ export default function UsersPage() {
               {invites.map((invite) => {
                 const isExpired = new Date(invite.expiresAt) < new Date() && invite.status === "PENDING";
                 const style = isExpired
-                  ? { bg: "bg-gray-100 text-gray-500", icon: <Clock className="h-3 w-3" /> }
+                  ? { bg: "bg-[var(--bg-elevated)] text-gray-500", icon: <Clock className="h-3 w-3" /> }
                   : INVITE_STATUS_STYLES[invite.status];
                 return (
-                  <tr key={invite.id} className="hover:bg-[#F8F9FA]">
+                  <tr key={invite.id} className="hover:bg-[var(--bg-surface)]">
                     <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-[#1A1A1A]">{invite.email}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{invite.email}</p>
                     </td>
                     <td className="px-6 py-4">
                       <Badge className={ROLE_COLORS[invite.role]} variant="secondary">
                         {invite.role.replace("_", " ")}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-sm text-[#6B7280]">
+                    <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">
                       {invite.department?.name || "—"}
                     </td>
                     <td className="px-6 py-4">
@@ -317,7 +317,7 @@ export default function UsersPage() {
                         {isExpired ? "EXPIRED" : invite.status}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-xs text-[#6B7280]">
+                    <td className="px-6 py-4 text-xs text-[var(--text-secondary)]">
                       {new Date(invite.createdAt).toLocaleDateString("en-IN", {
                         day: "numeric",
                         month: "short",
@@ -338,7 +338,7 @@ export default function UsersPage() {
               })}
               {invites.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-[#9CA3AF]">
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-[var(--text-muted)]">
                     No invitations sent yet.
                   </td>
                 </tr>

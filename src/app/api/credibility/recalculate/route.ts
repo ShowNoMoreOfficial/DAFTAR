@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, handleApiError } from "@/lib/api-utils";
 
 /**
  * POST /api/credibility/recalculate
@@ -11,6 +11,7 @@ export async function POST() {
   const session = await getAuthSession();
   if (!session || session.user.role !== "ADMIN") return unauthorized();
 
+  try {
   const users = await prisma.user.findMany({
     where: { isActive: true, role: { notIn: ["CLIENT"] } },
     select: { id: true },
@@ -88,4 +89,7 @@ export async function POST() {
   }
 
   return NextResponse.json({ ok: true, usersUpdated: updated });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

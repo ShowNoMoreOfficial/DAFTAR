@@ -23,19 +23,19 @@ import { cn } from "@/lib/utils";
 import { useNotifications } from "@/components/providers/notification-provider";
 import type { LiveNotification } from "@/components/providers/notification-provider";
 
-// ─── Type Styling ───────────────────────────────────────
+// ─── Type Styling (Abyss) ───────────────────────────────
 
 const TYPE_STYLES: Record<string, string> = {
-  TASK_ASSIGNED: "bg-blue-100 text-blue-600",
-  TASK_STATUS_CHANGED: "bg-yellow-100 text-yellow-600",
-  TASK_COMMENT: "bg-purple-100 text-purple-600",
-  TASK_OVERDUE: "bg-red-100 text-red-600",
-  APPROVAL_PENDING: "bg-orange-100 text-orange-600",
-  APPROVAL_COMPLETED: "bg-emerald-100 text-emerald-600",
-  DELIVERABLE_READY: "bg-teal-100 text-teal-600",
-  GI_SUGGESTION: "bg-[#2E86AB]/10 text-[#2E86AB]",
-  GI_REVIEW: "bg-violet-100 text-violet-600",
-  SYSTEM: "bg-gray-100 text-gray-600",
+  TASK_ASSIGNED: "bg-[rgba(59,130,246,0.15)] text-[var(--status-info)]",
+  TASK_STATUS_CHANGED: "bg-[rgba(245,158,11,0.15)] text-[var(--accent-tertiary)]",
+  TASK_COMMENT: "bg-[rgba(99,102,241,0.15)] text-[var(--accent-secondary)]",
+  TASK_OVERDUE: "bg-[rgba(239,68,68,0.15)] text-[var(--status-error)]",
+  APPROVAL_PENDING: "bg-[rgba(245,158,11,0.15)] text-[var(--accent-tertiary)]",
+  APPROVAL_COMPLETED: "bg-[rgba(16,185,129,0.15)] text-[var(--status-success)]",
+  DELIVERABLE_READY: "bg-[rgba(0,212,170,0.15)] text-[var(--accent-primary)]",
+  GI_SUGGESTION: "bg-[rgba(0,212,170,0.15)] text-[var(--accent-primary)]",
+  GI_REVIEW: "bg-[rgba(99,102,241,0.15)] text-[var(--accent-secondary)]",
+  SYSTEM: "bg-[var(--bg-elevated)] text-[var(--text-secondary)]",
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -129,7 +129,6 @@ export function NotificationBell() {
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Click outside to close
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -160,13 +159,13 @@ export function NotificationBell() {
         className={cn(
           "relative rounded-lg p-2 transition-colors",
           open
-            ? "bg-[#2E86AB]/10 text-[#2E86AB]"
-            : "text-[#6B7280] hover:bg-[#F0F2F5]"
+            ? "bg-[rgba(0,212,170,0.1)] text-[var(--accent-primary)]"
+            : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
         )}
       >
         <Bell className="h-[18px] w-[18px]" />
         {unreadCount > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#A23B72] px-1 text-[9px] font-bold text-white">
+          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--status-error)] px-1 text-[9px] font-bold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -174,15 +173,15 @@ export function NotificationBell() {
 
       {/* Popover Panel */}
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[400px] rounded-xl border border-[#E5E7EB] bg-white shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[400px] rounded-xl border border-[var(--border-default)] bg-[var(--bg-overlay)] shadow-[var(--shadow-lg)]">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 py-3">
+          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-[#1A1A1A]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                 Notifications
               </h3>
               {unreadCount > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#A23B72] px-1.5 text-[10px] font-bold text-white">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--status-error)] px-1.5 text-[10px] font-bold text-white">
                   {unreadCount}
                 </span>
               )}
@@ -191,7 +190,7 @@ export function NotificationBell() {
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-[#2E86AB] transition-colors hover:bg-[#2E86AB]/10"
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-[var(--accent-primary)] transition-colors hover:bg-[rgba(0,212,170,0.1)]"
                 >
                   <CheckCheck className="h-3 w-3" />
                   Mark all read
@@ -199,7 +198,7 @@ export function NotificationBell() {
               )}
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-md p-1 text-[#9CA3AF] hover:bg-[#F0F2F5]"
+                className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -207,7 +206,7 @@ export function NotificationBell() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex border-b border-[#E5E7EB] px-2">
+          <div className="flex border-b border-[var(--border-subtle)] px-2">
             {FILTER_TABS.map((tab) => (
               <button
                 key={tab.key}
@@ -215,13 +214,13 @@ export function NotificationBell() {
                 className={cn(
                   "relative px-3 py-2 text-xs font-medium transition-colors",
                   activeTab === tab.key
-                    ? "text-[#2E86AB]"
-                    : "text-[#9CA3AF] hover:text-[#6B7280]"
+                    ? "text-[var(--accent-primary)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                 )}
               >
                 {tab.label}
                 {activeTab === tab.key && (
-                  <span className="absolute bottom-0 left-1/2 h-0.5 w-4/5 -translate-x-1/2 rounded-full bg-[#2E86AB]" />
+                  <span className="absolute bottom-0 left-1/2 h-0.5 w-4/5 -translate-x-1/2 rounded-full bg-[var(--accent-primary)]" />
                 )}
               </button>
             ))}
@@ -233,15 +232,15 @@ export function NotificationBell() {
               <div className="py-12 text-center">
                 {activeTab === "all" ? (
                   <>
-                    <Bell className="mx-auto h-8 w-8 text-[#D1D5DB]" />
-                    <p className="mt-2 text-xs text-[#9CA3AF]">
+                    <Bell className="mx-auto h-8 w-8 text-[var(--text-muted)]" />
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
                       No notifications yet
                     </p>
                   </>
                 ) : (
                   <>
-                    <SearchIcon className="mx-auto h-8 w-8 text-[#D1D5DB]" />
-                    <p className="mt-2 text-xs text-[#9CA3AF]">
+                    <SearchIcon className="mx-auto h-8 w-8 text-[var(--text-muted)]" />
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
                       No {activeTab === "unread" ? "unread" : activeTab === "mentions" ? "task" : "AI"} notifications
                     </p>
                   </>
@@ -251,8 +250,8 @@ export function NotificationBell() {
               <>
                 {todayNotifications.length > 0 && (
                   <div>
-                    <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-4 py-2 z-10">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
+                    <div className="sticky top-0 bg-[var(--bg-overlay)] backdrop-blur-sm px-4 py-2 z-10">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                         Today
                       </span>
                     </div>
@@ -269,8 +268,8 @@ export function NotificationBell() {
 
                 {earlierNotifications.length > 0 && (
                   <div>
-                    <div className="sticky top-0 bg-white/95 backdrop-blur-sm px-4 py-2 z-10">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
+                    <div className="sticky top-0 bg-[var(--bg-overlay)] backdrop-blur-sm px-4 py-2 z-10">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                         Earlier
                       </span>
                     </div>
@@ -289,13 +288,13 @@ export function NotificationBell() {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-[#E5E7EB] px-4 py-2.5">
+          <div className="border-t border-[var(--border-subtle)] px-4 py-2.5">
             <button
               onClick={() => {
                 router.push("/notifications");
                 setOpen(false);
               }}
-              className="w-full text-center text-xs font-medium text-[#2E86AB] transition-colors hover:text-[#2E86AB]/80"
+              className="w-full text-center text-xs font-medium text-[var(--accent-primary)] transition-colors hover:text-[var(--accent-primary)]/80"
             >
               View all notifications
             </button>
@@ -321,14 +320,14 @@ function NotificationItem({
     <div
       onClick={onClick}
       className={cn(
-        "flex cursor-pointer gap-3 border-b border-[#F0F2F5] px-4 py-3 transition-colors hover:bg-[#F8F9FA] group",
-        !n.isRead && "bg-[#2E86AB]/[0.03]"
+        "flex cursor-pointer gap-3 border-b border-[var(--border-subtle)] px-4 py-3 transition-colors hover:bg-[var(--bg-elevated)] group",
+        !n.isRead && "bg-[rgba(0,212,170,0.03)]"
       )}
     >
       {/* Unread dot */}
       <div className="flex w-2 shrink-0 items-start pt-2.5">
         {!n.isRead && (
-          <span className="h-2 w-2 rounded-full bg-[#2E86AB]" />
+          <span className="h-2 w-2 rounded-full bg-[var(--accent-primary)]" />
         )}
       </div>
 
@@ -348,7 +347,7 @@ function NotificationItem({
           <p
             className={cn(
               "text-xs leading-snug",
-              n.isRead ? "text-[#6B7280]" : "font-medium text-[#1A1A1A]"
+              n.isRead ? "text-[var(--text-secondary)]" : "font-medium text-[var(--text-primary)]"
             )}
           >
             {n.title}
@@ -361,11 +360,11 @@ function NotificationItem({
           </span>
         </div>
         {n.message && (
-          <p className="mt-0.5 text-[10px] leading-relaxed text-[#9CA3AF] line-clamp-2">
+          <p className="mt-0.5 text-[10px] leading-relaxed text-[var(--text-muted)] line-clamp-2">
             {n.message}
           </p>
         )}
-        <span className="mt-1 inline-block text-[10px] text-[#D1D5DB]">
+        <span className="mt-1 inline-block text-[10px] text-[var(--text-muted)]">
           {timeAgo(n.createdAt)}
         </span>
       </div>
@@ -377,7 +376,7 @@ function NotificationItem({
             e.stopPropagation();
             onMarkRead();
           }}
-          className="mt-0.5 shrink-0 rounded-md p-1 text-[#9CA3AF] opacity-0 transition-all group-hover:opacity-100 hover:bg-[#F0F2F5] hover:text-[#2E86AB]"
+          className="mt-0.5 shrink-0 rounded-md p-1 text-[var(--text-muted)] opacity-0 transition-all group-hover:opacity-100 hover:bg-[var(--bg-elevated)] hover:text-[var(--accent-primary)]"
           title="Mark as read"
         >
           <Check className="h-3 w-3" />

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, forbidden, handleApiError } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 
@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
     return forbidden();
   }
 
+  try {
   const { title, content, priority, departmentId, isPinned, expiresAt } = await req.json();
 
   if (!title || !content) {
@@ -121,4 +122,7 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(announcement, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

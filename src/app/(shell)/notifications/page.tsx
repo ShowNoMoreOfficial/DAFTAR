@@ -80,15 +80,15 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
 };
 
 const TYPE_STYLES: Record<string, string> = {
-  TASK_ASSIGNED: "bg-blue-100 text-blue-600",
-  TASK_STATUS_CHANGED: "bg-yellow-100 text-yellow-600",
-  TASK_COMMENT: "bg-purple-100 text-purple-600",
-  TASK_OVERDUE: "bg-red-100 text-red-600",
-  APPROVAL_PENDING: "bg-orange-100 text-orange-600",
-  APPROVAL_COMPLETED: "bg-emerald-100 text-emerald-600",
-  DELIVERABLE_READY: "bg-teal-100 text-teal-600",
-  GI_SUGGESTION: "bg-[#2E86AB]/10 text-[#2E86AB]",
-  SYSTEM: "bg-gray-100 text-gray-600",
+  TASK_ASSIGNED: "bg-[rgba(59,130,246,0.15)] text-blue-600",
+  TASK_STATUS_CHANGED: "bg-[rgba(234,179,8,0.15)] text-yellow-600",
+  TASK_COMMENT: "bg-[rgba(168,85,247,0.15)] text-purple-600",
+  TASK_OVERDUE: "bg-[rgba(239,68,68,0.15)] text-red-600",
+  APPROVAL_PENDING: "bg-[rgba(249,115,22,0.15)] text-orange-600",
+  APPROVAL_COMPLETED: "bg-[rgba(16,185,129,0.15)] text-emerald-600",
+  DELIVERABLE_READY: "bg-[rgba(20,184,166,0.15)] text-teal-600",
+  GI_SUGGESTION: "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]",
+  SYSTEM: "bg-[var(--bg-elevated)] text-gray-600",
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -270,8 +270,8 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">Notifications</h1>
-          <p className="text-sm text-[#6B7280]">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Notifications</h1>
+          <p className="text-sm text-[var(--text-secondary)]">
             {unreadCount > 0
               ? `You have ${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
               : "You're all caught up"}
@@ -306,26 +306,26 @@ export default function NotificationsPage() {
 
       {/* Preferences panel */}
       {showPrefs && (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-6">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-[#1A1A1A]">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">
                 Notification Preferences
               </h2>
-              <p className="text-xs text-[#9CA3AF]">
+              <p className="text-xs text-[var(--text-muted)]">
                 Choose which notifications you receive
               </p>
             </div>
             <button
               onClick={() => setShowPrefs(false)}
-              className="rounded-md p-1 text-[#9CA3AF] hover:bg-[#F0F2F5]"
+              className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {prefsLoading ? (
-            <p className="text-xs text-[#9CA3AF]">Loading preferences...</p>
+            <p className="text-xs text-[var(--text-muted)]">Loading preferences...</p>
           ) : prefs ? (
             <div className="space-y-6">
               {/* Notification type toggles */}
@@ -338,7 +338,7 @@ export default function NotificationsPage() {
                   return (
                     <div
                       key={type}
-                      className="flex items-center justify-between rounded-lg border border-[#E5E7EB] p-4"
+                      className="flex items-center justify-between rounded-lg border border-[var(--border-subtle)] p-4"
                     >
                       <div className="flex items-center gap-3">
                         <div
@@ -350,10 +350,10 @@ export default function NotificationsPage() {
                           {TYPE_ICONS[type]}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-[#1A1A1A]">
+                          <p className="text-sm font-medium text-[var(--text-primary)]">
                             {TYPE_LABELS[type]}
                           </p>
-                          <p className="text-xs text-[#9CA3AF]">
+                          <p className="text-xs text-[var(--text-muted)]">
                             {TYPE_DESCRIPTIONS[type]}
                           </p>
                         </div>
@@ -361,11 +361,11 @@ export default function NotificationsPage() {
                       <button
                         onClick={() => togglePrefType(type)}
                         className={`relative h-6 w-11 rounded-full transition-colors ${
-                          pref.enabled ? "bg-[#2E86AB]" : "bg-[#D1D5DB]"
+                          pref.enabled ? "bg-[var(--accent-primary)]" : "bg-[#D1D5DB]"
                         }`}
                       >
                         <span
-                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-[var(--bg-surface)] shadow transition-transform ${
                             pref.enabled
                               ? "translate-x-[22px]"
                               : "translate-x-0.5"
@@ -381,15 +381,15 @@ export default function NotificationsPage() {
 
               {/* Quiet hours */}
               <div>
-                <h3 className="mb-3 text-sm font-semibold text-[#1A1A1A]">
+                <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
                   Quiet Hours
                 </h3>
-                <p className="mb-3 text-xs text-[#9CA3AF]">
+                <p className="mb-3 text-xs text-[var(--text-muted)]">
                   Suppress notifications during these hours
                 </p>
                 <div className="flex items-center gap-4">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                    <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                       Start
                     </label>
                     <input
@@ -401,12 +401,12 @@ export default function NotificationsPage() {
                           quietHoursStart: e.target.value || null,
                         })
                       }
-                      className="rounded-lg border border-[#E5E7EB] px-3 py-1.5 text-sm text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
+                      className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-sm text-[var(--text-primary)] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
                     />
                   </div>
-                  <span className="mt-5 text-sm text-[#9CA3AF]">to</span>
+                  <span className="mt-5 text-sm text-[var(--text-muted)]">to</span>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+                    <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                       End
                     </label>
                     <input
@@ -418,7 +418,7 @@ export default function NotificationsPage() {
                           quietHoursEnd: e.target.value || null,
                         })
                       }
-                      className="rounded-lg border border-[#E5E7EB] px-3 py-1.5 text-sm text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
+                      className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-sm text-[var(--text-primary)] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
                     />
                   </div>
                 </div>
@@ -426,7 +426,7 @@ export default function NotificationsPage() {
 
               <Button
                 onClick={savePreferences}
-                className="bg-[#2E86AB] hover:bg-[#2E86AB]/90"
+                className="bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90"
               >
                 {prefsSaved ? (
                   <>
@@ -446,7 +446,7 @@ export default function NotificationsPage() {
       {/* Filters and bulk actions */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Read filter tabs */}
-        <div className="flex rounded-lg border border-[#E5E7EB] bg-white p-1">
+        <div className="flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1">
           {(
             [
               { key: "all", label: "All" },
@@ -460,8 +460,8 @@ export default function NotificationsPage() {
               className={cn(
                 "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                 filterRead === f.key
-                  ? "bg-[#F0F2F5] text-[#1A1A1A]"
-                  : "text-[#6B7280] hover:text-[#1A1A1A]"
+                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               )}
             >
               {f.label}
@@ -471,11 +471,11 @@ export default function NotificationsPage() {
 
         {/* Type filter */}
         <div className="flex items-center gap-1.5">
-          <Filter className="h-3.5 w-3.5 text-[#9CA3AF]" />
+          <Filter className="h-3.5 w-3.5 text-[var(--text-muted)]" />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs text-[#1A1A1A] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--text-primary)] focus:border-[#2E86AB] focus:outline-none focus:ring-1 focus:ring-[#2E86AB]"
           >
             <option value="">All types</option>
             {NOTIFICATION_TYPES.map((t) => (
@@ -489,7 +489,7 @@ export default function NotificationsPage() {
         {/* Bulk actions */}
         {selected.size > 0 && (
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-xs text-[#6B7280]">
+            <span className="text-xs text-[var(--text-secondary)]">
               {selected.size} selected
             </span>
             <Button
@@ -515,10 +515,10 @@ export default function NotificationsPage() {
       </div>
 
       {/* Notification list */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white">
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
         {/* Select all header */}
         {notifications.length > 0 && (
-          <div className="flex items-center gap-3 border-b border-[#E5E7EB] px-4 py-2.5">
+          <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] px-4 py-2.5">
             <input
               type="checkbox"
               checked={
@@ -526,9 +526,9 @@ export default function NotificationsPage() {
                 selected.size === notifications.length
               }
               onChange={toggleSelectAll}
-              className="h-3.5 w-3.5 rounded border-[#D1D5DB] text-[#2E86AB] focus:ring-[#2E86AB]"
+              className="h-3.5 w-3.5 rounded border-[#D1D5DB] text-[var(--accent-primary)] focus:ring-[#2E86AB]"
             />
-            <span className="text-[10px] text-[#9CA3AF]">
+            <span className="text-[10px] text-[var(--text-muted)]">
               {total} notification{total !== 1 ? "s" : ""}
             </span>
           </div>
@@ -536,13 +536,13 @@ export default function NotificationsPage() {
 
         {loading ? (
           <div className="py-12 text-center">
-            <p className="text-xs text-[#9CA3AF]">Loading...</p>
+            <p className="text-xs text-[var(--text-muted)]">Loading...</p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="py-12 text-center">
-            <Bell className="mx-auto h-10 w-10 text-[#D1D5DB]" />
-            <p className="mt-3 text-sm text-[#9CA3AF]">No notifications found</p>
-            <p className="mt-1 text-xs text-[#D1D5DB]">
+            <Bell className="mx-auto h-10 w-10 text-[var(--text-muted)]" />
+            <p className="mt-3 text-sm text-[var(--text-muted)]">No notifications found</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
               {filterRead !== "all" || filterType
                 ? "Try adjusting your filters"
                 : "You're all caught up!"}
@@ -554,21 +554,21 @@ export default function NotificationsPage() {
               <div
                 key={n.id}
                 className={cn(
-                  "flex items-start gap-3 border-b border-[#F0F2F5] px-4 py-3.5 transition-colors hover:bg-[#F8F9FA]",
-                  !n.isRead && "bg-[#2E86AB]/[0.03]"
+                  "flex items-start gap-3 border-b border-[#F0F2F5] px-4 py-3.5 transition-colors hover:bg-[var(--bg-surface)]",
+                  !n.isRead && "bg-[var(--accent-primary)]/[0.03]"
                 )}
               >
                 <input
                   type="checkbox"
                   checked={selected.has(n.id)}
                   onChange={() => toggleSelect(n.id)}
-                  className="mt-1 h-3.5 w-3.5 rounded border-[#D1D5DB] text-[#2E86AB] focus:ring-[#2E86AB]"
+                  className="mt-1 h-3.5 w-3.5 rounded border-[#D1D5DB] text-[var(--accent-primary)] focus:ring-[#2E86AB]"
                 />
 
                 {/* Unread dot */}
                 <div className="flex w-2 shrink-0 items-start pt-2">
                   {!n.isRead && (
-                    <span className="h-2 w-2 rounded-full bg-[#2E86AB]" />
+                    <span className="h-2 w-2 rounded-full bg-[var(--accent-primary)]" />
                   )}
                 </div>
 
@@ -590,19 +590,19 @@ export default function NotificationsPage() {
                         className={cn(
                           "text-sm",
                           n.isRead
-                            ? "text-[#6B7280]"
-                            : "font-medium text-[#1A1A1A]"
+                            ? "text-[var(--text-secondary)]"
+                            : "font-medium text-[var(--text-primary)]"
                         )}
                       >
                         {n.title}
                       </p>
                       {n.message && (
-                        <p className="mt-0.5 text-xs text-[#9CA3AF]">
+                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
                           {n.message}
                         </p>
                       )}
                     </div>
-                    <span className="shrink-0 text-[10px] text-[#D1D5DB]">
+                    <span className="shrink-0 text-[10px] text-[var(--text-muted)]">
                       {timeAgo(n.createdAt)}
                     </span>
                   </div>
@@ -618,7 +618,7 @@ export default function NotificationsPage() {
                     {n.link && (
                       <a
                         href={n.link}
-                        className="text-[10px] font-medium text-[#2E86AB] hover:underline"
+                        className="text-[10px] font-medium text-[var(--accent-primary)] hover:underline"
                       >
                         View details
                       </a>
@@ -637,7 +637,7 @@ export default function NotificationsPage() {
                           body: JSON.stringify({ isRead: true }),
                         }).then(() => fetchNotifications());
                       }}
-                      className="rounded-md p-1.5 text-[#9CA3AF] transition-colors hover:bg-[#F0F2F5] hover:text-[#2E86AB]"
+                      className="rounded-md p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-elevated)] hover:text-[var(--accent-primary)]"
                       title="Mark as read"
                     >
                       <Check className="h-3.5 w-3.5" />
@@ -649,7 +649,7 @@ export default function NotificationsPage() {
                         method: "DELETE",
                       }).then(() => fetchNotifications());
                     }}
-                    className="rounded-md p-1.5 text-[#9CA3AF] transition-colors hover:bg-red-50 hover:text-red-500"
+                    className="rounded-md p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[rgba(239,68,68,0.1)] hover:text-red-500"
                     title="Delete"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -662,8 +662,8 @@ export default function NotificationsPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-[#E5E7EB] px-4 py-3">
-            <span className="text-xs text-[#9CA3AF]">
+          <div className="flex items-center justify-between border-t border-[var(--border-subtle)] px-4 py-3">
+            <span className="text-xs text-[var(--text-muted)]">
               Page {page} of {totalPages}
             </span>
             <div className="flex gap-2">

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, forbidden, badRequest, handleApiError } from "@/lib/api-utils";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 
 export async function GET(req: NextRequest) {
@@ -58,36 +58,40 @@ export async function POST(req: NextRequest) {
   if (!session) return unauthorized();
   if (!["ADMIN", "FINANCE", "DEPT_HEAD"].includes(session.user.role)) return forbidden();
 
-  const body = await req.json();
-  const { title, amount, category, departmentId, description, receiptUrl, date } = body;
+  try {
+    const body = await req.json();
+    const { title, amount, category, departmentId, description, receiptUrl, date } = body;
 
-  if (!title || !amount || !category) {
-    return badRequest("title, amount, and category are required");
+    if (!title || !amount || !category) {
+      return badRequest("title, amount, and category are required");
+    }
+
+    const validCategories = [
+      "SALARY", "SOFTWARE", "EQUIPMENT", "TRAVEL",
+      "MARKETING", "PRODUCTION", "OFFICE", "MISCELLANEOUS",
+    ];
+    if (!validCategories.includes(category)) {
+      return badRequest(`Invalid category. Must be one of: ${validCategories.join(", ")}`);
+    }
+
+    const expense = await prisma.expense.create({
+      data: {
+        title,
+        amount,
+        category,
+        departmentId: departmentId || null,
+        description: description || null,
+        receiptUrl: receiptUrl || null,
+        createdById: session.user.id,
+        date: date ? new Date(date) : new Date(),
+      },
+      include: {
+        department: { select: { id: true, name: true } },
+      },
+    });
+
+    return NextResponse.json(expense, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
   }
-
-  const validCategories = [
-    "SALARY", "SOFTWARE", "EQUIPMENT", "TRAVEL",
-    "MARKETING", "PRODUCTION", "OFFICE", "MISCELLANEOUS",
-  ];
-  if (!validCategories.includes(category)) {
-    return badRequest(`Invalid category. Must be one of: ${validCategories.join(", ")}`);
-  }
-
-  const expense = await prisma.expense.create({
-    data: {
-      title,
-      amount,
-      category,
-      departmentId: departmentId || null,
-      description: description || null,
-      receiptUrl: receiptUrl || null,
-      createdById: session.user.id,
-      date: date ? new Date(date) : new Date(),
-    },
-    include: {
-      department: { select: { id: true, name: true } },
-    },
-  });
-
-  return NextResponse.json(expense, { status: 201 });
 }

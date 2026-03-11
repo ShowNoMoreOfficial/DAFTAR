@@ -216,20 +216,20 @@ export function FileDropzone({
         className={cn(
           "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 transition-all",
           isDragOver
-            ? "border-[#2E86AB] bg-[#2E86AB]/5"
-            : "border-[#E5E7EB] bg-[#F8F9FA] hover:border-[#2E86AB]/50 hover:bg-[#F8F9FA]/80"
+            ? "border-[#2E86AB] bg-[var(--accent-primary)]/5"
+            : "border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[#2E86AB]/50 hover:bg-[var(--bg-surface)]/80"
         )}
       >
         <Upload
           className={cn(
             "mb-3 h-8 w-8",
-            isDragOver ? "text-[#2E86AB]" : "text-[#9CA3AF]"
+            isDragOver ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"
           )}
         />
-        <p className="text-sm font-medium text-[#1A1A1A]">
+        <p className="text-sm font-medium text-[var(--text-primary)]">
           {isDragOver ? "Drop files here" : "Drag & drop files here"}
         </p>
-        <p className="mt-1 text-xs text-[#9CA3AF]">
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
           or click to browse &middot; Max {Math.round(maxSize / 1024 / 1024)}MB
         </p>
         <input
@@ -248,20 +248,20 @@ export function FileDropzone({
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-center gap-3 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2"
+              className="flex items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2"
             >
-              <FileIcon className="h-4 w-4 shrink-0 text-[#9CA3AF]" />
+              <FileIcon className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium text-[#1A1A1A]">
+                <p className="truncate text-xs font-medium text-[var(--text-primary)]">
                   {entry.file.name}
                 </p>
-                <p className="text-[10px] text-[#9CA3AF]">
+                <p className="text-[10px] text-[var(--text-muted)]">
                   {(entry.file.size / 1024).toFixed(1)} KB
                 </p>
                 {entry.status === "uploading" && (
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#F0F2F5]">
+                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-elevated)]">
                     <div
-                      className="h-full rounded-full bg-[#2E86AB] transition-all duration-200"
+                      className="h-full rounded-full bg-[var(--accent-primary)] transition-all duration-200"
                       style={{ width: `${entry.progress}%` }}
                     />
                   </div>
@@ -272,7 +272,7 @@ export function FileDropzone({
               </div>
               <div className="shrink-0">
                 {entry.status === "uploading" && (
-                  <span className="text-[10px] font-medium text-[#2E86AB]">
+                  <span className="text-[10px] font-medium text-[var(--accent-primary)]">
                     {entry.progress}%
                   </span>
                 )}
@@ -286,7 +286,7 @@ export function FileDropzone({
               {(entry.status === "done" || entry.status === "error") && (
                 <button
                   onClick={() => removeEntry(entry.id)}
-                  className="shrink-0 text-[#9CA3AF] hover:text-[#1A1A1A]"
+                  className="shrink-0 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

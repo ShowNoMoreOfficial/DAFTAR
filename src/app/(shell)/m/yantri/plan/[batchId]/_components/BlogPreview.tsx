@@ -107,7 +107,7 @@ function InlineImageCard({
               <a
                 href={generatedImage}
                 download={`inline-image-${imagePrompt.index + 1}.png`}
-                className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-md hover:bg-emerald-500/20 transition-colors"
+                className="text-xs bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 px-2 py-1 rounded-md hover:bg-[rgba(16,185,129,0.1)]0/20 transition-colors"
               >
                 Download
               </a>
@@ -140,7 +140,7 @@ function InlineImageCard({
           <button
             onClick={onGenerate}
             disabled={loading}
-            className="shrink-0 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="shrink-0 px-3 py-1.5 bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 rounded-lg text-xs font-medium hover:bg-[rgba(16,185,129,0.1)]0/20 transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             {loading ? <><SpinnerIcon /> Generating...</> : <>Generate</>}
           </button>
@@ -222,7 +222,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+        <div className="w-8 h-8 bg-[rgba(16,185,129,0.1)]0/10 rounded-lg flex items-center justify-center">
           <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
           </svg>
@@ -247,7 +247,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
         <TabsContent value="article">
           <Card className="rounded-xl border-border p-5">
             <div className="flex items-center justify-between mb-3">
-              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-none text-xs">
+              <Badge variant="secondary" className="bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-none text-xs">
                 {content.word_count} words &middot; Markdown
               </Badge>
               <CopyButton text={content.article} />
@@ -287,7 +287,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
                 <h4 className="text-xs font-black text-zinc-500 uppercase tracking-widest">Featured Image (1280x720)</h4>
                 {featuredImage && (
                   <div className="flex gap-2">
-                    <a href={featuredImage} download="featured-image.png" className="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors">Download</a>
+                    <a href={featuredImage} download="featured-image.png" className="text-xs bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 px-3 py-1.5 rounded-lg hover:bg-[rgba(16,185,129,0.1)]0/20 transition-colors">Download</a>
                     <button onClick={handleGenerateFeatured} disabled={featuredLoading} className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1.5 rounded-lg hover:bg-zinc-700 transition-colors">Regenerate</button>
                   </div>
                 )}
@@ -312,7 +312,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
                   </div>
                   <p className="text-xs text-zinc-600">1280 x 720</p>
                   {content.featured_image_prompt ? (
-                    <button onClick={handleGenerateFeatured} disabled={featuredLoading} className="px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50 flex items-center gap-2">
+                    <button onClick={handleGenerateFeatured} disabled={featuredLoading} className="px-4 py-2 bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 rounded-lg text-sm font-medium hover:bg-[rgba(16,185,129,0.1)]0/20 transition-colors disabled:opacity-50 flex items-center gap-2">
                       {featuredLoading ? <><SpinnerIcon /> Generating...</> : "Generate Featured Image"}
                     </button>
                   ) : (
@@ -335,7 +335,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
               <>
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-black text-zinc-500 uppercase tracking-widest">Inline Images ({content.inline_image_prompts.length})</h4>
-                  <button onClick={handleGenerateAllInline} className="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors font-medium">Generate All</button>
+                  <button onClick={handleGenerateAllInline} className="text-xs bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 px-3 py-1.5 rounded-lg hover:bg-[rgba(16,185,129,0.1)]0/20 transition-colors font-medium">Generate All</button>
                 </div>
                 {content.inline_image_prompts.map((ip) => (
                   <Card key={ip.index} className="rounded-xl border-border p-5">
@@ -343,7 +343,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
                       <span className="text-[10px] font-bold text-zinc-600 uppercase">Image {ip.index + 1}</span>
                       {inlineImages[ip.index] && (
                         <div className="flex gap-2">
-                          <a href={inlineImages[ip.index]} download={`inline-image-${ip.index + 1}.png`} className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-md hover:bg-emerald-500/20 transition-colors">Download</a>
+                          <a href={inlineImages[ip.index]} download={`inline-image-${ip.index + 1}.png`} className="text-xs bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 px-2 py-1 rounded-md hover:bg-[rgba(16,185,129,0.1)]0/20 transition-colors">Download</a>
                           <button onClick={() => handleGenerateInline(ip.index, ip.prompt)} disabled={inlineLoading[ip.index]} className="text-xs bg-zinc-800 text-zinc-400 px-2 py-1 rounded-md hover:bg-zinc-700 transition-colors">Regenerate</button>
                         </div>
                       )}
@@ -384,7 +384,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
               <h4 className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-3">Keyphrases</h4>
               <div className="mb-3">
                 <div className="text-[10px] font-bold text-zinc-600 uppercase mb-1">Focus</div>
-                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-none">{postingPlan.focus_keyphrase}</Badge>
+                <Badge variant="secondary" className="bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-none">{postingPlan.focus_keyphrase}</Badge>
               </div>
               {postingPlan.secondary_keyphrases && postingPlan.secondary_keyphrases.length > 0 && (
                 <div>
@@ -405,7 +405,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
                 {postingPlan.primary_category && (
                   <div>
                     <div className="text-[10px] font-bold text-zinc-600 uppercase mb-1">Primary Category</div>
-                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-none">{postingPlan.primary_category}</Badge>
+                    <Badge variant="secondary" className="bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border-none">{postingPlan.primary_category}</Badge>
                   </div>
                 )}
                 {postingPlan.additional_category && (
@@ -418,7 +418,7 @@ export default function BlogPreview({ data }: { data: BlogDeliverable }) {
                   <div className="text-[10px] font-bold text-zinc-600 uppercase mb-1">Tags</div>
                   <div className="flex flex-wrap gap-1">
                     {postingPlan.tags.map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-none text-xs">{tag}</Badge>
+                      <Badge key={i} variant="secondary" className="bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-none text-xs">{tag}</Badge>
                     ))}
                   </div>
                 </div>

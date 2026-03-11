@@ -36,8 +36,8 @@ export default function NarrativeTreeFilters({
             onClick={() => handleFilter(filter.value)}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${
               isActive
-                ? "bg-white/10 text-white shadow-lg shadow-black/20"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                ? "bg-[var(--bg-surface)]/10 text-white shadow-lg shadow-black/20"
+                : "text-zinc-500 hover:text-zinc-300 hover:bg-[var(--bg-surface)]/5"
             }`}
           >
             {filter.label}

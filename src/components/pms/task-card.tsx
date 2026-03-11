@@ -22,10 +22,10 @@ interface TaskCardProps {
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  URGENT: "bg-red-100 text-red-700",
-  HIGH: "bg-orange-100 text-orange-700",
-  MEDIUM: "bg-blue-100 text-blue-700",
-  LOW: "bg-gray-100 text-gray-600",
+  URGENT: "bg-[rgba(239,68,68,0.15)] text-red-700",
+  HIGH: "bg-[rgba(249,115,22,0.15)] text-orange-700",
+  MEDIUM: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  LOW: "bg-[var(--bg-elevated)] text-gray-600",
 };
 
 const PRIORITY_ICONS: Record<string, string> = {
@@ -41,7 +41,7 @@ export function TaskCard({ task, onClick, draggable }: TaskCardProps) {
   return (
     <div
       className={cn(
-        "group cursor-pointer rounded-lg border border-[#E5E7EB] bg-white p-3 shadow-sm transition-all hover:shadow-md",
+        "group cursor-pointer rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 shadow-sm transition-all hover:shadow-md",
         draggable && "active:opacity-70"
       )}
       onClick={() => onClick?.(task.id)}
@@ -57,14 +57,14 @@ export function TaskCard({ task, onClick, draggable }: TaskCardProps) {
           </Badge>
         </div>
         {task.difficultyWeight > 1 && (
-          <span className="text-[10px] font-medium text-[#9CA3AF]">
+          <span className="text-[10px] font-medium text-[var(--text-muted)]">
             W:{task.difficultyWeight}
           </span>
         )}
       </div>
 
       {/* Title */}
-      <p className="mb-2 text-sm font-medium text-[#1A1A1A] line-clamp-2">
+      <p className="mb-2 text-sm font-medium text-[var(--text-primary)] line-clamp-2">
         {task.title}
       </p>
 
@@ -74,7 +74,7 @@ export function TaskCard({ task, onClick, draggable }: TaskCardProps) {
           {task.tags.map((tag) => (
             <span
               key={tag.name}
-              className="rounded-full bg-[#F0F2F5] px-2 py-0.5 text-[10px] text-[#6B7280]"
+              className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]"
             >
               {tag.name}
             </span>
@@ -88,7 +88,7 @@ export function TaskCard({ task, onClick, draggable }: TaskCardProps) {
           {task.assignee && (
             <Avatar className="h-5 w-5">
               <AvatarImage src={task.assignee.avatar || undefined} />
-              <AvatarFallback className="bg-[#2E86AB] text-[8px] text-white">
+              <AvatarFallback className="bg-[var(--accent-primary)] text-[8px] text-white">
                 {task.assignee.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
@@ -99,7 +99,7 @@ export function TaskCard({ task, onClick, draggable }: TaskCardProps) {
             <span
               className={cn(
                 "flex items-center gap-0.5 text-[10px]",
-                isOverdue ? "text-red-500" : "text-[#9CA3AF]"
+                isOverdue ? "text-red-500" : "text-[var(--text-muted)]"
               )}
             >
               <Calendar className="h-3 w-3" />
@@ -110,7 +110,7 @@ export function TaskCard({ task, onClick, draggable }: TaskCardProps) {
             </span>
           )}
           {task._count.comments > 0 && (
-            <span className="flex items-center gap-0.5 text-[10px] text-[#9CA3AF]">
+            <span className="flex items-center gap-0.5 text-[10px] text-[var(--text-muted)]">
               <MessageSquare className="h-3 w-3" />
               {task._count.comments}
             </span>

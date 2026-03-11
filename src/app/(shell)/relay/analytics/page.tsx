@@ -99,14 +99,14 @@ export default function RelayAnalyticsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="p-6 text-center text-sm text-[#9CA3AF]">
+      <div className="p-6 text-center text-sm text-[var(--text-muted)]">
         Unable to load analytics data.
       </div>
     );
@@ -117,8 +117,8 @@ export default function RelayAnalyticsPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#1A1A1A]">Content Analytics</h2>
-          <p className="text-sm text-[#9CA3AF]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Content Analytics</h2>
+          <p className="text-sm text-[var(--text-muted)]">
             Performance metrics across all platforms
           </p>
         </div>
@@ -126,14 +126,14 @@ export default function RelayAnalyticsPage() {
           <select
             value={brandId}
             onChange={(e) => setBrandId(e.target.value)}
-            className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs text-[#6B7280]"
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--text-secondary)]"
           >
             <option value="">All Brands</option>
             {brands.map((b) => (
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
-          <div className="flex gap-1 rounded-lg border border-[#E5E7EB] bg-white p-0.5">
+          <div className="flex gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-0.5">
             {[
               { label: "7d", value: "7" },
               { label: "30d", value: "30" },
@@ -144,7 +144,7 @@ export default function RelayAnalyticsPage() {
                 onClick={() => setPeriod(p.value)}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  period === p.value ? "bg-[#2E86AB] text-white" : "text-[#6B7280] hover:bg-[#F0F2F5]"
+                  period === p.value ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
                 )}
               >
                 {p.label}
@@ -160,7 +160,7 @@ export default function RelayAnalyticsPage() {
       {/* KPI cards */}
       <div className="mb-6 grid grid-cols-4 gap-4">
         <MetricCard
-          icon={<BarChart3 className="h-5 w-5 text-[#2E86AB]" />}
+          icon={<BarChart3 className="h-5 w-5 text-[var(--accent-primary)]" />}
           label="Total Posts"
           value={String(data.totalPosts)}
         />
@@ -175,7 +175,7 @@ export default function RelayAnalyticsPage() {
           value={formatNumber(data.totalEngagement)}
         />
         <MetricCard
-          icon={<TrendingUp className="h-5 w-5 text-[#A23B72]" />}
+          icon={<TrendingUp className="h-5 w-5 text-[var(--accent-secondary)]" />}
           label="Avg Engagement Rate"
           value={`${data.avgEngagementRate}%`}
         />
@@ -184,26 +184,26 @@ export default function RelayAnalyticsPage() {
       <div className="grid grid-cols-3 gap-6">
         {/* Platform breakdown */}
         <div className="col-span-1">
-          <h3 className="mb-3 text-sm font-semibold text-[#1A1A1A]">Platform Breakdown</h3>
-          <div className="space-y-3 rounded-lg border border-[#E5E7EB] bg-white p-4">
+          <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Platform Breakdown</h3>
+          <div className="space-y-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
             {data.platformBreakdown.length === 0 ? (
-              <p className="py-4 text-center text-xs text-[#9CA3AF]">No platform data</p>
+              <p className="py-4 text-center text-xs text-[var(--text-muted)]">No platform data</p>
             ) : (
               data.platformBreakdown.map((p) => (
                 <div key={p.platform} className="flex items-center gap-3">
                   <div className={cn("h-3 w-3 rounded-full", PLATFORM_COLORS[p.platform] || "bg-gray-400")} />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-[#1A1A1A]">
+                      <span className="text-sm font-medium text-[var(--text-primary)]">
                         {PLATFORM_LABELS[p.platform] || p.platform}
                       </span>
-                      <span className="text-xs text-[#6B7280]">{p.posts} posts</span>
+                      <span className="text-xs text-[var(--text-secondary)]">{p.posts} posts</span>
                     </div>
-                    <div className="mt-1 flex items-center justify-between text-[10px] text-[#9CA3AF]">
+                    <div className="mt-1 flex items-center justify-between text-[10px] text-[var(--text-muted)]">
                       <span>{formatNumber(p.views)} views</span>
                       <span>{p.engagementRate}% eng.</span>
                     </div>
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#F3F4F6]">
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
                       <div
                         className={cn("h-full rounded-full", PLATFORM_COLORS[p.platform] || "bg-gray-400")}
                         style={{ width: `${Math.min(p.engagementRate * 10, 100)}%`, opacity: 0.7 }}
@@ -218,10 +218,10 @@ export default function RelayAnalyticsPage() {
 
         {/* Top performing posts */}
         <div className="col-span-2">
-          <h3 className="mb-3 text-sm font-semibold text-[#1A1A1A]">Top Performing Posts</h3>
-          <div className="rounded-lg border border-[#E5E7EB] bg-white">
+          <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Top Performing Posts</h3>
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
             {data.topPosts.length === 0 ? (
-              <p className="py-8 text-center text-xs text-[#9CA3AF]">No published posts yet</p>
+              <p className="py-8 text-center text-xs text-[var(--text-muted)]">No published posts yet</p>
             ) : (
               <div className="divide-y divide-[#F0F2F5]">
                 {data.topPosts.map((post, i) => (
@@ -229,14 +229,14 @@ export default function RelayAnalyticsPage() {
                     <span
                       className={cn(
                         "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold",
-                        i < 3 ? "bg-[#2E86AB] text-white" : "bg-[#F0F2F5] text-[#6B7280]"
+                        i < 3 ? "bg-[var(--accent-primary)] text-white" : "bg-[var(--bg-elevated)] text-[var(--text-secondary)]"
                       )}
                     >
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[#1A1A1A]">{post.title}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF]">
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{post.title}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
                         <span className="flex items-center gap-1">
                           <div className={cn("h-1.5 w-1.5 rounded-full", PLATFORM_COLORS[post.platform] || "bg-gray-400")} />
                           {PLATFORM_LABELS[post.platform] || post.platform}
@@ -252,7 +252,7 @@ export default function RelayAnalyticsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-xs">
-                      <div className="flex items-center gap-1 text-[#6B7280]">
+                      <div className="flex items-center gap-1 text-[var(--text-secondary)]">
                         <Eye className="h-3 w-3" />
                         {formatNumber(post.views)}
                       </div>
@@ -274,12 +274,12 @@ export default function RelayAnalyticsPage() {
 
 function MetricCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
       <div className="mb-2 flex items-center gap-2">
         {icon}
-        <span className="text-xs text-[#9CA3AF]">{label}</span>
+        <span className="text-xs text-[var(--text-muted)]">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-[#1A1A1A]">{value}</p>
+      <p className="text-2xl font-bold text-[var(--text-primary)]">{value}</p>
     </div>
   );
 }

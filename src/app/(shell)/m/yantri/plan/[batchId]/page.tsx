@@ -341,7 +341,7 @@ export default function PlanPage() {
                 setActiveNarrative(null);
                 await loadBatch();
               }}
-              className="bg-yellow-500/10 text-yellow-300 border-yellow-500/20 hover:bg-yellow-500/20 rounded-lg"
+              className="bg-[rgba(234,179,8,0.1)]0/10 text-yellow-300 border-yellow-500/20 hover:bg-[rgba(234,179,8,0.1)]0/20 rounded-lg"
             >
               Re-run Yantri
             </Button>
@@ -350,7 +350,7 @@ export default function PlanPage() {
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-lg mb-6">{error}</div>
+        <div className="bg-[rgba(239,68,68,0.1)]0/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-lg mb-6">{error}</div>
       )}
 
       {/* ==================== PRIORITIES LIST ==================== */}
@@ -377,7 +377,7 @@ export default function PlanPage() {
                           n.priority === 1
                             ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                             : n.priority === 2
-                              ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                              ? "bg-[rgba(245,158,11,0.1)]0/10 text-amber-400 border border-amber-500/20"
                               : "bg-zinc-800 text-zinc-400 border border-zinc-700"
                         }`}>
                           P{n.priority}
@@ -389,7 +389,7 @@ export default function PlanPage() {
                         <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 border-none rounded-md text-[10px] font-bold uppercase tracking-wider">
                           {n.brand.name}
                         </Badge>
-                        <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-400 border-none rounded-md text-[10px] font-bold uppercase tracking-wider">
+                        <Badge variant="secondary" className="bg-[rgba(99,102,241,0.1)]0/10 text-indigo-400 border-none rounded-md text-[10px] font-bold uppercase tracking-wider">
                           {getPlatformLabel(n.platform)}
                         </Badge>
                         <Badge variant="secondary" className="bg-rose-500/10 text-rose-400 border-none rounded-md text-[10px] font-bold uppercase tracking-wider">
@@ -443,7 +443,7 @@ export default function PlanPage() {
                 <Button
                   variant="outline"
                   onClick={() => updateStatus(active.id, "killed")}
-                  className="bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20 rounded-lg"
+                  className="bg-[rgba(239,68,68,0.1)]0/10 text-red-400 border-red-500/20 hover:bg-[rgba(239,68,68,0.1)]0/20 rounded-lg"
                 >
                   Kill
                 </Button>
@@ -455,7 +455,7 @@ export default function PlanPage() {
               <div className="glass-card rounded-2xl p-8 mb-8 border-indigo-500/20 relative overflow-hidden group">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
+                    <div className="p-3 bg-[rgba(99,102,241,0.1)]0/10 rounded-xl text-indigo-400">
                       <Loader2 className="w-5 h-5 animate-spin" />
                     </div>
                     <div>
@@ -472,7 +472,7 @@ export default function PlanPage() {
                     <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Elapsed</span>
                   </div>
                 </div>
-                <div className="w-full bg-indigo-500/10 rounded-full h-2 mb-6 overflow-hidden border border-indigo-500/20">
+                <div className="w-full bg-[rgba(99,102,241,0.1)]0/10 rounded-full h-2 mb-6 overflow-hidden border border-indigo-500/20">
                   <div
                     className="bg-indigo-600 h-2 rounded-full transition-all duration-1000 ease-linear shadow-[0_0_12px_rgba(79,70,229,0.4)]"
                     style={{ width: `${Math.min((researchElapsed / 45) * 100, 95)}%` }}
@@ -504,7 +504,7 @@ export default function PlanPage() {
             )}
 
             {/* ---- Information Gap (always shown) ---- */}
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+            <div className="bg-[rgba(234,179,8,0.1)]0/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
               <div className="text-xs font-medium text-yellow-300 mb-1">Information Gap</div>
               <p className="text-sm text-yellow-300">{active.informationGap}</p>
             </div>
@@ -530,7 +530,7 @@ export default function PlanPage() {
                 <details>
                   <summary className="flex items-center justify-between cursor-pointer">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span className="w-2 h-2 bg-[rgba(34,197,94,0.1)]0 rounded-full" />
                       <h3 className="font-semibold text-sm text-foreground">Research Results</h3>
                     </div>
                     <CopyButton text={active.researchResults} />
@@ -568,9 +568,9 @@ export default function PlanPage() {
             {/* ---- Pre-generation card: Research done, no content yet ---- */}
             {active.researchResults && !active.packageData && !generating && (
               <Card className="rounded-2xl border-indigo-500/20 p-8 mb-4 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500" />
+                <div className="absolute top-0 left-0 w-full h-1 bg-[rgba(99,102,241,0.1)]0" />
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 bg-[rgba(99,102,241,0.1)]0/10 rounded-xl flex items-center justify-center shrink-0">
                     <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
@@ -578,7 +578,7 @@ export default function PlanPage() {
                   <div>
                     <h3 className="text-lg font-bold text-foreground mb-1">Ready to Generate Content</h3>
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-400 border-none text-xs font-bold">
+                      <Badge variant="secondary" className="bg-[rgba(99,102,241,0.1)]0/10 text-indigo-400 border-none text-xs font-bold">
                         {getPlatformLabel(active.platform)}
                       </Badge>
                       <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 border-none text-xs">
@@ -594,7 +594,7 @@ export default function PlanPage() {
                     <ul className="space-y-1">
                       {getDeliverableDescription(active.platform).map((item, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm text-zinc-300">
-                          <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full shrink-0" />
+                          <span className="w-1.5 h-1.5 bg-[rgba(99,102,241,0.1)]0 rounded-full shrink-0" />
                           {item}
                         </li>
                       ))}
@@ -608,7 +608,7 @@ export default function PlanPage() {
                   <Button
                     variant="outline"
                     onClick={() => updateStatus(active.id, "killed")}
-                    className="bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20 rounded-xl"
+                    className="bg-[rgba(239,68,68,0.1)]0/10 text-red-400 border-red-500/20 hover:bg-[rgba(239,68,68,0.1)]0/20 rounded-xl"
                   >
                     Kill
                   </Button>
@@ -620,7 +620,7 @@ export default function PlanPage() {
             {generating && (
               <Card className="rounded-2xl border-indigo-500/20 p-8 mb-4">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-indigo-500/10 rounded-xl">
+                  <div className="p-3 bg-[rgba(99,102,241,0.1)]0/10 rounded-xl">
                     <Loader2 className="w-5 h-5 animate-spin" />
                   </div>
                   <div>
@@ -666,7 +666,7 @@ export default function PlanPage() {
                     variant="outline"
                     onClick={() => { generateContent(active.id); setEditing(false); }}
                     disabled={generating}
-                    className="bg-yellow-500/10 text-yellow-300 border-yellow-500/20 hover:bg-yellow-500/20 rounded-xl"
+                    className="bg-[rgba(234,179,8,0.1)]0/10 text-yellow-300 border-yellow-500/20 hover:bg-[rgba(234,179,8,0.1)]0/20 rounded-xl"
                   >
                     Regenerate
                   </Button>
@@ -687,7 +687,7 @@ export default function PlanPage() {
                   <Button
                     variant="outline"
                     onClick={() => updateStatus(active.id, "killed")}
-                    className="bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20 rounded-xl"
+                    className="bg-[rgba(239,68,68,0.1)]0/10 text-red-400 border-red-500/20 hover:bg-[rgba(239,68,68,0.1)]0/20 rounded-xl"
                   >
                     Kill
                   </Button>
@@ -699,7 +699,7 @@ export default function PlanPage() {
             {active.status === "published" && active.packageData && (
               <div className="space-y-4 mb-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-3 h-3 bg-emerald-500 rounded-full" />
+                  <span className="w-3 h-3 bg-[rgba(16,185,129,0.1)]0 rounded-full" />
                   <h3 className="text-lg font-bold text-emerald-400">Published</h3>
                 </div>
                 {isNewDeliverable ? (
@@ -740,7 +740,7 @@ export default function PlanPage() {
                       <Button
                         variant="outline"
                         onClick={() => updateStatus(active.id, "killed")}
-                        className="bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20 rounded-lg"
+                        className="bg-[rgba(239,68,68,0.1)]0/10 text-red-400 border-red-500/20 hover:bg-[rgba(239,68,68,0.1)]0/20 rounded-lg"
                       >
                         Kill
                       </Button>
@@ -775,7 +775,7 @@ export default function PlanPage() {
                 <span className="text-lg font-bold text-zinc-500">#{t.rank}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-none rounded text-xs font-medium">
+                    <Badge variant="secondary" className="bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border-none rounded text-xs font-medium">
                       {t.score}
                     </Badge>
                     <span className="font-medium text-sm text-foreground">{t.headline}</span>

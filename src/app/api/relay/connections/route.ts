@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
 
 // GET /api/relay/connections — List platform connections for accessible brands
@@ -52,15 +52,19 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const id = req.nextUrl.searchParams.get("id");
-  if (!id) return badRequest("Connection ID is required");
+  try {
+    const id = req.nextUrl.searchParams.get("id");
+    if (!id) return badRequest("Connection ID is required");
 
-  await prisma.platformConnection.update({
-    where: { id },
-    data: { isActive: false },
-  });
+    await prisma.platformConnection.update({
+      where: { id },
+      data: { isActive: false },
+    });
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 // POST /api/relay/connections — Create or update a platform connection (ADMIN only)
@@ -72,6 +76,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  try {
   const body = await req.json();
   const { brandId, platform, accountId, accountName, config } = body;
 
@@ -111,4 +116,7 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(connection, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

@@ -18,11 +18,11 @@ interface Report {
 }
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  DEPARTMENT_PERFORMANCE: <BarChart3 className="h-5 w-5 text-[#2E86AB]" />,
-  TEAM_WORKLOAD: <Users className="h-5 w-5 text-[#A23B72]" />,
+  DEPARTMENT_PERFORMANCE: <BarChart3 className="h-5 w-5 text-[var(--accent-primary)]" />,
+  TEAM_WORKLOAD: <Users className="h-5 w-5 text-[var(--accent-secondary)]" />,
   TASK_COMPLETION: <CheckSquare className="h-5 w-5 text-emerald-500" />,
   HIRING_PIPELINE: <Users className="h-5 w-5 text-purple-500" />,
-  CUSTOM: <FileText className="h-5 w-5 text-[#6B7280]" />,
+  CUSTOM: <FileText className="h-5 w-5 text-[var(--text-secondary)]" />,
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -86,8 +86,8 @@ export default function ReportsPage() {
     <div className="h-full overflow-y-auto p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#1A1A1A]">Reports</h2>
-          <p className="text-sm text-[#9CA3AF]">Generate and view organizational reports</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Reports</h2>
+          <p className="text-sm text-[var(--text-muted)]">Generate and view organizational reports</p>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -97,10 +97,10 @@ export default function ReportsPage() {
 
       {/* Create report form */}
       {createOpen && (
-        <div className="mb-6 rounded-lg border border-[#E5E7EB] bg-white p-4">
+        <div className="mb-6 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">Generate Report</h3>
-            <button onClick={() => setCreateOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">Generate Report</h3>
+            <button onClick={() => setCreateOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -109,7 +109,7 @@ export default function ReportsPage() {
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
             >
               {Object.entries(TYPE_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
@@ -118,7 +118,7 @@ export default function ReportsPage() {
             <select
               value={deptId}
               onChange={(e) => setDeptId(e.target.value)}
-              className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
             >
               <option value="">All departments</option>
               {departments.map((d) => (
@@ -134,9 +134,9 @@ export default function ReportsPage() {
 
       {/* Reports list */}
       {loading ? (
-        <div className="py-12 text-center text-sm text-[#9CA3AF]">Loading reports...</div>
+        <div className="py-12 text-center text-sm text-[var(--text-muted)]">Loading reports...</div>
       ) : reports.length === 0 ? (
-        <div className="py-12 text-center text-sm text-[#9CA3AF]">
+        <div className="py-12 text-center text-sm text-[var(--text-muted)]">
           No reports yet. Generate one to get started.
         </div>
       ) : (
@@ -145,12 +145,12 @@ export default function ReportsPage() {
             <div
               key={report.id}
               onClick={() => setSelectedReport(report)}
-              className="cursor-pointer rounded-lg border border-[#E5E7EB] bg-white p-4 transition-all hover:shadow-md"
+              className="cursor-pointer rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-all hover:shadow-md"
             >
               <div className="mb-3 flex items-start gap-3">
                 {TYPE_ICONS[report.type]}
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-[#1A1A1A]">{report.title}</h4>
+                  <h4 className="text-sm font-medium text-[var(--text-primary)]">{report.title}</h4>
                   <div className="mt-1 flex items-center gap-2">
                     <Badge variant="secondary" className="text-[10px]">
                       {TYPE_LABELS[report.type]}
@@ -166,29 +166,29 @@ export default function ReportsPage() {
 
               {/* Quick data preview */}
               {report.generatedData && report.type === "TASK_COMPLETION" && (
-                <div className="grid grid-cols-3 gap-2 rounded-lg bg-[#F8F9FA] p-2 text-center">
+                <div className="grid grid-cols-3 gap-2 rounded-lg bg-[var(--bg-surface)] p-2 text-center">
                   <div>
-                    <p className="text-lg font-bold text-[#1A1A1A]">
+                    <p className="text-lg font-bold text-[var(--text-primary)]">
                       {(report.generatedData as Record<string, number>).total || 0}
                     </p>
-                    <p className="text-[10px] text-[#9CA3AF]">Total</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">Total</p>
                   </div>
                   <div>
                     <p className="text-lg font-bold text-emerald-600">
                       {(report.generatedData as Record<string, number>).completed || 0}
                     </p>
-                    <p className="text-[10px] text-[#9CA3AF]">Completed</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">Completed</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-[#2E86AB]">
+                    <p className="text-lg font-bold text-[var(--accent-primary)]">
                       {(report.generatedData as Record<string, number>).completionRate || 0}%
                     </p>
-                    <p className="text-[10px] text-[#9CA3AF]">Rate</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">Rate</p>
                   </div>
                 </div>
               )}
 
-              <div className="mt-3 flex items-center justify-between text-[10px] text-[#9CA3AF]">
+              <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--text-muted)]">
                 <span>By {report.createdBy.name}</span>
                 <span>
                   {new Date(report.createdAt).toLocaleDateString("en-IN", {
@@ -206,10 +206,10 @@ export default function ReportsPage() {
       {/* Report detail modal */}
       {selectedReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">{selectedReport.title}</h3>
-              <button onClick={() => setSelectedReport(null)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">{selectedReport.title}</h3>
+              <button onClick={() => setSelectedReport(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -220,7 +220,7 @@ export default function ReportsPage() {
               )}
             </div>
             {selectedReport.generatedData && (
-              <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-[#F8F9FA] p-4 text-xs text-[#6B7280]">
+              <pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-[var(--bg-surface)] p-4 text-xs text-[var(--text-secondary)]">
                 {JSON.stringify(selectedReport.generatedData, null, 2)}
               </pre>
             )}

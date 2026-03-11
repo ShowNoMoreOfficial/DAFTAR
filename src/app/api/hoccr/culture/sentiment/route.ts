@@ -35,56 +35,60 @@ export async function GET(req: NextRequest) {
     select: { id: true, name: true },
   });
 
-  const deptSentiments = await Promise.all(
-    departments.map(async (dept) => {
-      const entries = await prisma.sentimentEntry.findMany({
-        where: { departmentId: dept.id, createdAt: { gte: fourWeeksAgo } },
-        select: { score: true, createdAt: true },
-        orderBy: { createdAt: "desc" },
-      });
+  // Batch-load all sentiment entries across departments in one query
+  const allEntries = await prisma.sentimentEntry.findMany({
+    where: {
+      departmentId: { in: departments.map((d) => d.id) },
+      createdAt: { gte: fourWeeksAgo },
+    },
+    select: { departmentId: true, score: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
 
-      const avgScore =
-        entries.length > 0
-          ? Math.round((entries.reduce((s, e) => s + e.score, 0) / entries.length) * 10) / 10
-          : null;
+  const deptSentiments = departments.map((dept) => {
+    const entries = allEntries.filter((e) => e.departmentId === dept.id);
 
-      // Weekly trends
-      const weeks: { week: number; avg: number; count: number }[] = [];
-      for (let w = 0; w < 4; w++) {
-        const weekStart = new Date(now.getTime() - (w + 1) * 7 * 24 * 60 * 60 * 1000);
-        const weekEnd = new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000);
-        const weekEntries = entries.filter(
-          (e) => e.createdAt >= weekStart && e.createdAt < weekEnd
-        );
-        const weekAvg =
-          weekEntries.length > 0
-            ? Math.round(
-                (weekEntries.reduce((s, e) => s + e.score, 0) / weekEntries.length) * 10
-              ) / 10
-            : 0;
-        weeks.push({ week: w, avg: weekAvg, count: weekEntries.length });
-      }
+    const avgScore =
+      entries.length > 0
+        ? Math.round((entries.reduce((s, e) => s + e.score, 0) / entries.length) * 10) / 10
+        : null;
 
-      // Trend direction
-      const thisWeekAvg = weeks[0]?.avg || 0;
-      const lastWeekAvg = weeks[1]?.avg || 0;
-      const trend =
-        thisWeekAvg > lastWeekAvg
-          ? "up"
-          : thisWeekAvg < lastWeekAvg
-          ? "down"
-          : "stable";
+    // Weekly trends
+    const weeks: { week: number; avg: number; count: number }[] = [];
+    for (let w = 0; w < 4; w++) {
+      const weekStart = new Date(now.getTime() - (w + 1) * 7 * 24 * 60 * 60 * 1000);
+      const weekEnd = new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000);
+      const weekEntries = entries.filter(
+        (e) => e.createdAt >= weekStart && e.createdAt < weekEnd
+      );
+      const weekAvg =
+        weekEntries.length > 0
+          ? Math.round(
+              (weekEntries.reduce((s, e) => s + e.score, 0) / weekEntries.length) * 10
+            ) / 10
+          : 0;
+      weeks.push({ week: w, avg: weekAvg, count: weekEntries.length });
+    }
 
-      return {
-        departmentId: dept.id,
-        departmentName: dept.name,
-        avgScore,
-        totalEntries: entries.length,
-        trend,
-        weeks: weeks.reverse(),
-      };
-    })
-  );
+    // Trend direction
+    const thisWeekAvg = weeks[0]?.avg || 0;
+    const lastWeekAvg = weeks[1]?.avg || 0;
+    const trend =
+      thisWeekAvg > lastWeekAvg
+        ? "up"
+        : thisWeekAvg < lastWeekAvg
+        ? "down"
+        : "stable";
+
+    return {
+      departmentId: dept.id,
+      departmentName: dept.name,
+      avgScore,
+      totalEntries: entries.length,
+      trend,
+      weeks: weeks.reverse(),
+    };
+  });
 
   // Flag departments with declining sentiment
   const declining = deptSentiments.filter((d) => d.trend === "down");

@@ -23,11 +23,11 @@ interface Activity {
 }
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
-  status_changed: <ArrowRight className="h-3.5 w-3.5 text-amber-500" />,
-  created: <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />,
-  commented: <MessageSquare className="h-3.5 w-3.5 text-blue-500" />,
-  assigned: <UserPlus className="h-3.5 w-3.5 text-purple-500" />,
-  updated: <AlertCircle className="h-3.5 w-3.5 text-[#6B7280]" />,
+  status_changed: <ArrowRight className="h-3.5 w-3.5 text-[var(--accent-tertiary)]" />,
+  created: <CheckCircle className="h-3.5 w-3.5 text-[var(--status-success)]" />,
+  commented: <MessageSquare className="h-3.5 w-3.5 text-[var(--status-info)]" />,
+  assigned: <UserPlus className="h-3.5 w-3.5 text-[var(--accent-secondary)]" />,
+  updated: <AlertCircle className="h-3.5 w-3.5 text-[var(--text-secondary)]" />,
 };
 
 function timeAgo(dateStr: string): string {
@@ -70,9 +70,9 @@ export function ActivityFeed() {
   }, []);
 
   return (
-    <div className="rounded-xl border border-[#E5E7EB] bg-white">
-      <div className="border-b border-[#E5E7EB] px-5 py-3">
-        <h2 className="text-sm font-semibold text-[#1A1A1A]">
+    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+      <div className="border-b border-[var(--border-subtle)] px-5 py-3">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)]">
           Recent Activity
         </h2>
       </div>
@@ -80,17 +80,17 @@ export function ActivityFeed() {
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex animate-pulse items-center gap-3">
-                <div className="h-7 w-7 rounded-full bg-[#F0F2F5]" />
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-7 w-7 rounded-full skeleton-shimmer" />
                 <div className="flex-1">
-                  <div className="h-3 w-3/4 rounded bg-[#F0F2F5]" />
-                  <div className="mt-1.5 h-2 w-16 rounded bg-[#F0F2F5]" />
+                  <div className="h-3 w-3/4 rounded skeleton-shimmer" />
+                  <div className="mt-1.5 h-2 w-16 rounded skeleton-shimmer" />
                 </div>
               </div>
             ))}
           </div>
         ) : activities.length === 0 ? (
-          <p className="py-6 text-center text-sm text-[#9CA3AF]">
+          <p className="py-6 text-center text-sm text-[var(--text-muted)]">
             No recent activity. Activity will appear as tasks are updated.
           </p>
         ) : (
@@ -98,23 +98,23 @@ export function ActivityFeed() {
             {activities.map((a) => (
               <div
                 key={a.id}
-                className="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-0.5 transition-colors hover:bg-[#F8F9FA]"
+                className="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-0.5 transition-colors hover:bg-[var(--bg-elevated)]"
                 onClick={() => router.push(`/pms?taskId=${a.task.id}`)}
               >
                 <Avatar className="h-7 w-7 shrink-0">
                   <AvatarImage src={a.actor.avatar || undefined} />
-                  <AvatarFallback className="bg-[#2E86AB] text-[10px] text-white">
+                  <AvatarFallback className="bg-[var(--accent-primary)] text-[10px] text-[var(--text-inverse)] font-semibold">
                     {a.actor.name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-[#6B7280]">
-                    <span className="font-medium text-[#1A1A1A]">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    <span className="font-medium text-[var(--text-primary)]">
                       {a.actor.name.split(" ")[0]}
                     </span>{" "}
                     {describeActivity(a)}
                   </p>
-                  <p className="mt-0.5 text-[10px] text-[#9CA3AF]">
+                  <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">
                     {timeAgo(a.createdAt)}
                   </p>
                 </div>

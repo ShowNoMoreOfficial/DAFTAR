@@ -136,7 +136,7 @@ export default function OperationsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -145,10 +145,10 @@ export default function OperationsPage() {
     <div className="h-full overflow-y-auto p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-[#1A1A1A]">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Operations Dashboard
         </h2>
-        <p className="text-sm text-[#9CA3AF]">
+        <p className="text-sm text-[var(--text-muted)]">
           Velocity, capacity, and team health at a glance
         </p>
       </div>
@@ -156,7 +156,7 @@ export default function OperationsPage() {
       {/* ── KPI Cards ────────────────────────────────────── */}
       <div className="mb-6 grid grid-cols-4 gap-4">
         <KPICard
-          icon={<TrendingUp className="h-5 w-5 text-[#2E86AB]" />}
+          icon={<TrendingUp className="h-5 w-5 text-[var(--accent-primary)]" />}
           label="Overall Velocity"
           value={
             chartSummary
@@ -183,7 +183,7 @@ export default function OperationsPage() {
           highlight={blockerCount > 0}
         />
         <KPICard
-          icon={<Smile className="h-5 w-5 text-[#A23B72]" />}
+          icon={<Smile className="h-5 w-5 text-[var(--accent-secondary)]" />}
           label="Avg Sentiment"
           value={sentimentAvg !== null ? `${sentimentAvg}/10` : "—"}
         />
@@ -204,13 +204,13 @@ export default function OperationsPage() {
       {/* ── Charts Section ───────────────────────────────── */}
       <div className="mb-6 grid grid-cols-2 gap-4">
         {/* Company Velocity */}
-        <div className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
           <div className="mb-4 flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[#2E86AB]" />
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">
+            <Activity className="h-4 w-4 text-[var(--accent-primary)]" />
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
               Company Velocity
             </h3>
-            <span className="ml-auto text-[10px] text-[#9CA3AF]">
+            <span className="ml-auto text-[10px] text-[var(--text-muted)]">
               Tasks completed / week
             </span>
           </div>
@@ -276,20 +276,20 @@ export default function OperationsPage() {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-[220px] items-center justify-center text-sm text-[#9CA3AF]">
+            <div className="flex h-[220px] items-center justify-center text-sm text-[var(--text-muted)]">
               No velocity data
             </div>
           )}
         </div>
 
         {/* Department Capacity */}
-        <div className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
           <div className="mb-4 flex items-center gap-2">
-            <Users className="h-4 w-4 text-[#A23B72]" />
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">
+            <Users className="h-4 w-4 text-[var(--accent-secondary)]" />
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
               Department Capacity
             </h3>
-            <span className="ml-auto text-[10px] text-[#9CA3AF]">
+            <span className="ml-auto text-[10px] text-[var(--text-muted)]">
               % workload utilization
             </span>
           </div>
@@ -337,7 +337,7 @@ export default function OperationsPage() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-[220px] items-center justify-center text-sm text-[#9CA3AF]">
+            <div className="flex h-[220px] items-center justify-center text-sm text-[var(--text-muted)]">
               No capacity data
             </div>
           )}
@@ -347,10 +347,10 @@ export default function OperationsPage() {
       {/* ── Capacity Table ───────────────────────────────── */}
       <div>
         <div className="mb-3 flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-[#1A1A1A]">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             Employee Capacity
           </h3>
-          <Users className="h-4 w-4 text-[#9CA3AF]" />
+          <Users className="h-4 w-4 text-[var(--text-muted)]" />
         </div>
         <CapacityTable rows={capacityRows} />
       </div>
@@ -378,24 +378,24 @@ function KPICard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-[#E5E7EB] bg-white p-4",
-        highlight && "border-red-200 bg-red-50"
+        "rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4",
+        highlight && "border-red-200 bg-[rgba(239,68,68,0.1)]"
       )}
     >
       <div className="mb-2 flex items-center gap-2">
         {icon}
-        <span className="text-xs text-[#9CA3AF]">{label}</span>
+        <span className="text-xs text-[var(--text-muted)]">{label}</span>
       </div>
       <p
         className={cn(
           "text-2xl font-bold",
-          highlight ? "text-red-600" : "text-[#1A1A1A]"
+          highlight ? "text-red-600" : "text-[var(--text-primary)]"
         )}
       >
         {value}
       </p>
       {sub && (
-        <p className={cn("mt-1 text-xs", subColor ?? "text-[#9CA3AF]")}>
+        <p className={cn("mt-1 text-xs", subColor ?? "text-[var(--text-muted)]")}>
           {sub}
         </p>
       )}

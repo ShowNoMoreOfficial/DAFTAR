@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, forbidden, handleApiError } from "@/lib/api-utils";
 import type { Role } from "@prisma/client";
 
 // GET /api/hoccr/candidates — list candidates with optional filters
@@ -41,36 +41,50 @@ export async function POST(req: NextRequest) {
   const session = await getAuthSession();
   if (!session) return unauthorized();
 
-  const { name, email, phone, resumeUrl, positionId, notes } = await req.json();
-  if (!name || !email || !positionId) return badRequest("Name, email, and position are required");
+  const allowedRoles: Role[] = ["ADMIN", "HEAD_HR", "DEPT_HEAD"];
+  if (!allowedRoles.includes(session.user.role as Role)) return forbidden();
 
-  const candidate = await prisma.hiringCandidate.create({
-    data: { name, email, phone, resumeUrl, positionId, notes },
-    include: {
-      position: { select: { id: true, title: true } },
-    },
-  });
+  try {
+    const { name, email, phone, resumeUrl, positionId, notes } = await req.json();
+    if (!name || !email || !positionId) return badRequest("Name, email, and position are required");
 
-  return NextResponse.json(candidate, { status: 201 });
+    const candidate = await prisma.hiringCandidate.create({
+      data: { name, email, phone, resumeUrl, positionId, notes },
+      include: {
+        position: { select: { id: true, title: true } },
+      },
+    });
+
+    return NextResponse.json(candidate, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 export async function PATCH(req: NextRequest) {
   const session = await getAuthSession();
   if (!session) return unauthorized();
 
-  const { id, status, rating, notes, interviewDate } = await req.json();
-  if (!id) return badRequest("Candidate ID is required");
+  const allowedRoles: Role[] = ["ADMIN", "HEAD_HR", "DEPT_HEAD"];
+  if (!allowedRoles.includes(session.user.role as Role)) return forbidden();
 
-  const data: Record<string, unknown> = {};
-  if (status) data.status = status;
-  if (rating !== undefined) data.rating = rating;
-  if (notes !== undefined) data.notes = notes;
-  if (interviewDate !== undefined) data.interviewDate = interviewDate ? new Date(interviewDate) : null;
+  try {
+    const { id, status, rating, notes, interviewDate } = await req.json();
+    if (!id) return badRequest("Candidate ID is required");
 
-  const candidate = await prisma.hiringCandidate.update({
-    where: { id },
-    data,
-  });
+    const data: Record<string, unknown> = {};
+    if (status) data.status = status;
+    if (rating !== undefined) data.rating = rating;
+    if (notes !== undefined) data.notes = notes;
+    if (interviewDate !== undefined) data.interviewDate = interviewDate ? new Date(interviewDate) : null;
 
-  return NextResponse.json(candidate);
+    const candidate = await prisma.hiringCandidate.update({
+      where: { id },
+      data,
+    });
+
+    return NextResponse.json(candidate);
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

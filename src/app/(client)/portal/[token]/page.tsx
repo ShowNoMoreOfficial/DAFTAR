@@ -135,8 +135,8 @@ export default function PortalPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32">
-        <Loader2 className="h-8 w-8 animate-spin text-[#2E86AB]" />
-        <p className="mt-4 text-sm text-[#6B7280]">Loading deliverable...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-primary)]" />
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">Loading deliverable...</p>
       </div>
     );
   }
@@ -144,11 +144,11 @@ export default function PortalPage() {
   if (invalid) {
     return (
       <div className="flex flex-col items-center justify-center py-32">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(239,68,68,0.1)]">
           <ShieldAlert className="h-8 w-8 text-red-400" />
         </div>
-        <h2 className="text-lg font-semibold text-[#1A1A1A]">Invalid or Expired Link</h2>
-        <p className="mt-1 text-sm text-[#9CA3AF]">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Invalid or Expired Link</h2>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
           This review link is no longer valid. Please contact your account manager for a new link.
         </p>
       </div>
@@ -160,7 +160,7 @@ export default function PortalPage() {
       <div className="flex flex-col items-center justify-center py-32">
         <div
           className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
-            actionComplete === "approved" ? "bg-emerald-50" : "bg-amber-50"
+            actionComplete === "approved" ? "bg-[rgba(16,185,129,0.1)]" : "bg-[rgba(245,158,11,0.1)]"
           }`}
         >
           {actionComplete === "approved" ? (
@@ -173,10 +173,10 @@ export default function PortalPage() {
             </svg>
           )}
         </div>
-        <h2 className="text-lg font-semibold text-[#1A1A1A]">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           {actionComplete === "approved" ? "Deliverable Approved!" : "Revision Requested"}
         </h2>
-        <p className="mt-1 max-w-sm text-center text-sm text-[#9CA3AF]">
+        <p className="mt-1 max-w-sm text-center text-sm text-[var(--text-muted)]">
           {actionComplete === "approved"
             ? "Thank you! Your approval has been recorded. Our team will proceed with publishing."
             : "Your feedback has been sent to the team. They'll revise and send you an updated version."}
@@ -190,14 +190,14 @@ export default function PortalPage() {
       {/* Brand & meta header */}
       <div className="mb-8">
         <div className="mb-1 flex items-center gap-2">
-          <span className="rounded-md bg-[#2E86AB]/10 px-2 py-0.5 text-xs font-medium text-[#2E86AB]">
+          <span className="rounded-md bg-[var(--accent-primary)]/10 px-2 py-0.5 text-xs font-medium text-[var(--accent-primary)]">
             {deliverable!.brandName}
           </span>
-          <span className="text-xs text-[#9CA3AF]">•</span>
-          <span className="text-xs text-[#9CA3AF]">{deliverable!.metadata.platform}</span>
+          <span className="text-xs text-[var(--text-muted)]">•</span>
+          <span className="text-xs text-[var(--text-muted)]">{deliverable!.metadata.platform}</span>
         </div>
-        <h1 className="text-2xl font-semibold text-[#1A1A1A]">{deliverable!.title}</h1>
-        <p className="mt-1 text-xs text-[#9CA3AF]">
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{deliverable!.title}</h1>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
           Submitted{" "}
           {new Date(deliverable!.metadata.createdAt).toLocaleDateString("en-US", {
             month: "long",

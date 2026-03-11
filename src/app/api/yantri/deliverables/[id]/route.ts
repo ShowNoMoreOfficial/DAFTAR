@@ -119,6 +119,7 @@ export async function PATCH(
       viral_micro: "yantri/deliverable.viral-micro",
       carousel: "yantri/deliverable.carousel",
       cinematic: "yantri/deliverable.cinematic",
+      reel: "yantri/deliverable.reel",
     };
 
     const eventName = eventMap[deliverable.pipelineType] ?? "yantri/deliverable.viral-micro";

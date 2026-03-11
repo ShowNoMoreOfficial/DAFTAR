@@ -56,7 +56,7 @@ function TagInput({
         {tags.map((tag, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 text-indigo-400 rounded-xl text-xs font-bold border border-indigo-500/20 animate-fade-in"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-[rgba(99,102,241,0.1)]0/10 text-indigo-400 rounded-xl text-xs font-bold border border-indigo-500/20 animate-fade-in"
           >
             {tag}
             <button
@@ -248,7 +248,7 @@ export default function BrandForm({ initial }: { initial?: BrandData }) {
             {PLATFORMS.map((platform) => {
               const active = form.activePlatforms.find((p) => p.name === platform);
               return (
-                <div key={platform} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${active ? "bg-indigo-500/10 border-indigo-500/20 shadow-sm" : "bg-zinc-900 border-border opacity-60"}`}>
+                <div key={platform} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${active ? "bg-[rgba(99,102,241,0.1)]0/10 border-indigo-500/20 shadow-sm" : "bg-zinc-900 border-border opacity-60"}`}>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <Checkbox
                       checked={!!active}

@@ -30,31 +30,31 @@ const PLATFORM_CONFIG: Record<string, { label: string; color: string; bgColor: s
   youtube: {
     label: "YouTube",
     color: "#FF0000",
-    bgColor: "bg-red-50",
+    bgColor: "bg-[rgba(239,68,68,0.1)]",
     description: "Upload videos, shorts, and manage your channel",
   },
   x: {
     label: "X (Twitter)",
     color: "#000000",
-    bgColor: "bg-gray-50",
+    bgColor: "bg-[var(--bg-elevated)]",
     description: "Post tweets, threads, and engage with followers",
   },
   instagram: {
     label: "Instagram",
     color: "#E4405F",
-    bgColor: "bg-pink-50",
+    bgColor: "bg-[rgba(236,72,153,0.1)]",
     description: "Share photos, reels, stories, and carousels",
   },
   linkedin: {
     label: "LinkedIn",
     color: "#0A66C2",
-    bgColor: "bg-blue-50",
+    bgColor: "bg-[rgba(59,130,246,0.1)]",
     description: "Publish professional content and articles",
   },
   facebook: {
     label: "Facebook",
     color: "#1877F2",
-    bgColor: "bg-blue-50",
+    bgColor: "bg-[rgba(59,130,246,0.1)]",
     description: "Manage page posts, stories, and engagement",
   },
 };
@@ -111,7 +111,7 @@ export default function ConnectionsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -120,8 +120,8 @@ export default function ConnectionsPage() {
     <div className="h-full overflow-y-auto p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-[#1A1A1A]">Platform Connections</h2>
-        <p className="text-sm text-[#9CA3AF]">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Platform Connections</h2>
+        <p className="text-sm text-[var(--text-muted)]">
           Connect your social media accounts to enable content distribution
         </p>
       </div>
@@ -137,7 +137,7 @@ export default function ConnectionsPage() {
             <div
               key={platform}
               className={cn(
-                "rounded-xl border border-[#E5E7EB] bg-white p-5 transition-shadow hover:shadow-sm"
+                "rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 transition-shadow hover:shadow-sm"
               )}
             >
               {/* Platform header */}
@@ -152,14 +152,14 @@ export default function ConnectionsPage() {
                     />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-[#1A1A1A]">{config.label}</h3>
-                    <p className="text-[10px] text-[#9CA3AF]">{config.description}</p>
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">{config.label}</h3>
+                    <p className="text-[10px] text-[var(--text-muted)]">{config.description}</p>
                   </div>
                 </div>
                 {isConnected ? (
                   <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-[#D1D5DB]" />
+                  <XCircle className="h-5 w-5 text-[var(--text-muted)]" />
                 )}
               </div>
 
@@ -172,23 +172,23 @@ export default function ConnectionsPage() {
                       className="flex items-center justify-between rounded-lg bg-[#F8FBF9] px-3 py-2"
                     >
                       <div>
-                        <p className="text-xs font-medium text-[#1A1A1A]">
+                        <p className="text-xs font-medium text-[var(--text-primary)]">
                           {conn.accountName || conn.accountId || "Connected"}
                         </p>
-                        <p className="text-[10px] text-[#9CA3AF]">
+                        <p className="text-[10px] text-[var(--text-muted)]">
                           {conn.brand.name} &middot; Connected {new Date(conn.connectedAt).toLocaleDateString("en-IN", {
                             day: "numeric", month: "short", year: "numeric",
                           })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-medium text-emerald-700">
+                        <span className="rounded-full bg-[rgba(16,185,129,0.15)] px-2 py-0.5 text-[9px] font-medium text-emerald-700">
                           Connected
                         </span>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 px-2 text-[10px] text-red-500 hover:bg-red-50 hover:text-red-600"
+                          className="h-6 px-2 text-[10px] text-red-500 hover:bg-[rgba(239,68,68,0.1)] hover:text-red-600"
                           onClick={() => handleDisconnect(conn.id)}
                         >
                           Disconnect
@@ -198,9 +198,9 @@ export default function ConnectionsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="mb-3 rounded-lg border border-dashed border-[#E5E7EB] p-3 text-center">
-                  <Link2 className="mx-auto h-5 w-5 text-[#D1D5DB]" />
-                  <p className="mt-1 text-[10px] text-[#9CA3AF]">No accounts connected</p>
+                <div className="mb-3 rounded-lg border border-dashed border-[var(--border-subtle)] p-3 text-center">
+                  <Link2 className="mx-auto h-5 w-5 text-[var(--text-muted)]" />
+                  <p className="mt-1 text-[10px] text-[var(--text-muted)]">No accounts connected</p>
                 </div>
               )}
 
@@ -221,21 +221,21 @@ export default function ConnectionsPage() {
       {/* Connect dialog (placeholder) */}
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-sm rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">
                 Connect {PLATFORM_CONFIG[dialogPlatform]?.label}
               </h3>
-              <button onClick={() => setDialogOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <button onClick={() => setDialogOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="rounded-lg bg-[#F0F8FF] p-4 text-center">
-              <Link2 className="mx-auto h-8 w-8 text-[#2E86AB]" />
-              <p className="mt-3 text-sm font-medium text-[#1A1A1A]">
+              <Link2 className="mx-auto h-8 w-8 text-[var(--accent-primary)]" />
+              <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">
                 API Integration Coming Soon
               </p>
-              <p className="mt-1 text-xs text-[#9CA3AF]">
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
                 OAuth connection to {PLATFORM_CONFIG[dialogPlatform]?.label} will be available in a future update.
                 For now, connections can be configured by an administrator through the API.
               </p>

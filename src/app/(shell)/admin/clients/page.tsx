@@ -151,10 +151,10 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">
             Clients & Brands
           </h1>
-          <p className="mt-1 text-sm text-[#6B7280]">
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Manage clients, their brands, and platform configurations.
           </p>
         </div>
@@ -172,7 +172,7 @@ export default function ClientsPage() {
             </DialogHeader>
             <form onSubmit={handleCreateClient} className="space-y-4 pt-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+                <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                   Client Name *
                 </label>
                 <Input
@@ -185,7 +185,7 @@ export default function ClientsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+                <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                   Email
                 </label>
                 <Input
@@ -198,7 +198,7 @@ export default function ClientsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+                <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                   Company
                 </label>
                 <Input
@@ -211,7 +211,7 @@ export default function ClientsPage() {
               </div>
               <Button
                 type="submit"
-                className="w-full bg-[#2E86AB] hover:bg-[#2E86AB]/90"
+                className="w-full bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90"
               >
                 Create Client
               </Button>
@@ -228,7 +228,7 @@ export default function ClientsPage() {
           </DialogHeader>
           <form onSubmit={handleCreateBrand} className="space-y-4 pt-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+              <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                 Brand Name *
               </label>
               <Input
@@ -249,7 +249,7 @@ export default function ClientsPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#1A1A1A]">
+              <label className="mb-1 block text-sm font-medium text-[var(--text-primary)]">
                 Slug
               </label>
               <Input
@@ -261,7 +261,7 @@ export default function ClientsPage() {
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-[#1A1A1A]">
+              <label className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
                 Platforms
               </label>
               <div className="flex flex-wrap gap-2">
@@ -273,8 +273,8 @@ export default function ClientsPage() {
                     className={cn(
                       "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                       brandForm.platforms.includes(p)
-                        ? "border-[#2E86AB] bg-[#2E86AB]/10 text-[#2E86AB]"
-                        : "border-[#E5E7EB] text-[#6B7280] hover:border-[#2E86AB]"
+                        ? "border-[#2E86AB] bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]"
+                        : "border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#2E86AB]"
                     )}
                   >
                     {p}
@@ -284,7 +284,7 @@ export default function ClientsPage() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-[#2E86AB] hover:bg-[#2E86AB]/90"
+              className="w-full bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90"
             >
               Add Brand
             </Button>
@@ -294,16 +294,16 @@ export default function ClientsPage() {
 
       {/* Clients list */}
       {loading ? (
-        <p className="py-12 text-center text-sm text-[#9CA3AF]">
+        <p className="py-12 text-center text-sm text-[var(--text-muted)]">
           Loading clients...
         </p>
       ) : clients.length === 0 ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white p-8 text-center">
-          <Building className="mx-auto h-12 w-12 text-[#D1D5DB]" />
-          <h3 className="mt-4 text-sm font-medium text-[#1A1A1A]">
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 text-center">
+          <Building className="mx-auto h-12 w-12 text-[var(--text-muted)]" />
+          <h3 className="mt-4 text-sm font-medium text-[var(--text-primary)]">
             No Clients Yet
           </h3>
-          <p className="mt-2 text-sm text-[#9CA3AF]">
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             Add your first client to start managing brands.
           </p>
         </div>
@@ -312,11 +312,11 @@ export default function ClientsPage() {
           {clients.map((client) => (
             <div
               key={client.id}
-              className="rounded-xl border border-[#E5E7EB] bg-white"
+              className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]"
             >
               {/* Client header */}
               <div
-                className="flex cursor-pointer items-center gap-3 p-4 transition-colors hover:bg-[#F8F9FA]"
+                className="flex cursor-pointer items-center gap-3 p-4 transition-colors hover:bg-[var(--bg-surface)]"
                 onClick={() =>
                   setExpandedClient(
                     expandedClient === client.id ? null : client.id
@@ -324,26 +324,26 @@ export default function ClientsPage() {
                 }
               >
                 {expandedClient === client.id ? (
-                  <ChevronDown className="h-4 w-4 text-[#9CA3AF]" />
+                  <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />
                 ) : (
-                  <ChevronRight className="h-4 w-4 text-[#9CA3AF]" />
+                  <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
                 )}
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#A23B72]/10">
-                  <Building className="h-4.5 w-4.5 text-[#A23B72]" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent-secondary)]/10">
+                  <Building className="h-4.5 w-4.5 text-[var(--accent-secondary)]" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#1A1A1A]">
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">
                       {client.name}
                     </span>
                     {client.company && (
-                      <span className="text-xs text-[#9CA3AF]">
+                      <span className="text-xs text-[var(--text-muted)]">
                         {client.company}
                       </span>
                     )}
                   </div>
                   {client.email && (
-                    <p className="text-xs text-[#6B7280]">{client.email}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{client.email}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
@@ -368,9 +368,9 @@ export default function ClientsPage() {
 
               {/* Expanded: Brands */}
               {expandedClient === client.id && (
-                <div className="border-t border-[#E5E7EB] p-4">
+                <div className="border-t border-[var(--border-subtle)] p-4">
                   {client.brands.length === 0 ? (
-                    <p className="py-4 text-center text-xs text-[#9CA3AF]">
+                    <p className="py-4 text-center text-xs text-[var(--text-muted)]">
                       No brands yet. Add a brand to get started.
                     </p>
                   ) : (
@@ -378,17 +378,17 @@ export default function ClientsPage() {
                       {client.brands.map((brand) => (
                         <div
                           key={brand.id}
-                          className="rounded-lg border border-[#F0F2F5] bg-[#F8F9FA] p-3"
+                          className="rounded-lg border border-[#F0F2F5] bg-[var(--bg-surface)] p-3"
                         >
                           <div className="mb-2 flex items-center gap-2">
-                            <Palette className="h-4 w-4 text-[#2E86AB]" />
-                            <span className="text-sm font-medium text-[#1A1A1A]">
+                            <Palette className="h-4 w-4 text-[var(--accent-primary)]" />
+                            <span className="text-sm font-medium text-[var(--text-primary)]">
                               {brand.name}
                             </span>
                           </div>
                           <div className="mb-2 flex items-center gap-1">
-                            <Tag className="h-3 w-3 text-[#9CA3AF]" />
-                            <span className="text-[10px] text-[#9CA3AF]">
+                            <Tag className="h-3 w-3 text-[var(--text-muted)]" />
+                            <span className="text-[10px] text-[var(--text-muted)]">
                               {brand.slug}
                             </span>
                           </div>

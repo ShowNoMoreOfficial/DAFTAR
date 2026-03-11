@@ -55,10 +55,10 @@ interface SearchResults {
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  URGENT: "text-red-600",
-  HIGH: "text-orange-500",
-  MEDIUM: "text-amber-500",
-  LOW: "text-gray-400",
+  URGENT: "text-[var(--status-error)]",
+  HIGH: "text-[var(--accent-tertiary)]",
+  MEDIUM: "text-[var(--status-info)]",
+  LOW: "text-[var(--text-muted)]",
 };
 
 export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
@@ -131,13 +131,13 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
                 onSelect={() => navigate(link.href)}
                 className="gap-2"
               >
-                <link.icon className="h-4 w-4 text-[#9CA3AF]" />
+                <link.icon className="h-4 w-4 text-[var(--text-muted)]" />
                 {link.label}
               </CommandItem>
             ))}
           </CommandGroup>
         ) : loading ? (
-          <div className="py-6 text-center text-sm text-[#9CA3AF]">
+          <div className="py-6 text-center text-sm text-[var(--text-muted)]">
             Searching...
           </div>
         ) : !hasResults ? (
@@ -152,7 +152,7 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
                     onSelect={() => navigate("/tasks")}
                     className="gap-2"
                   >
-                    <CheckSquare className="h-4 w-4 text-[#9CA3AF]" />
+                    <CheckSquare className="h-4 w-4 text-[var(--text-muted)]" />
                     <span className="flex-1 truncate">{task.title}</span>
                     <Badge
                       variant="outline"
@@ -178,9 +178,9 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
                       onSelect={() => navigate("/admin/users")}
                       className="gap-2"
                     >
-                      <User className="h-4 w-4 text-[#9CA3AF]" />
+                      <User className="h-4 w-4 text-[var(--text-muted)]" />
                       <span>{u.name}</span>
-                      <span className="text-xs text-[#9CA3AF]">{u.email}</span>
+                      <span className="text-xs text-[var(--text-muted)]">{u.email}</span>
                       <Badge variant="outline" className="ml-auto text-[10px]">
                         {u.role}
                       </Badge>
@@ -200,9 +200,9 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
                       onSelect={() => navigate("/brands")}
                       className="gap-2"
                     >
-                      <Tag className="h-4 w-4 text-[#9CA3AF]" />
+                      <Tag className="h-4 w-4 text-[var(--text-muted)]" />
                       <span>{b.name}</span>
-                      <span className="text-xs text-[#9CA3AF]">/{b.slug}</span>
+                      <span className="text-xs text-[var(--text-muted)]">/{b.slug}</span>
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -219,7 +219,7 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
                       onSelect={() => navigate(`/m/${m.name}`)}
                       className="gap-2"
                     >
-                      <Box className="h-4 w-4 text-[#9CA3AF]" />
+                      <Box className="h-4 w-4 text-[var(--text-muted)]" />
                       <span>{m.displayName}</span>
                     </CommandItem>
                   ))}

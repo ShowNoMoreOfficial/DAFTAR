@@ -40,10 +40,10 @@ interface AnnouncementItem {
 // ---- Constants ----
 
 const TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  urgent: { bg: "bg-red-100", text: "text-red-700", label: "Urgent" },
-  policy: { bg: "bg-blue-100", text: "text-blue-700", label: "Policy" },
-  celebration: { bg: "bg-emerald-100", text: "text-emerald-700", label: "Celebration" },
-  general: { bg: "bg-gray-100", text: "text-gray-600", label: "General" },
+  urgent: { bg: "bg-[rgba(239,68,68,0.15)]", text: "text-red-700", label: "Urgent" },
+  policy: { bg: "bg-[rgba(59,130,246,0.15)]", text: "text-blue-700", label: "Policy" },
+  celebration: { bg: "bg-[rgba(16,185,129,0.15)]", text: "text-emerald-700", label: "Celebration" },
+  general: { bg: "bg-[var(--bg-elevated)]", text: "text-gray-600", label: "General" },
 };
 
 const SCOPE_LABELS: Record<string, string> = {
@@ -117,7 +117,7 @@ export default function CommunicationPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -127,8 +127,8 @@ export default function CommunicationPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#1A1A1A]">Communication</h2>
-          <p className="text-sm text-[#9CA3AF]">Announcements and organizational updates</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Communication</h2>
+          <p className="text-sm text-[var(--text-muted)]">Announcements and organizational updates</p>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => setShowFilters(!showFilters)}>
@@ -144,11 +144,11 @@ export default function CommunicationPage() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-[#E5E7EB] bg-white p-3">
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3">
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-sm"
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm"
           >
             <option value="">All Types</option>
             <option value="general">General</option>
@@ -159,14 +159,14 @@ export default function CommunicationPage() {
           <select
             value={filterScope}
             onChange={(e) => setFilterScope(e.target.value)}
-            className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-sm"
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-sm"
           >
             <option value="">All Scopes</option>
             <option value="org">Org-wide</option>
             <option value="department">Department</option>
             <option value="brand">Brand</option>
           </select>
-          <div className="flex items-center gap-1.5 text-xs text-[#6B7280]">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
             <span>From</span>
             <Input
               type="date"
@@ -190,7 +190,7 @@ export default function CommunicationPage() {
                 setFilterFrom("");
                 setFilterTo("");
               }}
-              className="text-xs text-[#2E86AB] hover:underline"
+              className="text-xs text-[var(--accent-primary)] hover:underline"
             >
               Clear
             </button>
@@ -201,8 +201,8 @@ export default function CommunicationPage() {
       {/* Pinned Announcements */}
       {pinnedAnnouncements.length > 0 && (
         <div className="mb-6">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1A1A1A]">
-            <Pin className="h-4 w-4 text-[#2E86AB]" />
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+            <Pin className="h-4 w-4 text-[var(--accent-primary)]" />
             Pinned
           </h3>
           <div className="space-y-3">
@@ -219,16 +219,16 @@ export default function CommunicationPage() {
 
       {/* Announcements Feed */}
       <div>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#1A1A1A]">
-          <Megaphone className="h-4 w-4 text-[#2E86AB]" />
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+          <Megaphone className="h-4 w-4 text-[var(--accent-primary)]" />
           Announcements
         </h3>
         {regularAnnouncements.length === 0 && pinnedAnnouncements.length === 0 ? (
-          <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-8 text-center text-sm text-[#9CA3AF]">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
             No announcements yet. Create one to get started.
           </div>
         ) : regularAnnouncements.length === 0 ? (
-          <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-6 text-center text-sm text-[#9CA3AF]">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-6 text-center text-sm text-[var(--text-muted)]">
             No additional announcements
           </div>
         ) : (
@@ -284,7 +284,7 @@ function AnnouncementCard({
   return (
     <div
       className={cn(
-        "cursor-pointer rounded-lg border border-[#E5E7EB] bg-white p-4 transition-colors hover:bg-[#F8F9FA]",
+        "cursor-pointer rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-colors hover:bg-[var(--bg-surface)]",
         !announcement.isRead && "border-l-4 border-l-[#2E86AB]"
       )}
       onClick={onView}
@@ -295,22 +295,22 @@ function AnnouncementCard({
             {typeStyle.label}
           </Badge>
           {announcement.isPinned && (
-            <Pin className="h-3 w-3 text-[#2E86AB]" />
+            <Pin className="h-3 w-3 text-[var(--accent-primary)]" />
           )}
           <Badge variant="secondary" className="text-[10px]">
             {SCOPE_LABELS[announcement.scope] || announcement.scope}
           </Badge>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF]">
+        <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
           <Eye className="h-3 w-3" />
           <span>{announcement.readCount} read</span>
         </div>
       </div>
-      <h4 className="mb-1 text-sm font-medium text-[#1A1A1A]">{announcement.title}</h4>
-      <p className="mb-2 line-clamp-2 text-xs text-[#6B7280]">{announcement.content}</p>
-      <div className="flex items-center gap-3 text-[10px] text-[#9CA3AF]">
+      <h4 className="mb-1 text-sm font-medium text-[var(--text-primary)]">{announcement.title}</h4>
+      <p className="mb-2 line-clamp-2 text-xs text-[var(--text-secondary)]">{announcement.content}</p>
+      <div className="flex items-center gap-3 text-[10px] text-[var(--text-muted)]">
         <div className="flex items-center gap-1">
-          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#2E86AB] text-[8px] text-white">
+          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[8px] text-white">
             {announcement.author.name.charAt(0)}
           </div>
           <span>{announcement.author.name}</span>
@@ -352,7 +352,7 @@ function AnnouncementDetailDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-2">
             <Badge className={cn("text-xs", typeStyle.bg, typeStyle.text)}>
@@ -368,22 +368,22 @@ function AnnouncementDetailDialog({
           <div className="flex items-center gap-1">
             <button
               onClick={onDelete}
-              className="rounded p-1 text-red-500 hover:bg-red-50"
+              className="rounded p-1 text-red-500 hover:bg-[rgba(239,68,68,0.1)]"
               title="Delete"
             >
               <Trash2 className="h-4 w-4" />
             </button>
-            <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#6B7280]">
+            <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        <h3 className="mb-2 text-lg font-semibold text-[#1A1A1A]">{announcement.title}</h3>
+        <h3 className="mb-2 text-lg font-semibold text-[var(--text-primary)]">{announcement.title}</h3>
 
-        <div className="mb-4 flex items-center gap-3 text-xs text-[#9CA3AF]">
+        <div className="mb-4 flex items-center gap-3 text-xs text-[var(--text-muted)]">
           <div className="flex items-center gap-1">
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2E86AB] text-[9px] text-white">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[9px] text-white">
               {announcement.author.name.charAt(0)}
             </div>
             <span>{announcement.author.name}</span>
@@ -402,11 +402,11 @@ function AnnouncementDetailDialog({
           </Badge>
         </div>
 
-        <div className="mb-4 whitespace-pre-wrap rounded-lg bg-[#F8F9FA] p-4 text-sm text-[#1A1A1A]">
+        <div className="mb-4 whitespace-pre-wrap rounded-lg bg-[var(--bg-surface)] p-4 text-sm text-[var(--text-primary)]">
           {announcement.content}
         </div>
 
-        <div className="flex items-center gap-3 text-xs text-[#9CA3AF]">
+        <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
           <div className="flex items-center gap-1">
             <Eye className="h-3.5 w-3.5" />
             <span>{announcement.readCount} read</span>
@@ -487,16 +487,16 @@ function CreateAnnouncementDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-[#1A1A1A]">Create Announcement</h3>
-          <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#6B7280]">
+          <h3 className="text-base font-semibold text-[var(--text-primary)]">Create Announcement</h3>
+          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs text-[#6B7280]">Title</label>
+            <label className="mb-1 block text-xs text-[var(--text-secondary)]">Title</label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -504,7 +504,7 @@ function CreateAnnouncementDialog({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[#6B7280]">Content</label>
+            <label className="mb-1 block text-xs text-[var(--text-secondary)]">Content</label>
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -514,11 +514,11 @@ function CreateAnnouncementDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs text-[#6B7280]">Type</label>
+              <label className="mb-1 block text-xs text-[var(--text-secondary)]">Type</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="general">General</option>
                 <option value="urgent">Urgent</option>
@@ -527,14 +527,14 @@ function CreateAnnouncementDialog({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-[#6B7280]">Scope</label>
+              <label className="mb-1 block text-xs text-[var(--text-secondary)]">Scope</label>
               <select
                 value={scope}
                 onChange={(e) => {
                   setScope(e.target.value);
                   setScopeId("");
                 }}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="org">Org-wide</option>
                 <option value="department">Specific Department</option>
@@ -545,11 +545,11 @@ function CreateAnnouncementDialog({
 
           {scope === "department" && (
             <div>
-              <label className="mb-1 block text-xs text-[#6B7280]">Department</label>
+              <label className="mb-1 block text-xs text-[var(--text-secondary)]">Department</label>
               <select
                 value={scopeId}
                 onChange={(e) => setScopeId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">Select department</option>
                 {departments.map((d) => (
@@ -563,11 +563,11 @@ function CreateAnnouncementDialog({
 
           {scope === "brand" && (
             <div>
-              <label className="mb-1 block text-xs text-[#6B7280]">Brand</label>
+              <label className="mb-1 block text-xs text-[var(--text-secondary)]">Brand</label>
               <select
                 value={scopeId}
                 onChange={(e) => setScopeId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">Select brand</option>
                 {brands.map((b) => (
@@ -581,7 +581,7 @@ function CreateAnnouncementDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs text-[#6B7280]">Expiry Date (optional)</label>
+              <label className="mb-1 block text-xs text-[var(--text-secondary)]">Expiry Date (optional)</label>
               <Input
                 type="datetime-local"
                 value={expiresAt}
@@ -589,7 +589,7 @@ function CreateAnnouncementDialog({
               />
             </div>
             <div className="flex items-end pb-1">
-              <label className="flex items-center gap-2 text-sm text-[#6B7280]">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                 <input
                   type="checkbox"
                   checked={isPinned}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -61,6 +62,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
         }),
       });
       if (res.ok) {
+        toast.success("Task created successfully");
         setTitle("");
         setDescription("");
         setPriority("MEDIUM");
@@ -71,7 +73,12 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
         setDifficultyWeight(1);
         onOpenChange(false);
         onCreated?.();
+      } else {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error?.message || data?.error || "Failed to create task");
       }
+    } catch {
+      toast.error("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -81,32 +88,32 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#1A1A1A]">Create Task</h2>
-          <button onClick={() => onOpenChange(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Create Task</h2>
+          <button onClick={() => onOpenChange(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#6B7280]">Title *</label>
+            <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Title *</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task title" required />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#6B7280]">Description</label>
+            <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Description</label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the task..." rows={3} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Priority</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
@@ -115,7 +122,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Difficulty Weight</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Difficulty Weight</label>
               <Input
                 type="number"
                 min={1}
@@ -128,11 +135,11 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Assignee</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Assignee</label>
               <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">Unassigned</option>
                 {users.map((u) => (
@@ -141,11 +148,11 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Department</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Department</label>
               <select
                 value={departmentId}
                 onChange={(e) => setDepartmentId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">None</option>
                 {departments.map((d) => (
@@ -157,11 +164,11 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Brand</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Brand</label>
               <select
                 value={brandId}
                 onChange={(e) => setBrandId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">None</option>
                 {brands.map((b) => (
@@ -170,7 +177,7 @@ export function CreateTaskDialog({ open, onOpenChange, onCreated }: CreateTaskDi
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#6B7280]">Due Date</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--text-secondary)]">Due Date</label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
           </div>

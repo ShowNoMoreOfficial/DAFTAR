@@ -520,6 +520,7 @@ export function registerGIEventListeners(): void {
  */
 export async function handleGIQueryWithSkills(
   query: string,
+  userId: string,
   context: GISkillContext,
   config: Partial<GIConfig> = {}
 ): Promise<{
@@ -598,18 +599,13 @@ export async function handleGIQueryWithSkills(
   }
 
   // Generate insights with skill awareness
-  const insights = await generateSkillAwareInsights(userId_placeholder(context), context, cfg);
+  const insights = await generateSkillAwareInsights(userId, context, cfg);
 
   return {
     skillContext: skillContextParts.join("\n---\n\n"),
     loadedSkills: loadedSkillPaths,
     insights,
   };
-}
-
-// Placeholder — in real usage, userId comes from the API route session
-function userId_placeholder(context: GISkillContext): string {
-  return `gi-query-${context.module}`;
 }
 
 // ─── Helpers ──────────────────────────────────────────────

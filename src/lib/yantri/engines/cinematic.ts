@@ -3,6 +3,7 @@
  */
 
 import { routeToModel } from "@/lib/yantri/model-router";
+import { getBrandVoiceBlock } from "@/lib/yantri/brand-voice";
 
 export interface ScriptSection {
   title: string;
@@ -72,6 +73,8 @@ TARGET RUNTIME: ${runtime} minutes
 RESEARCH DOSSIER:
 ${params.researchResults}
 
+${getBrandVoiceBlock(params.brandName, params.voiceRules, params.brandTone, params.language)}
+
 Write a complete ${runtime}-minute video script following a 6-act structure:
 ACT 1 — THE HOOK (0:00 - 0:30)
 ACT 2 — THE CONTEXT (0:30 - 3:00)
@@ -110,7 +113,8 @@ export async function runCinematicEngine(params: CinematicEngineParams): Promise
   const systemPrompt = buildScriptwriterPrompt(params);
   const userMessage = `Write the complete YouTube script with storyboard and B-roll plan for: "${params.narrativeAngle}". Include all production cues and visual asset prompts.`;
 
-  const result = await routeToModel("drafting", systemPrompt, userMessage, { maxTokens: 16384, temperature: 0.5 });
+  const isCredibilityBrand = params.brandName.toLowerCase().trim() === "the squirrels";
+  const result = await routeToModel("drafting", systemPrompt, userMessage, { maxTokens: 16384, temperature: isCredibilityBrand ? 0.4 : 0.5 });
 
   if (!result.parsed) {
     throw new Error(`CinematicEngine: model returned unparseable response. Raw (first 300 chars): ${result.raw.slice(0, 300)}`);

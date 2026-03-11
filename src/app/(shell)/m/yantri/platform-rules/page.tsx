@@ -144,7 +144,7 @@ export default function PlatformRulesPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 shadow-sm">
+                      <span className="px-2 py-1 bg-[rgba(99,102,241,0.1)]0/10 text-indigo-400 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 shadow-sm">
                         {rule.speedPriority.replace(/_/g, " ")}
                       </span>
                     </td>
@@ -157,7 +157,7 @@ export default function PlatformRulesPage() {
                       <div className="flex gap-2 justify-end md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => startEdit(rule)}
-                          className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all"
+                          className="p-2 text-zinc-500 hover:text-indigo-400 hover:bg-[rgba(99,102,241,0.1)]0/10 rounded-lg transition-all"
                           title="Edit Rule"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,7 +180,7 @@ export default function PlatformRulesPage() {
               </tr>
             ))}
             {adding && (
-              <tr className="bg-indigo-500/5">
+              <tr className="bg-[rgba(99,102,241,0.1)]0/5">
                 <td className="px-6 py-4">
                   <Input value={newData.narrativeType} onChange={(e) => setNewData({ ...newData, narrativeType: e.target.value })} className="w-full px-3 py-2 bg-zinc-900 border-border rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/40 outline-none" placeholder="e.g., system_failure" />
                 </td>

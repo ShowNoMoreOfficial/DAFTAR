@@ -11,20 +11,20 @@ function LoginForm() {
   const error = searchParams.get("error");
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
-      <div className="w-full max-w-sm space-y-8 rounded-xl border border-[#E5E7EB] bg-white p-8 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--bg-abyss)]">
+      <div className="w-full max-w-sm space-y-8 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 shadow-[var(--shadow-lg)]">
         {/* Logo / Title */}
         <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
             Daftar
           </h1>
-          <p className="mt-2 text-sm text-[#6B7280]">
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
             Sign in to your organization
           </p>
         </div>
 
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-center text-sm text-red-600">
+          <div className="rounded-lg bg-[rgba(239,68,68,0.1)] p-3 text-center text-sm text-red-600">
             {error === "AccessDenied"
               ? "Access denied. Your email is not registered. Contact your admin."
               : "An error occurred. Please try again."}
@@ -74,7 +74,7 @@ function LoginForm() {
           </Button>
         </div>
 
-        <p className="text-center text-xs text-[#9CA3AF]">
+        <p className="text-center text-xs text-[var(--text-muted)]">
           Access is invitation-only. Contact your admin if you need access.
         </p>
       </div>
@@ -86,8 +86,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA]">
-          <p className="text-[#6B7280]">Loading...</p>
+        <div className="flex min-h-screen items-center justify-center bg-[var(--bg-abyss)]">
+          <p className="text-[var(--text-secondary)]">Loading...</p>
         </div>
       }
     >

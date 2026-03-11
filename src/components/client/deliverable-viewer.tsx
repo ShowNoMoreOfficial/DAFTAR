@@ -35,17 +35,17 @@ export function DeliverableViewer({
   return (
     <div>
       {/* Content card */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white shadow-sm">
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-sm">
         {/* Type label */}
-        <div className="border-b border-[#E5E7EB] px-6 py-3">
-          <span className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">
+        <div className="border-b border-[var(--border-subtle)] px-6 py-3">
+          <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
             {type.replace(/_/g, " ")}
           </span>
         </div>
 
         {/* Content body */}
         <div className="px-6 py-6">
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-[#1A1A1A]">
+          <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-[var(--text-primary)]">
             {content}
           </pre>
         </div>
@@ -71,7 +71,7 @@ export function DeliverableViewer({
         </button>
       </div>
 
-      <p className="mt-3 text-center text-xs text-[#9CA3AF]">
+      <p className="mt-3 text-center text-xs text-[var(--text-muted)]">
         Your response will be recorded and sent to the content team.
       </p>
 

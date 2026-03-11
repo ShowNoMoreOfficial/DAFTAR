@@ -70,11 +70,11 @@ export default function TrendsPage() {
                         })}
                       </h2>
                       {hasNarratives ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20">
+                        <Badge className="bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-emerald-500/20 hover:bg-[rgba(16,185,129,0.1)]0/20">
                           Scanned
                         </Badge>
                       ) : (
-                        <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/20">
+                        <Badge className="bg-[rgba(234,179,8,0.1)]0/10 text-yellow-400 border-yellow-500/20 hover:bg-[rgba(234,179,8,0.1)]0/20">
                           Pending Scan
                         </Badge>
                       )}
@@ -88,7 +88,7 @@ export default function TrendsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/20 hover:text-yellow-300"
+                        className="bg-[rgba(234,179,8,0.1)]0/10 text-yellow-400 border-yellow-500/20 hover:bg-[rgba(234,179,8,0.1)]0/20 hover:text-yellow-300"
                         onClick={async (e) => {
                           e.preventDefault();
                           if (!confirm("Reset this batch and re-run Yantri?")) return;
@@ -106,7 +106,7 @@ export default function TrendsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20 hover:text-red-300"
+                      className="bg-[rgba(239,68,68,0.1)]0/10 text-red-400 border-red-500/20 hover:bg-[rgba(239,68,68,0.1)]0/20 hover:text-red-300"
                       onClick={async (e) => {
                         e.preventDefault();
                         if (!confirm("Delete this batch and all its trends?")) return;
@@ -126,17 +126,17 @@ export default function TrendsPage() {
                       className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 py-2 border-b border-zinc-800 last:border-0"
                     >
                       <span className="text-sm font-bold text-zinc-500 w-6 shrink-0">#{t.rank}</span>
-                      <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20 w-12 justify-center shrink-0">
+                      <Badge className="bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border-blue-500/20 hover:bg-[rgba(59,130,246,0.1)]0/20 w-12 justify-center shrink-0">
                         {t.score}
                       </Badge>
                       <span className="text-sm flex-1 min-w-0 text-foreground">{t.headline}</span>
                       <Badge
                         className={
                           t.status === "selected"
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                            ? "bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-emerald-500/20 hover:bg-[rgba(16,185,129,0.1)]0/20"
                             : t.status === "skipped"
                             ? "bg-zinc-800/50 text-muted-foreground border-border hover:bg-zinc-700"
-                            : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/20"
+                            : "bg-[rgba(234,179,8,0.1)]0/10 text-yellow-400 border-yellow-500/20 hover:bg-[rgba(234,179,8,0.1)]0/20"
                         }
                       >
                         {t.status}

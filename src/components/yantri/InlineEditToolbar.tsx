@@ -137,7 +137,7 @@ export default function InlineEditToolbar({
             <button
               onClick={() => rewrite("Rewrite this to be clearer and more impactful")}
               disabled={loading}
-              className="px-3 py-1.5 text-[11px] font-bold text-zinc-300 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3 py-1.5 text-[11px] font-bold text-zinc-300 hover:bg-[var(--bg-surface)]/10 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
             >
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Rewrite"}
             </button>
@@ -145,7 +145,7 @@ export default function InlineEditToolbar({
             <button
               onClick={() => rewrite("Shorten this by at least 30% while keeping the key message")}
               disabled={loading}
-              className="px-3 py-1.5 text-[11px] font-bold text-zinc-300 hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-[11px] font-bold text-zinc-300 hover:bg-[var(--bg-surface)]/10 rounded-lg transition-colors whitespace-nowrap"
             >
               Shorten
             </button>
@@ -153,7 +153,7 @@ export default function InlineEditToolbar({
             <button
               onClick={() => { setShowCustom(true); setCustomInstruction(""); }}
               disabled={loading}
-              className="px-3 py-1.5 text-[11px] font-bold text-zinc-300 hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap"
+              className="px-3 py-1.5 text-[11px] font-bold text-zinc-300 hover:bg-[var(--bg-surface)]/10 rounded-lg transition-colors whitespace-nowrap"
             >
               Custom
             </button>

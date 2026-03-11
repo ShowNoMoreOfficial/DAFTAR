@@ -53,7 +53,7 @@ import {
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   LayoutDashboard,
   CheckSquare,
   Palette,
@@ -139,15 +139,15 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
       {/* Mobile backdrop */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30 md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       <aside
         className={cn(
-          // Base styles
-          "z-50 flex h-screen shrink-0 flex-col border-r border-[#E5E7EB] bg-[#F8F9FA] transition-all duration-200",
+          // Base styles — Abyss sidebar
+          "z-50 flex h-screen shrink-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--sidebar-bg)] transition-all duration-300",
           // Desktop: inline, collapsible
           "hidden md:relative md:flex",
           isCollapsed ? "md:w-16" : "md:w-[260px]",
@@ -159,32 +159,58 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
         {/* Mobile close button */}
         <button
           onClick={() => setMobileOpen(false)}
-          className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-[#6B7280] hover:bg-[#E5E7EB] md:hidden"
+          className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-secondary)] md:hidden"
         >
           <X className="h-5 w-5" />
         </button>
 
-        {/* User section */}
+        {/* Logo / Brand area */}
         <div
           className={cn(
-            "flex items-center gap-3 border-b border-[#E5E7EB] p-4",
+            "flex items-center border-b border-[var(--border-subtle)] px-4 py-5",
             isCollapsed && "md:justify-center md:px-2"
           )}
         >
-          <Avatar className="h-9 w-9 shrink-0">
+          <span
+            className={cn(
+              "text-lg font-bold tracking-tight text-[var(--accent-primary)]",
+              isCollapsed && "md:hidden"
+            )}
+            style={{ textShadow: "0 0 10px rgba(0, 212, 170, 0.3)" }}
+          >
+            DAFTAR
+          </span>
+          {isCollapsed && (
+            <span
+              className="hidden text-lg font-bold text-[var(--accent-primary)] md:block"
+              style={{ textShadow: "0 0 10px rgba(0, 212, 170, 0.3)" }}
+            >
+              D
+            </span>
+          )}
+        </div>
+
+        {/* User section */}
+        <div
+          className={cn(
+            "flex items-center gap-3 border-b border-[var(--border-subtle)] p-4",
+            isCollapsed && "md:justify-center md:px-2"
+          )}
+        >
+          <Avatar className="h-9 w-9 shrink-0 ring-2 ring-transparent hover:ring-[var(--accent-primary)] transition-all">
             <AvatarImage src={user.image || undefined} alt={user.name} />
-            <AvatarFallback className="bg-[#2E86AB] text-white text-sm">
+            <AvatarFallback className="bg-[var(--accent-primary)] text-[var(--text-inverse)] text-sm font-semibold">
               {user.name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           {/* On mobile always show text; on desktop hide when collapsed */}
           <div className={cn("min-w-0 flex-1", isCollapsed && "md:hidden")}>
-            <p className="truncate text-sm font-medium text-[#1A1A1A]">
+            <p className="truncate text-sm font-medium text-[var(--text-primary)]">
               {user.name}
             </p>
             <Badge
               variant="secondary"
-              className="mt-0.5 text-[10px] font-normal"
+              className="mt-0.5 border-0 bg-[var(--bg-elevated)] text-[10px] font-normal text-[var(--text-secondary)]"
             >
               {ROLE_LABELS[user.role]}
             </Badge>
@@ -206,19 +232,20 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
                     href={item.href}
                     title={isCollapsed ? item.label : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                      "flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm transition-all duration-150",
                       isActive
-                        ? "bg-[#2E86AB]/10 font-medium text-[#2E86AB]"
-                        : "text-[#6B7280] hover:bg-[#F0F2F5] hover:text-[#1A1A1A]",
-                      isCollapsed && "md:justify-center md:px-2"
+                        ? "border-l-[3px] border-l-[var(--accent-primary)] bg-[rgba(0,212,170,0.08)] font-medium text-[var(--accent-primary)]"
+                        : "border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] hover:translate-x-0.5",
+                      isCollapsed && "md:justify-center md:border-l-0 md:px-2"
                     )}
                   >
                     {Icon && (
                       <Icon
                         className={cn(
-                          "h-[18px] w-[18px] shrink-0",
-                          isActive ? "text-[#2E86AB]" : "text-[#9CA3AF]"
+                          "h-5 w-5 shrink-0",
+                          isActive ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"
                         )}
+                        strokeWidth={1.5}
                       />
                     )}
                     {/* On mobile always show label; on desktop hide when collapsed */}
@@ -233,7 +260,7 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
         </nav>
 
         {/* Bottom section */}
-        <div className="border-t border-[#E5E7EB] p-2">
+        <div className="border-t border-[var(--border-subtle)] p-2">
           <ul className="space-y-0.5">
             {[
               { icon: Settings, label: "Settings", href: "/settings" },
@@ -244,11 +271,11 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
                   href={item.href}
                   title={isCollapsed ? item.label : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-[#6B7280] transition-colors hover:bg-[#F0F2F5] hover:text-[#1A1A1A]",
+                    "flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
                     isCollapsed && "md:justify-center md:px-2"
                   )}
                 >
-                  <item.icon className="h-[18px] w-[18px] shrink-0 text-[#9CA3AF]" />
+                  <item.icon className="h-5 w-5 shrink-0 text-[var(--text-muted)]" strokeWidth={1.5} />
                   <span className={cn(isCollapsed && "md:hidden")}>
                     {item.label}
                   </span>
@@ -260,11 +287,11 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
                 onClick={onSignOut}
                 title={isCollapsed ? "Logout" : undefined}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-[#6B7280] transition-colors hover:bg-red-50 hover:text-red-600",
+                  "flex w-full items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[rgba(239,68,68,0.1)] hover:text-[var(--status-error)]",
                   isCollapsed && "md:justify-center md:px-2"
                 )}
               >
-                <LogOut className="h-[18px] w-[18px] shrink-0 text-[#9CA3AF]" />
+                <LogOut className="h-5 w-5 shrink-0 text-[var(--text-muted)]" strokeWidth={1.5} />
                 <span className={cn(isCollapsed && "md:hidden")}>Logout</span>
               </button>
             </li>
@@ -273,7 +300,7 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
           {/* Toggle button — desktop only */}
           <button
             onClick={toggleSidebar}
-            className="mt-2 hidden w-full items-center justify-center rounded-lg py-1.5 text-[#9CA3AF] transition-colors hover:bg-[#F0F2F5] hover:text-[#6B7280] md:flex"
+            className="mt-2 hidden w-full items-center justify-center rounded-[var(--radius)] py-1.5 text-[var(--text-muted)] transition-all duration-150 hover:bg-[var(--bg-elevated)] hover:text-[var(--text-secondary)] md:flex"
           >
             {isCollapsed ? (
               <PanelLeftOpen className="h-4 w-4" />

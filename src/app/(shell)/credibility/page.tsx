@@ -52,16 +52,16 @@ interface Delivery {
 
 function scoreColor(val: number): string {
   if (val >= 80) return "text-emerald-600";
-  if (val >= 60) return "text-[#2E86AB]";
+  if (val >= 60) return "text-[var(--accent-primary)]";
   if (val >= 40) return "text-yellow-600";
   return "text-red-600";
 }
 
 function scoreBg(val: number): string {
-  if (val >= 80) return "bg-emerald-500";
-  if (val >= 60) return "bg-[#2E86AB]";
-  if (val >= 40) return "bg-yellow-500";
-  return "bg-red-500";
+  if (val >= 80) return "bg-[rgba(16,185,129,0.1)]0";
+  if (val >= 60) return "bg-[var(--accent-primary)]";
+  if (val >= 40) return "bg-[rgba(234,179,8,0.1)]0";
+  return "bg-[rgba(239,68,68,0.1)]0";
 }
 
 function scoreLabel(val: number): string {
@@ -93,14 +93,14 @@ export default function CredibilityPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
 
   if (!score || !stats || !streak) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-[#9CA3AF]">
+      <div className="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">
         No credibility data available yet. Complete tasks to build your score.
       </div>
     );
@@ -109,14 +109,14 @@ export default function CredibilityPage() {
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-[#1A1A1A]">Credibility Score</h2>
-        <p className="text-sm text-[#9CA3AF]">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Credibility Score</h2>
+        <p className="text-sm text-[var(--text-muted)]">
           Your reliability and performance metrics based on task delivery
         </p>
       </div>
 
       {/* Overall Score Hero */}
-      <div className="mb-6 rounded-xl border border-[#E5E7EB] bg-white p-6">
+      <div className="mb-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6">
         <div className="flex items-center gap-8">
           {/* Score ring */}
           <div className="relative flex h-32 w-32 shrink-0 items-center justify-center">
@@ -144,7 +144,7 @@ export default function CredibilityPage() {
               <span className={cn("text-3xl font-bold", scoreColor(score.overall))}>
                 {score.overall}
               </span>
-              <span className="text-[10px] text-[#9CA3AF]">/ 100</span>
+              <span className="text-[10px] text-[var(--text-muted)]">/ 100</span>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ export default function CredibilityPage() {
                 {scoreLabel(score.overall)}
               </span>
             </div>
-            <p className="mb-4 text-xs text-[#9CA3AF]">
+            <p className="mb-4 text-xs text-[var(--text-muted)]">
               Based on {score.tasksCompleted} completed tasks with {score.onTimePct}% on-time delivery
             </p>
 
@@ -178,7 +178,7 @@ export default function CredibilityPage() {
           value={String(score.tasksCompleted)}
         />
         <StatCard
-          icon={<Clock className="h-5 w-5 text-[#2E86AB]" />}
+          icon={<Clock className="h-5 w-5 text-[var(--accent-primary)]" />}
           label="On-Time Delivery"
           value={`${score.onTimePct}%`}
           sub={`${score.tasksOnTime} of ${score.tasksCompleted}`}
@@ -198,17 +198,17 @@ export default function CredibilityPage() {
       </div>
 
       {/* XP & Level */}
-      <div className="mb-6 rounded-lg border border-[#E5E7EB] bg-white p-5">
+      <div className="mb-6 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#2E86AB] to-[#A23B72] text-white">
             <Zap className="h-5 w-5" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-[#1A1A1A]">Level {streak.level}</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)]">Level {streak.level}</span>
               <Badge variant="secondary" className="text-[10px]">{streak.totalXp} XP</Badge>
             </div>
-            <p className="mt-1 text-xs text-[#9CA3AF]">
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
               {stats.doneTasks} tasks done &middot; {stats.inProgressTasks} in progress &middot; {stats.totalTasks} total assigned
             </p>
           </div>
@@ -216,12 +216,12 @@ export default function CredibilityPage() {
       </div>
 
       {/* Recent Deliveries */}
-      <div className="rounded-lg border border-[#E5E7EB] bg-white">
-        <div className="border-b border-[#E5E7EB] px-4 py-3">
-          <h3 className="text-sm font-semibold text-[#1A1A1A]">Recent Deliveries</h3>
+      <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <div className="border-b border-[var(--border-subtle)] px-4 py-3">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Recent Deliveries</h3>
         </div>
         {deliveries.length === 0 ? (
-          <div className="py-8 text-center text-sm text-[#9CA3AF]">
+          <div className="py-8 text-center text-sm text-[var(--text-muted)]">
             No completed tasks yet
           </div>
         ) : (
@@ -231,7 +231,7 @@ export default function CredibilityPage() {
                 <div
                   className={cn(
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-                    d.onTime ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+                    d.onTime ? "bg-[rgba(16,185,129,0.15)] text-emerald-600" : "bg-[rgba(239,68,68,0.15)] text-red-600"
                   )}
                 >
                   {d.onTime ? (
@@ -241,13 +241,13 @@ export default function CredibilityPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-[#1A1A1A]">{d.title}</p>
+                  <p className="truncate text-sm text-[var(--text-primary)]">{d.title}</p>
                   <div className="mt-0.5 flex items-center gap-2">
-                    <span className="text-[10px] text-[#9CA3AF]">
+                    <span className="text-[10px] text-[var(--text-muted)]">
                       Completed {new Date(d.completedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                     </span>
                     {d.dueDate && (
-                      <span className="text-[10px] text-[#9CA3AF]">
+                      <span className="text-[10px] text-[var(--text-muted)]">
                         &middot; Due {new Date(d.dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                       </span>
                     )}
@@ -259,10 +259,10 @@ export default function CredibilityPage() {
                     className={cn(
                       "text-[9px]",
                       d.priority === "URGENT"
-                        ? "bg-red-100 text-red-700"
+                        ? "bg-[rgba(239,68,68,0.15)] text-red-700"
                         : d.priority === "HIGH"
-                          ? "bg-orange-100 text-orange-700"
-                          : "bg-gray-100 text-gray-600"
+                          ? "bg-[rgba(249,115,22,0.15)] text-orange-700"
+                          : "bg-[var(--bg-elevated)] text-gray-600"
                     )}
                   >
                     {d.priority}
@@ -273,7 +273,7 @@ export default function CredibilityPage() {
                   <Badge
                     className={cn(
                       "text-[9px]",
-                      d.onTime ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                      d.onTime ? "bg-[rgba(16,185,129,0.15)] text-emerald-700" : "bg-[rgba(239,68,68,0.15)] text-red-700"
                     )}
                   >
                     {d.onTime ? "On Time" : "Late"}
@@ -301,10 +301,10 @@ function ScoreBar({
     <div>
       <div className="mb-1 flex items-center gap-1.5">
         <span className={scoreColor(value)}>{icon}</span>
-        <span className="text-xs text-[#6B7280]">{label}</span>
+        <span className="text-xs text-[var(--text-secondary)]">{label}</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-2 flex-1 rounded-full bg-[#F0F2F5]">
+        <div className="h-2 flex-1 rounded-full bg-[var(--bg-elevated)]">
           <div
             className={cn("h-2 rounded-full transition-all", scoreBg(value))}
             style={{ width: `${value}%` }}
@@ -332,18 +332,18 @@ function StatCard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-[#E5E7EB] bg-white p-4",
-        highlight && "border-red-200 bg-red-50"
+        "rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4",
+        highlight && "border-red-200 bg-[rgba(239,68,68,0.1)]"
       )}
     >
       <div className="mb-2 flex items-center gap-2">
         {icon}
-        <span className="text-xs text-[#9CA3AF]">{label}</span>
+        <span className="text-xs text-[var(--text-muted)]">{label}</span>
       </div>
-      <p className={cn("text-2xl font-bold", highlight ? "text-red-600" : "text-[#1A1A1A]")}>
+      <p className={cn("text-2xl font-bold", highlight ? "text-red-600" : "text-[var(--text-primary)]")}>
         {value}
       </p>
-      {sub && <p className="mt-0.5 text-[10px] text-[#9CA3AF]">{sub}</p>}
+      {sub && <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{sub}</p>}
     </div>
   );
 }

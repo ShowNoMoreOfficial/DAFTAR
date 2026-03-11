@@ -39,10 +39,10 @@ interface TwitterDeliverable {
 
 const typeColors: Record<string, string> = {
   hook: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-  data: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  data: "bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border-blue-500/20",
   context: "bg-zinc-800 text-zinc-400 border-zinc-700",
-  quote: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  cta: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  quote: "bg-[rgba(245,158,11,0.1)]0/10 text-amber-400 border-amber-500/20",
+  cta: "bg-[rgba(16,185,129,0.1)]0/10 text-emerald-400 border-emerald-500/20",
 };
 
 const XIcon = () => (
@@ -82,13 +82,13 @@ function ImagePromptBlock({
 
   return (
     <div className="mt-3 space-y-2">
-      <div className="flex items-center gap-2 text-xs text-indigo-400 bg-indigo-500/5 rounded-lg px-3 py-1.5 border border-indigo-500/10">
+      <div className="flex items-center gap-2 text-xs text-indigo-400 bg-[rgba(99,102,241,0.1)]0/5 rounded-lg px-3 py-1.5 border border-indigo-500/10">
         <ImageIcon />
         <span className="flex-1">{prompt}</span>
         <button
           onClick={() => onGenerate(imageKey, prompt)}
           disabled={isLoading}
-          className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[rgba(99,102,241,0.1)]0/20 hover:bg-[rgba(99,102,241,0.1)]0/30 text-indigo-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <>
@@ -140,7 +140,7 @@ function PostingPlan({ postingPlan, isThread }: { postingPlan: TwitterDeliverabl
           <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider mb-1">Hashtags</div>
           <div className="flex flex-wrap gap-1">
             {postingPlan.hashtags.map((tag, i) => (
-              <Badge key={i} variant="secondary" className="bg-blue-500/10 text-blue-400 border-none text-xs">
+              <Badge key={i} variant="secondary" className="bg-[rgba(59,130,246,0.1)]0/10 text-blue-400 border-none text-xs">
                 {tag}
               </Badge>
             ))}
@@ -193,11 +193,11 @@ function SingleTweetView({
         <CopyButton text={tweetText} />
       </div>
 
-      <Card className="rounded-xl p-5 border-border ring-1 ring-indigo-500/30 bg-indigo-500/5">
+      <Card className="rounded-xl p-5 border-border ring-1 ring-indigo-500/30 bg-[rgba(99,102,241,0.1)]0/5">
         <div className="flex items-center gap-2 mb-3">
           <Badge
             variant="outline"
-            className="text-[9px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+            className="text-[9px] font-black uppercase tracking-wider bg-[rgba(99,102,241,0.1)]0/10 text-indigo-400 border-indigo-500/20"
           >
             single
           </Badge>
@@ -292,7 +292,7 @@ function ThreadView({
                   {tweet.text}
                 </p>
                 {tweet.media_notes && (
-                  <div className="mt-2 flex items-center gap-2 text-xs text-indigo-400 bg-indigo-500/5 rounded-lg px-3 py-1.5 border border-indigo-500/10">
+                  <div className="mt-2 flex items-center gap-2 text-xs text-indigo-400 bg-[rgba(99,102,241,0.1)]0/5 rounded-lg px-3 py-1.5 border border-indigo-500/10">
                     <ImageIcon />
                     <span>{tweet.media_notes}</span>
                   </div>

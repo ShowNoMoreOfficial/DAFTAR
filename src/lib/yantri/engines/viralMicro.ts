@@ -3,6 +3,7 @@
  */
 
 import { routeToModel } from "@/lib/yantri/model-router";
+import { getBrandVoiceBlock } from "@/lib/yantri/brand-voice";
 
 export interface ViralMicroResult {
   platform: "x" | "linkedin";
@@ -45,6 +46,8 @@ TARGET PLATFORM: ${params.targetPlatform}
 RESEARCH DOSSIER:
 ${params.researchResults}
 
+${getBrandVoiceBlock(params.brandName, params.voiceRules, params.brandTone, params.language)}
+
 PHASE 1 — SIGNAL ANALYSIS:
 Identify the SINGLE most viral-worthy data point, contradiction, or insight.
 
@@ -81,7 +84,7 @@ export async function runViralMicroEngine(params: ViralMicroParams): Promise<Vir
   const systemPrompt = buildViralMicroPrompt(params);
   const userMessage = `Analyze the research, identify the most viral signal, and craft the complete micro-content for: "${params.narrativeAngle}". Make it scroll-stopping.`;
 
-  const result = await routeToModel("drafting", systemPrompt, userMessage, { temperature: 0.6 });
+  const result = await routeToModel("drafting", systemPrompt, userMessage, { temperature: 0.45 });
 
   if (!result.parsed) {
     throw new Error(`ViralMicroEngine: model returned unparseable response. Raw (first 300 chars): ${result.raw.slice(0, 300)}`);

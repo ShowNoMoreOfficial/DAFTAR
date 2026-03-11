@@ -21,21 +21,28 @@ export async function GET() {
 
   const now = new Date();
 
-  // ── Company Velocity: real tasks completed per week ──────────
-  const companyVelocity: { week: string; tasks: number }[] = [];
+  // ── Company Velocity: batch query all completed tasks in last 8 weeks ──
+  const eightWeeksAgo = new Date(now);
+  eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 8 * 7);
 
+  const completedTasks = await prisma.task.findMany({
+    where: {
+      status: "DONE",
+      completedAt: { gte: eightWeeksAgo, lt: now },
+    },
+    select: { completedAt: true },
+  });
+
+  const companyVelocity: { week: string; tasks: number }[] = [];
   for (let i = 7; i >= 0; i--) {
     const weekEnd = new Date(now);
     weekEnd.setDate(weekEnd.getDate() - i * 7);
     const weekStart = new Date(weekEnd);
     weekStart.setDate(weekStart.getDate() - 7);
 
-    const count = await prisma.task.count({
-      where: {
-        status: "DONE",
-        completedAt: { gte: weekStart, lt: weekEnd },
-      },
-    });
+    const count = completedTasks.filter(
+      (t) => t.completedAt! >= weekStart && t.completedAt! < weekEnd
+    ).length;
 
     companyVelocity.push({
       week: weekEnd.toLocaleDateString("en-IN", {
@@ -46,34 +53,42 @@ export async function GET() {
     });
   }
 
-  // ── Department Capacity: open tasks / headcount ──────────────
-  const departments = await prisma.department.findMany({
-    select: { id: true, name: true },
-  });
+  // ── Department Capacity: batch query headcount + open tasks ──
+  const [departments, headcountByDept, openTasksByDept] = await Promise.all([
+    prisma.department.findMany({ select: { id: true, name: true } }),
+    prisma.user.groupBy({
+      by: ["primaryDeptId"],
+      _count: { id: true },
+    }),
+    prisma.task.groupBy({
+      by: ["departmentId"],
+      where: {
+        status: { in: ["CREATED", "ASSIGNED", "IN_PROGRESS", "REVIEW"] },
+      },
+      _count: { id: true },
+    }),
+  ]);
 
-  const departmentCapacity = await Promise.all(
-    departments.map(async (dept) => {
-      const headcount = await prisma.user.count({
-        where: { primaryDeptId: dept.id },
-      });
-
-      const openTasks = await prisma.task.count({
-        where: {
-          departmentId: dept.id,
-          status: { in: ["CREATED", "ASSIGNED", "IN_PROGRESS", "REVIEW"] },
-        },
-      });
-
-      // Capacity = open tasks per person (scaled to 0–100)
-      // 5 open tasks per person = 100% capacity
-      const capacity =
-        headcount > 0
-          ? Math.min(100, Math.round((openTasks / headcount / 5) * 100))
-          : 0;
-
-      return { department: dept.name, capacity, headcount };
-    })
+  const headcountMap = new Map(
+    headcountByDept
+      .filter((h) => h.primaryDeptId != null)
+      .map((h) => [h.primaryDeptId!, h._count.id])
   );
+  const openTasksMap = new Map(
+    openTasksByDept
+      .filter((t) => t.departmentId != null)
+      .map((t) => [t.departmentId!, t._count.id])
+  );
+
+  const departmentCapacity = departments.map((dept) => {
+    const headcount = headcountMap.get(dept.id) ?? 0;
+    const openTasks = openTasksMap.get(dept.id) ?? 0;
+    const capacity =
+      headcount > 0
+        ? Math.min(100, Math.round((openTasks / headcount / 5) * 100))
+        : 0;
+    return { department: dept.name, capacity, headcount };
+  });
 
   // ── Summary ──────────────────────────────────────────────────
   const totalVelocity = companyVelocity.reduce((s, w) => s + w.tasks, 0);

@@ -132,9 +132,9 @@ const MOCK_CLIENTS: Client[] = [
 ];
 
 const CLIENT_STATUS_STYLES: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-700",
-  trial: "bg-amber-100 text-amber-700",
-  churned: "bg-red-100 text-red-700",
+  active: "bg-[rgba(16,185,129,0.15)] text-emerald-700",
+  trial: "bg-[rgba(245,158,11,0.15)] text-amber-700",
+  churned: "bg-[rgba(239,68,68,0.15)] text-red-700",
 };
 
 export default function HoccrStandalonePage() {
@@ -161,10 +161,10 @@ export default function HoccrStandalonePage() {
         <div className="h-8 w-64 animate-pulse rounded-lg bg-gray-200" />
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl border border-[#E5E7EB] bg-white" />
+            <div key={i} className="h-28 animate-pulse rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]" />
           ))}
         </div>
-        <div className="h-96 animate-pulse rounded-xl border border-[#E5E7EB] bg-white" />
+        <div className="h-96 animate-pulse rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]" />
       </div>
     );
   }
@@ -174,18 +174,18 @@ export default function HoccrStandalonePage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#A23B72] text-lg font-bold text-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-secondary)] text-lg font-bold text-white">
             H
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-[#1A1A1A]">HOCCR Standalone</h1>
-            <p className="mt-0.5 text-sm text-[#6B7280]">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)]">HOCCR Standalone</h1>
+            <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
               Hiring, Operations, Culture, Communication &amp; Reporting
             </p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(16,185,129,0.15)] px-3 py-1 text-xs font-medium text-emerald-700">
+          <span className="h-1.5 w-1.5 rounded-full bg-[rgba(16,185,129,0.1)]0" />
           Live
         </span>
       </div>
@@ -193,42 +193,42 @@ export default function HoccrStandalonePage() {
       {/* Key Stats */}
       {stats && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Active Organizations</p>
-            <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{stats.activeOrganizations}</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Active Organizations</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{stats.activeOrganizations}</p>
             <p className="mt-1 text-xs text-emerald-600">+2 this quarter</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Total Users</p>
-            <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">{stats.totalUsers}</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Total Users</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{stats.totalUsers}</p>
             <p className="mt-1 text-xs text-emerald-600">+{stats.growthPercent}% growth</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">MRR from HOCCR</p>
-            <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">${stats.mrr.toLocaleString()}</p>
-            <p className="mt-1 text-xs text-[#6B7280]">35% of total MRR</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">MRR from HOCCR</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">${stats.mrr.toLocaleString()}</p>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">35% of total MRR</p>
           </div>
-          <div className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7280]">Avg Revenue / Org</p>
-            <p className="mt-2 text-2xl font-bold text-[#1A1A1A]">
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">Avg Revenue / Org</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">
               ${stats.activeOrganizations > 0 ? Math.round(stats.mrr / stats.activeOrganizations).toLocaleString() : 0}
             </p>
-            <p className="mt-1 text-xs text-[#6B7280]">per month</p>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">per month</p>
           </div>
         </div>
       )}
 
       {/* Features */}
       <div>
-        <h2 className="mb-4 text-sm font-semibold text-[#1A1A1A]">Core Features</h2>
+        <h2 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">Core Features</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature) => (
-            <div key={feature.name} className="rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#A23B72]/10 text-[#A23B72]">
+            <div key={feature.name} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-secondary)]/10 text-[var(--accent-secondary)]">
                 {feature.icon}
               </div>
-              <h3 className="mt-3 text-sm font-semibold text-[#1A1A1A]">{feature.name}</h3>
-              <p className="mt-1 text-xs text-[#6B7280] leading-relaxed">{feature.description}</p>
+              <h3 className="mt-3 text-sm font-semibold text-[var(--text-primary)]">{feature.name}</h3>
+              <p className="mt-1 text-xs text-[var(--text-secondary)] leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>
@@ -236,33 +236,33 @@ export default function HoccrStandalonePage() {
 
       {/* Pricing Tiers */}
       <div>
-        <h2 className="mb-4 text-sm font-semibold text-[#1A1A1A]">Pricing Tiers</h2>
+        <h2 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">Pricing Tiers</h2>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {PRICING_TIERS.map((tier) => (
             <div
               key={tier.name}
               className={`rounded-xl border p-6 shadow-sm ${
                 tier.highlighted
-                  ? "border-[#A23B72] bg-white ring-2 ring-[#A23B72]/20"
-                  : "border-[#E5E7EB] bg-white"
+                  ? "border-[#A23B72] bg-[var(--bg-surface)] ring-2 ring-[#A23B72]/20"
+                  : "border-[var(--border-subtle)] bg-[var(--bg-surface)]"
               }`}
             >
               {tier.highlighted && (
-                <span className="mb-3 inline-flex rounded-full bg-[#A23B72] px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                <span className="mb-3 inline-flex rounded-full bg-[var(--accent-secondary)] px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                   Most Popular
                 </span>
               )}
-              <h3 className="text-lg font-semibold text-[#1A1A1A]">{tier.name}</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">{tier.name}</h3>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-[#1A1A1A]">{tier.price}</span>
-                {tier.period && <span className="text-sm text-[#6B7280]">{tier.period}</span>}
+                <span className="text-3xl font-bold text-[var(--text-primary)]">{tier.price}</span>
+                {tier.period && <span className="text-sm text-[var(--text-secondary)]">{tier.period}</span>}
               </div>
-              <p className="mt-1 text-xs text-[#6B7280]">{tier.users}</p>
+              <p className="mt-1 text-xs text-[var(--text-secondary)]">{tier.users}</p>
 
               <ul className="mt-5 space-y-2.5">
                 {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-xs text-[#1A1A1A]">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#A23B72]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  <li key={f} className="flex items-start gap-2 text-xs text-[var(--text-primary)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent-secondary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     {f}
                   </li>
                 ))}
@@ -271,8 +271,8 @@ export default function HoccrStandalonePage() {
               <button
                 className={`mt-6 w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                   tier.highlighted
-                    ? "bg-[#A23B72] text-white hover:bg-[#A23B72]/90"
-                    : "border border-[#E5E7EB] text-[#1A1A1A] hover:bg-[#F8F9FA]"
+                    ? "bg-[var(--accent-secondary)] text-white hover:bg-[var(--accent-secondary)]/90"
+                    : "border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface)]"
                 }`}
               >
                 {tier.cta}
@@ -283,13 +283,13 @@ export default function HoccrStandalonePage() {
       </div>
 
       {/* Client List */}
-      <div className="rounded-xl border border-[#E5E7EB] bg-white shadow-sm">
-        <div className="border-b border-[#E5E7EB] px-6 py-4">
-          <h2 className="text-sm font-semibold text-[#1A1A1A]">HOCCR Clients</h2>
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-sm">
+        <div className="border-b border-[var(--border-subtle)] px-6 py-4">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">HOCCR Clients</h2>
         </div>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#E5E7EB] text-left text-xs font-medium uppercase tracking-wider text-[#6B7280]">
+            <tr className="border-b border-[var(--border-subtle)] text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
               <th className="px-6 py-3">Organization</th>
               <th className="px-6 py-3">Plan</th>
               <th className="px-6 py-3">Users</th>
@@ -299,23 +299,23 @@ export default function HoccrStandalonePage() {
           </thead>
           <tbody className="divide-y divide-[#E5E7EB]">
             {MOCK_CLIENTS.map((client) => (
-              <tr key={client.id} className="hover:bg-[#F8F9FA]">
+              <tr key={client.id} className="hover:bg-[var(--bg-surface)]">
                 <td className="px-6 py-4">
-                  <span className="text-sm font-medium text-[#1A1A1A]">{client.name}</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">{client.name}</span>
                 </td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     client.plan === "Enterprise"
-                      ? "bg-[#A23B72]/10 text-[#A23B72]"
+                      ? "bg-[var(--accent-secondary)]/10 text-[var(--accent-secondary)]"
                       : client.plan === "Professional"
-                        ? "bg-[#2E86AB]/10 text-[#2E86AB]"
-                        : "bg-gray-100 text-gray-700"
+                        ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]"
+                        : "bg-[var(--bg-elevated)] text-gray-700"
                   }`}>
                     {client.plan}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-[#1A1A1A]">{client.users}</td>
-                <td className="px-6 py-4 text-xs text-[#6B7280]">{client.since}</td>
+                <td className="px-6 py-4 text-sm text-[var(--text-primary)]">{client.users}</td>
+                <td className="px-6 py-4 text-xs text-[var(--text-secondary)]">{client.since}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${CLIENT_STATUS_STYLES[client.status]}`}>
                     {client.status}

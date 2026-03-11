@@ -47,12 +47,12 @@ const STATUS_COLUMNS = [
 ] as const;
 
 const statusBadgeClasses: Record<string, string> = {
-  IDEA: "bg-gray-50 text-gray-700",
-  DRAFTING: "bg-blue-50 text-blue-700",
-  EDITING: "bg-amber-50 text-amber-700",
-  REVIEW: "bg-purple-50 text-purple-700",
-  APPROVED: "bg-green-50 text-green-700",
-  PUBLISHED: "bg-emerald-50 text-emerald-700",
+  IDEA: "bg-[var(--bg-elevated)] text-gray-700",
+  DRAFTING: "bg-[rgba(59,130,246,0.1)] text-blue-700",
+  EDITING: "bg-[rgba(245,158,11,0.1)] text-amber-700",
+  REVIEW: "bg-[rgba(168,85,247,0.1)] text-purple-700",
+  APPROVED: "bg-[rgba(34,197,94,0.1)] text-green-700",
+  PUBLISHED: "bg-[rgba(16,185,129,0.1)] text-emerald-700",
 };
 
 function formatDate(dateStr: string) {
@@ -144,8 +144,8 @@ export default function PipelinePage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-[#6B7280]" />
-        <span className="ml-2 text-sm text-[#6B7280]">Loading...</span>
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--text-secondary)]" />
+        <span className="ml-2 text-sm text-[var(--text-secondary)]">Loading...</span>
       </div>
     );
   }
@@ -153,10 +153,10 @@ export default function PipelinePage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] bg-[#F8F9FA] px-6 py-4">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
         <div>
-          <h1 className="text-lg font-semibold text-[#1A1A1A]">Editorial Pipeline</h1>
-          <p className="text-sm text-[#6B7280]">
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Editorial Pipeline</h1>
+          <p className="text-sm text-[var(--text-secondary)]">
             {articles.length} article{articles.length !== 1 ? "s" : ""} in pipeline
           </p>
         </div>
@@ -171,7 +171,7 @@ export default function PipelinePage() {
           </Button>
           <Button
             size="sm"
-            className="bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+            className="bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
             onClick={() => setShowCreateForm(true)}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -182,11 +182,11 @@ export default function PipelinePage() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="flex items-center gap-3 border-b border-[#E5E7EB] bg-white px-6 py-3">
+        <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3">
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="h-8 rounded-lg border border-[#E5E7EB] bg-white px-2.5 text-sm text-[#1A1A1A] outline-none focus:border-[#2E86AB]"
+            className="h-8 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#2E86AB]"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -217,9 +217,9 @@ export default function PipelinePage() {
 
       {/* Create Form */}
       {showCreateForm && (
-        <div className="border-b border-[#E5E7EB] bg-white px-6 py-4">
-          <div className="mx-auto max-w-lg rounded-xl border border-[#E5E7EB] bg-white p-4">
-            <h3 className="mb-3 text-sm font-semibold text-[#1A1A1A]">Create New Article</h3>
+        <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-4">
+          <div className="mx-auto max-w-lg rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
+            <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">Create New Article</h3>
             <div className="space-y-3">
               <Input
                 placeholder="Article title"
@@ -229,7 +229,7 @@ export default function PipelinePage() {
               <select
                 value={newCategoryId}
                 onChange={(e) => setNewCategoryId(e.target.value)}
-                className="h-8 w-full rounded-lg border border-[#E5E7EB] bg-white px-2.5 text-sm text-[#1A1A1A] outline-none focus:border-[#2E86AB]"
+                className="h-8 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[#2E86AB]"
               >
                 <option value="">Select category</option>
                 {categories.map((cat) => (
@@ -246,7 +246,7 @@ export default function PipelinePage() {
               <div className="flex items-center gap-2 pt-1">
                 <Button
                   size="sm"
-                  className="bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+                  className="bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
                   onClick={handleCreate}
                 >
                   Create
@@ -267,14 +267,14 @@ export default function PipelinePage() {
       {/* Kanban Board */}
       {articles.length === 0 && !loading ? (
         <div className="flex flex-1 flex-col items-center justify-center py-20">
-          <Kanban className="h-10 w-10 text-[#9CA3AF]" />
-          <p className="mt-3 text-sm font-medium text-[#1A1A1A]">No articles yet</p>
-          <p className="mt-1 text-sm text-[#6B7280]">
+          <Kanban className="h-10 w-10 text-[var(--text-muted)]" />
+          <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">No articles yet</p>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Create your first article to get started
           </p>
           <Button
             size="sm"
-            className="mt-4 bg-[#2E86AB] text-white hover:bg-[#2E86AB]/90"
+            className="mt-4 bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
             onClick={() => setShowCreateForm(true)}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -286,7 +286,7 @@ export default function PipelinePage() {
           {groupedByStatus.map((column) => (
             <div
               key={column.key}
-              className="flex w-64 min-w-[256px] flex-col rounded-xl border border-[#E5E7EB] bg-[#F8F9FA]"
+              className="flex w-64 min-w-[256px] flex-col rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]"
             >
               {/* Column Header */}
               <div className="flex items-center justify-between px-3 py-3">
@@ -299,7 +299,7 @@ export default function PipelinePage() {
                   >
                     {column.label}
                   </span>
-                  <span className="text-xs text-[#9CA3AF]">
+                  <span className="text-xs text-[var(--text-muted)]">
                     {column.articles.length}
                   </span>
                 </div>
@@ -313,7 +313,7 @@ export default function PipelinePage() {
                   return (
                     <div
                       key={article.id}
-                      className="cursor-pointer rounded-xl border border-[#E5E7EB] bg-white p-3 transition-shadow hover:shadow-sm"
+                      className="cursor-pointer rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 transition-shadow hover:shadow-sm"
                       onClick={() =>
                         setExpandedArticleId(isExpanded ? null : article.id)
                       }
@@ -332,12 +332,12 @@ export default function PipelinePage() {
                       )}
 
                       {/* Title */}
-                      <p className="text-sm font-medium text-[#1A1A1A] leading-snug">
+                      <p className="text-sm font-medium text-[var(--text-primary)] leading-snug">
                         {article.title}
                       </p>
 
                       {/* Meta */}
-                      <div className="mt-2 flex items-center gap-3 text-[11px] text-[#9CA3AF]">
+                      <div className="mt-2 flex items-center gap-3 text-[11px] text-[var(--text-muted)]">
                         {article.author && (
                           <span className="flex items-center gap-1">
                             <User className="h-3 w-3" />
@@ -359,8 +359,8 @@ export default function PipelinePage() {
                             className={cn(
                               "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
                               new Date(article.scheduledAt) < new Date()
-                                ? "bg-red-50 text-red-700"
-                                : "bg-blue-50 text-blue-700"
+                                ? "bg-[rgba(239,68,68,0.1)] text-red-700"
+                                : "bg-[rgba(59,130,246,0.1)] text-blue-700"
                             )}
                           >
                             {new Date(article.scheduledAt) < new Date()
@@ -373,18 +373,18 @@ export default function PipelinePage() {
 
                       {/* Expanded Details */}
                       {isExpanded && (
-                        <div className="mt-3 border-t border-[#E5E7EB] pt-3">
+                        <div className="mt-3 border-t border-[var(--border-subtle)] pt-3">
                           {article.excerpt && (
-                            <p className="mb-2 text-xs text-[#6B7280]">
+                            <p className="mb-2 text-xs text-[var(--text-secondary)]">
                               {article.excerpt}
                             </p>
                           )}
-                          <p className="text-[11px] text-[#9CA3AF]">
+                          <p className="text-[11px] text-[var(--text-muted)]">
                             Updated {formatDate(article.updatedAt)}
                           </p>
                           <a
                             href={`/m/vritti/articles/${article.id}`}
-                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#2E86AB] hover:underline"
+                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[var(--accent-primary)] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             Open article

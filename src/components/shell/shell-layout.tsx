@@ -91,7 +91,7 @@ export function ShellLayout({ user, children }: ShellLayoutProps) {
 
   return (
     <NotificationProvider>
-      <div className="relative flex h-screen overflow-hidden bg-white">
+      <div className="relative flex h-screen overflow-hidden bg-[var(--bg-abyss)]">
         <Sidebar user={user} onSignOut={handleSignOut} />
 
         <div className="flex flex-1 flex-col overflow-hidden">

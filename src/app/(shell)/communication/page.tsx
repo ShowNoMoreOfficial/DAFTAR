@@ -63,18 +63,18 @@ interface FeedbackEntry {
 // ─── Constants ──────────────────────────────────────────
 
 const PRIORITY_STYLES: Record<string, { bg: string; text: string }> = {
-  LOW: { bg: "bg-gray-100", text: "text-gray-600" },
-  NORMAL: { bg: "bg-blue-50", text: "text-blue-700" },
-  HIGH: { bg: "bg-orange-50", text: "text-orange-700" },
-  URGENT: { bg: "bg-red-50", text: "text-red-700" },
+  LOW: { bg: "bg-[var(--bg-elevated)]", text: "text-gray-600" },
+  NORMAL: { bg: "bg-[rgba(59,130,246,0.1)]", text: "text-blue-700" },
+  HIGH: { bg: "bg-[rgba(249,115,22,0.1)]", text: "text-orange-700" },
+  URGENT: { bg: "bg-[rgba(239,68,68,0.1)]", text: "text-red-700" },
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  open: "bg-yellow-100 text-yellow-700",
-  acknowledged: "bg-blue-100 text-blue-700",
-  in_progress: "bg-purple-100 text-purple-700",
-  resolved: "bg-emerald-100 text-emerald-700",
-  closed: "bg-gray-100 text-gray-500",
+  open: "bg-[rgba(234,179,8,0.15)] text-yellow-700",
+  acknowledged: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  in_progress: "bg-[rgba(168,85,247,0.15)] text-purple-700",
+  resolved: "bg-[rgba(16,185,129,0.15)] text-emerald-700",
+  closed: "bg-[var(--bg-elevated)] text-gray-500",
 };
 
 // ─── Component ──────────────────────────────────────────
@@ -85,7 +85,7 @@ export default function CommunicationPage() {
   return (
     <div className="h-full overflow-y-auto">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-[#E5E7EB] bg-white px-6">
+      <div className="flex items-center gap-1 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6">
         {([
           { key: "announcements" as const, label: "Announcements", icon: Megaphone },
           { key: "feedback" as const, label: "Feedback", icon: MessageSquare },
@@ -96,8 +96,8 @@ export default function CommunicationPage() {
             className={cn(
               "flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm transition-colors",
               activeTab === tab.key
-                ? "border-[#2E86AB] font-medium text-[#2E86AB]"
-                : "border-transparent text-[#6B7280] hover:text-[#1A1A1A]"
+                ? "border-[#2E86AB] font-medium text-[var(--accent-primary)]"
+                : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             )}
           >
             <tab.icon className="h-4 w-4" />
@@ -193,7 +193,7 @@ function AnnouncementsTab() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -202,8 +202,8 @@ function AnnouncementsTab() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-[#1A1A1A]">Announcements</h3>
-          <p className="text-xs text-[#9CA3AF]">Organization and department updates</p>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Announcements</h3>
+          <p className="text-xs text-[var(--text-muted)]">Organization and department updates</p>
         </div>
         {canCreate && (
           <Button size="sm" onClick={() => setCreateOpen(true)}>
@@ -216,10 +216,10 @@ function AnnouncementsTab() {
       {/* Create dialog */}
       {createOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-lg rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">New Announcement</h3>
-              <button onClick={() => setCreateOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">New Announcement</h3>
+              <button onClick={() => setCreateOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -235,7 +235,7 @@ function AnnouncementsTab() {
                 <select
                   value={formPriority}
                   onChange={(e) => setFormPriority(e.target.value)}
-                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
                 >
                   <option value="LOW">Low Priority</option>
                   <option value="NORMAL">Normal</option>
@@ -245,7 +245,7 @@ function AnnouncementsTab() {
                 <select
                   value={formDeptId}
                   onChange={(e) => setFormDeptId(e.target.value)}
-                  className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
                 >
                   <option value="">Organization-wide</option>
                   {departments.map((d) => (
@@ -253,7 +253,7 @@ function AnnouncementsTab() {
                   ))}
                 </select>
               </div>
-              <label className="flex items-center gap-2 text-sm text-[#6B7280]">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                 <input
                   type="checkbox"
                   checked={formPinned}
@@ -275,7 +275,7 @@ function AnnouncementsTab() {
 
       {/* Announcements list */}
       {announcements.length === 0 ? (
-        <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-8 text-center text-sm text-[#9CA3AF]">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
           No announcements yet.
         </div>
       ) : (
@@ -289,14 +289,14 @@ function AnnouncementsTab() {
                 <div
                   key={ann.id}
                   className={cn(
-                    "rounded-lg border bg-white p-4 transition-colors",
-                    !ann.isRead ? "border-[#2E86AB]/30 bg-[#F8FBFD]" : "border-[#E5E7EB]"
+                    "rounded-lg border bg-[var(--bg-surface)] p-4 transition-colors",
+                    !ann.isRead ? "border-[#2E86AB]/30 bg-[#F8FBFD]" : "border-[var(--border-subtle)]"
                   )}
                 >
                   <div className="mb-2 flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      {ann.isPinned && <Pin className="h-3.5 w-3.5 text-[#2E86AB]" />}
-                      <h4 className="text-sm font-medium text-[#1A1A1A]">{ann.title}</h4>
+                      {ann.isPinned && <Pin className="h-3.5 w-3.5 text-[var(--accent-primary)]" />}
+                      <h4 className="text-sm font-medium text-[var(--text-primary)]">{ann.title}</h4>
                       <Badge className={cn("text-[10px]", prStyle.bg, prStyle.text)}>
                         {ann.priority}
                       </Badge>
@@ -308,7 +308,7 @@ function AnnouncementsTab() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-xs text-[#2E86AB]"
+                        className="h-7 text-xs text-[var(--accent-primary)]"
                         onClick={() => handleMarkRead(ann.id)}
                       >
                         <Check className="mr-1 h-3 w-3" />
@@ -316,8 +316,8 @@ function AnnouncementsTab() {
                       </Button>
                     )}
                   </div>
-                  <p className="text-sm text-[#6B7280] whitespace-pre-line">{ann.content}</p>
-                  <div className="mt-3 flex items-center gap-3 text-[10px] text-[#9CA3AF]">
+                  <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">{ann.content}</p>
+                  <div className="mt-3 flex items-center gap-3 text-[10px] text-[var(--text-muted)]">
                     {ann.authorName && <span>By {ann.authorName}</span>}
                     <span>
                       {new Date(ann.createdAt).toLocaleDateString("en-IN", {
@@ -466,7 +466,7 @@ function FeedbackTab() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E86AB]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-primary)]" />
       </div>
     );
   }
@@ -475,8 +475,8 @@ function FeedbackTab() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-[#1A1A1A]">Feedback Channels</h3>
-          <p className="text-xs text-[#9CA3AF]">Share ideas, concerns, and suggestions</p>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Feedback Channels</h3>
+          <p className="text-xs text-[var(--text-muted)]">Share ideas, concerns, and suggestions</p>
         </div>
         {isAdmin && (
           <Button size="sm" variant="outline" onClick={() => setCreateChannelOpen(true)}>
@@ -490,7 +490,7 @@ function FeedbackTab() {
         {/* Channel list */}
         <div className="space-y-2">
           {channels.length === 0 ? (
-            <p className="py-8 text-center text-xs text-[#9CA3AF]">No channels yet</p>
+            <p className="py-8 text-center text-xs text-[var(--text-muted)]">No channels yet</p>
           ) : (
             channels.map((ch) => (
               <button
@@ -500,15 +500,15 @@ function FeedbackTab() {
                   "flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors",
                   selectedChannel === ch.id
                     ? "border-[#2E86AB] bg-[#F8FBFD]"
-                    : "border-[#E5E7EB] bg-white hover:border-[#2E86AB]/30"
+                    : "border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[#2E86AB]/30"
                 )}
               >
-                <MessageSquare className={cn("h-4 w-4", selectedChannel === ch.id ? "text-[#2E86AB]" : "text-[#9CA3AF]")} />
+                <MessageSquare className={cn("h-4 w-4", selectedChannel === ch.id ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]")} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-[#1A1A1A]">{ch.name}</p>
-                  <p className="text-[10px] text-[#9CA3AF] capitalize">{ch.type}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{ch.name}</p>
+                  <p className="text-[10px] text-[var(--text-muted)] capitalize">{ch.type}</p>
                 </div>
-                <ChevronRight className="h-3.5 w-3.5 text-[#9CA3AF]" />
+                <ChevronRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
               </button>
             ))
           )}
@@ -517,13 +517,13 @@ function FeedbackTab() {
         {/* Entries */}
         <div className="col-span-3">
           {!selectedChannel ? (
-            <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-12 text-center text-sm text-[#9CA3AF]">
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-12 text-center text-sm text-[var(--text-muted)]">
               Select a channel to view feedback
             </div>
           ) : (
             <>
               <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-[#1A1A1A]">
+                <h4 className="text-sm font-semibold text-[var(--text-primary)]">
                   {channels.find((c) => c.id === selectedChannel)?.name}
                 </h4>
                 <Button size="sm" onClick={() => setSubmitFeedbackOpen(true)}>
@@ -533,18 +533,18 @@ function FeedbackTab() {
               </div>
 
               {entries.length === 0 ? (
-                <div className="rounded-lg border border-[#E5E7EB] bg-white px-4 py-8 text-center text-sm text-[#9CA3AF]">
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
                   No feedback yet. Be the first to share.
                 </div>
               ) : (
                 <div className="space-y-2">
                   {entries.map((entry) => (
-                    <div key={entry.id} className="rounded-lg border border-[#E5E7EB] bg-white p-4">
-                      <p className="text-sm text-[#1A1A1A] whitespace-pre-line">{entry.content}</p>
+                    <div key={entry.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
+                      <p className="text-sm text-[var(--text-primary)] whitespace-pre-line">{entry.content}</p>
                       {entry.response && (
-                        <div className="mt-2 rounded-lg bg-[#F0F2F5] p-3">
-                          <p className="text-xs font-medium text-[#2E86AB]">Response:</p>
-                          <p className="text-sm text-[#6B7280]">{entry.response}</p>
+                        <div className="mt-2 rounded-lg bg-[var(--bg-elevated)] p-3">
+                          <p className="text-xs font-medium text-[var(--accent-primary)]">Response:</p>
+                          <p className="text-sm text-[var(--text-secondary)]">{entry.response}</p>
                         </div>
                       )}
                       {/* Admin response form */}
@@ -568,7 +568,7 @@ function FeedbackTab() {
                         </div>
                       )}
                       <div className="mt-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-[10px] text-[#9CA3AF]">
+                        <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
                           <Badge className={cn("text-[10px]", STATUS_COLORS[entry.status] || "")}>
                             {entry.status}
                           </Badge>
@@ -579,7 +579,7 @@ function FeedbackTab() {
                           </span>
                           <button
                             onClick={() => handleUpvote(entry.id)}
-                            className="flex items-center gap-0.5 hover:text-[#2E86AB] transition-colors"
+                            className="flex items-center gap-0.5 hover:text-[var(--accent-primary)] transition-colors"
                           >
                             <ThumbsUp className="h-3 w-3" /> {entry.upvotes}
                           </button>
@@ -589,7 +589,7 @@ function FeedbackTab() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 text-[10px] text-[#2E86AB]"
+                              className="h-6 text-[10px] text-[var(--accent-primary)]"
                               onClick={() => { setRespondingTo(entry.id); setResponseText(""); }}
                             >
                               Reply
@@ -599,7 +599,7 @@ function FeedbackTab() {
                             <select
                               value={entry.status}
                               onChange={(e) => handleUpdateStatus(entry.id, e.target.value)}
-                              className="rounded border border-[#E5E7EB] px-2 py-0.5 text-[10px]"
+                              className="rounded border border-[var(--border-subtle)] px-2 py-0.5 text-[10px]"
                             >
                               <option value="open">Open</option>
                               <option value="acknowledged">Acknowledged</option>
@@ -622,10 +622,10 @@ function FeedbackTab() {
       {/* Create channel dialog */}
       {createChannelOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">New Feedback Channel</h3>
-              <button onClick={() => setCreateChannelOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">New Feedback Channel</h3>
+              <button onClick={() => setCreateChannelOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -635,14 +635,14 @@ function FeedbackTab() {
               <select
                 value={chType}
                 onChange={(e) => setChType(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="suggestion">Suggestion</option>
                 <option value="concern">Concern</option>
                 <option value="idea">Idea</option>
                 <option value="general">General</option>
               </select>
-              <label className="flex items-center gap-2 text-sm text-[#6B7280]">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                 <input
                   type="checkbox"
                   checked={chAnonymous}
@@ -665,15 +665,15 @@ function FeedbackTab() {
       {/* Submit feedback dialog */}
       {submitFeedbackOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">Submit Feedback</h3>
-              <button onClick={() => setSubmitFeedbackOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">Submit Feedback</h3>
+              <button onClick={() => setSubmitFeedbackOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="h-5 w-5" />
               </button>
             </div>
             {channels.find((c) => c.id === selectedChannel)?.isAnonymous && (
-              <p className="mb-3 rounded-lg bg-[#F0F2F5] px-3 py-2 text-xs text-[#6B7280]">
+              <p className="mb-3 rounded-lg bg-[var(--bg-elevated)] px-3 py-2 text-xs text-[var(--text-secondary)]">
                 This channel supports anonymous submissions. Your identity will not be recorded.
               </p>
             )}

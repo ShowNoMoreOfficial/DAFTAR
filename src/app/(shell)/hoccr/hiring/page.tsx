@@ -31,13 +31,13 @@ interface Candidate {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  APPLIED: "bg-gray-100 text-gray-700",
-  SCREENING: "bg-blue-100 text-blue-700",
-  INTERVIEW: "bg-purple-100 text-purple-700",
-  OFFER: "bg-yellow-100 text-yellow-700",
-  HIRED: "bg-emerald-100 text-emerald-700",
-  REJECTED: "bg-red-100 text-red-700",
-  WITHDRAWN: "bg-gray-100 text-gray-500",
+  APPLIED: "bg-[var(--bg-elevated)] text-gray-700",
+  SCREENING: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  INTERVIEW: "bg-[rgba(168,85,247,0.15)] text-purple-700",
+  OFFER: "bg-[rgba(234,179,8,0.15)] text-yellow-700",
+  HIRED: "bg-[rgba(16,185,129,0.15)] text-emerald-700",
+  REJECTED: "bg-[rgba(239,68,68,0.15)] text-red-700",
+  WITHDRAWN: "bg-[var(--bg-elevated)] text-gray-500",
 };
 
 export default function HiringPage() {
@@ -135,8 +135,8 @@ export default function HiringPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-[#1A1A1A]">Hiring Pipeline</h2>
-          <p className="text-sm text-[#9CA3AF]">Manage open positions and candidates</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Hiring Pipeline</h2>
+          <p className="text-sm text-[var(--text-muted)]">Manage open positions and candidates</p>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -146,10 +146,10 @@ export default function HiringPage() {
 
       {/* Create position dialog */}
       {createOpen && (
-        <div className="mb-6 rounded-lg border border-[#E5E7EB] bg-white p-4">
+        <div className="mb-6 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#1A1A1A]">New Position</h3>
-            <button onClick={() => setCreateOpen(false)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">New Position</h3>
+            <button onClick={() => setCreateOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -158,7 +158,7 @@ export default function HiringPage() {
             <select
               value={posDept}
               onChange={(e) => setPosDept(e.target.value)}
-              className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
             >
               <option value="">Select department</option>
               {departments.map((d) => (
@@ -175,38 +175,38 @@ export default function HiringPage() {
 
       {/* Positions list */}
       {loading ? (
-        <div className="py-12 text-center text-sm text-[#9CA3AF]">Loading positions...</div>
+        <div className="py-12 text-center text-sm text-[var(--text-muted)]">Loading positions...</div>
       ) : positions.length === 0 ? (
-        <div className="py-12 text-center text-sm text-[#9CA3AF]">
+        <div className="py-12 text-center text-sm text-[var(--text-muted)]">
           No positions yet. Create one to start your hiring pipeline.
         </div>
       ) : (
         <div className="space-y-3">
           {positions.map((pos) => (
-            <div key={pos.id} className="rounded-lg border border-[#E5E7EB] bg-white">
+            <div key={pos.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
               {/* Position header */}
               <div
-                className="flex cursor-pointer items-center gap-3 p-4 transition-colors hover:bg-[#F8F9FA]"
+                className="flex cursor-pointer items-center gap-3 p-4 transition-colors hover:bg-[var(--bg-surface)]"
                 onClick={() => handleExpandPosition(pos.id)}
               >
                 {expandedPosition === pos.id ? (
-                  <ChevronDown className="h-4 w-4 text-[#9CA3AF]" />
+                  <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />
                 ) : (
-                  <ChevronRight className="h-4 w-4 text-[#9CA3AF]" />
+                  <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
                 )}
-                <Briefcase className="h-5 w-5 text-[#2E86AB]" />
+                <Briefcase className="h-5 w-5 text-[var(--accent-primary)]" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-[#1A1A1A]">{pos.title}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">{pos.title}</span>
                     <Badge variant="secondary" className="text-[10px]">{pos.department.name}</Badge>
-                    {!pos.isOpen && <Badge className="bg-red-100 text-red-700 text-[10px]">Closed</Badge>}
+                    {!pos.isOpen && <Badge className="bg-[rgba(239,68,68,0.15)] text-red-700 text-[10px]">Closed</Badge>}
                   </div>
                   {pos.description && (
-                    <p className="mt-0.5 text-xs text-[#9CA3AF]">{pos.description}</p>
+                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">{pos.description}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#9CA3AF]">{pos._count.candidates} candidates</span>
+                  <span className="text-xs text-[var(--text-muted)]">{pos._count.candidates} candidates</span>
                   <Button
                     size="sm"
                     variant="outline"
@@ -223,21 +223,21 @@ export default function HiringPage() {
 
               {/* Expanded: Candidates */}
               {expandedPosition === pos.id && pos.candidates && (
-                <div className="border-t border-[#E5E7EB] p-4">
+                <div className="border-t border-[var(--border-subtle)] p-4">
                   {pos.candidates.length === 0 ? (
-                    <p className="text-center text-xs text-[#9CA3AF]">No candidates yet</p>
+                    <p className="text-center text-xs text-[var(--text-muted)]">No candidates yet</p>
                   ) : (
                     <div className="space-y-2">
                       {pos.candidates.map((c) => (
-                        <div key={c.id} className="flex items-center gap-3 rounded-lg bg-[#F8F9FA] p-3">
+                        <div key={c.id} className="flex items-center gap-3 rounded-lg bg-[var(--bg-surface)] p-3">
                           <Avatar className="h-7 w-7">
-                            <AvatarFallback className="bg-[#A23B72] text-[10px] text-white">
+                            <AvatarFallback className="bg-[var(--accent-secondary)] text-[10px] text-white">
                               {c.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-[#1A1A1A]">{c.name}</p>
-                            <p className="text-[10px] text-[#9CA3AF]">{c.email}</p>
+                            <p className="text-sm font-medium text-[var(--text-primary)]">{c.name}</p>
+                            <p className="text-[10px] text-[var(--text-muted)]">{c.email}</p>
                           </div>
                           <select
                             value={c.status}
@@ -265,10 +265,10 @@ export default function HiringPage() {
       {/* Add candidate dialog */}
       {addCandidateFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#1A1A1A]">Add Candidate</h3>
-              <button onClick={() => setAddCandidateFor(null)} className="text-[#9CA3AF] hover:text-[#6B7280]">
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">Add Candidate</h3>
+              <button onClick={() => setAddCandidateFor(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
                 <X className="h-5 w-5" />
               </button>
             </div>

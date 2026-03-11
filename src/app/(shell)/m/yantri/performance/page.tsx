@@ -32,7 +32,7 @@ export default function YantriPerformancePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#6B7280]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-secondary)]" />
       </div>
     );
   }
@@ -42,22 +42,22 @@ export default function YantriPerformancePage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-[#1A1A1A]">Pipeline Performance</h1>
-        <p className="text-sm text-[#6B7280] mt-1">Yantri pipeline effectiveness metrics</p>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Pipeline Performance</h1>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Yantri pipeline effectiveness metrics</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Total Narratives", value: String(s.total), icon: TrendingUp, color: "text-[#2E86AB]" },
+          { label: "Total Narratives", value: String(s.total), icon: TrendingUp, color: "text-[var(--accent-primary)]" },
           { label: "Approval Rate", value: s.approvalRate + "%", icon: Target, color: "text-emerald-600" },
           { label: "Total Deliverables", value: String(s.totalDeliverables), icon: Clock, color: "text-amber-600" },
           { label: "Completed", value: String(s.completed), icon: Zap, color: "text-purple-600" },
         ].map((stat) => (
-          <Card key={stat.label} className="border-[#E5E7EB]">
+          <Card key={stat.label} className="border-[var(--border-subtle)]">
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <stat.icon className={"h-5 w-5 " + stat.color} />
-                <span className="text-xs font-medium text-[#6B7280] uppercase tracking-wide">{stat.label}</span>
+                <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">{stat.label}</span>
               </div>
               <div className={"text-3xl font-bold " + stat.color}>{stat.value}</div>
             </CardContent>
@@ -65,22 +65,22 @@ export default function YantriPerformancePage() {
         ))}
       </div>
 
-      <Card className="border-[#E5E7EB]">
+      <Card className="border-[var(--border-subtle)]">
         <CardContent className="p-5">
-          <h2 className="text-sm font-semibold text-[#1A1A1A] mb-4">Pipeline Breakdown</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Pipeline Breakdown</h2>
           <div className="space-y-3">
             {[
-              { label: "Incoming (awaiting review)", count: s.incoming, color: "bg-blue-500" },
-              { label: "In Production", count: s.inProduction, color: "bg-purple-500" },
-              { label: "Completed", count: s.completed, color: "bg-emerald-500" },
+              { label: "Incoming (awaiting review)", count: s.incoming, color: "bg-[rgba(59,130,246,0.1)]0" },
+              { label: "In Production", count: s.inProduction, color: "bg-[rgba(168,85,247,0.1)]0" },
+              { label: "Completed", count: s.completed, color: "bg-[rgba(16,185,129,0.1)]0" },
               { label: "Skipped", count: s.skipped, color: "bg-gray-400" },
             ].map((row) => (
               <div key={row.label} className="flex items-center gap-3">
                 <div className={"w-3 h-3 rounded-full shrink-0 " + row.color} />
-                <span className="text-sm text-[#6B7280] flex-1">{row.label}</span>
-                <span className="text-sm font-bold text-[#1A1A1A]">{row.count}</span>
+                <span className="text-sm text-[var(--text-secondary)] flex-1">{row.label}</span>
+                <span className="text-sm font-bold text-[var(--text-primary)]">{row.count}</span>
                 {s.total > 0 && (
-                  <div className="w-20 h-2 bg-[#F0F2F5] rounded-full">
+                  <div className="w-20 h-2 bg-[var(--bg-elevated)] rounded-full">
                     <div className={"h-2 rounded-full " + row.color} style={{ width: Math.round((row.count / s.total) * 100) + "%" }} />
                   </div>
                 )}

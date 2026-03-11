@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Image, Hash, AtSign, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -130,15 +131,19 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
       });
 
       if (res.ok) {
+        toast.success(scheduledAt ? "Post scheduled successfully" : "Post created as draft");
         resetForm();
         onCreated();
         onClose();
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to create post");
+        const msg = data.error || "Failed to create post";
+        setError(msg);
+        toast.error(msg);
       }
     } catch {
       setError("Network error. Please try again.");
+      toast.error("Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -146,18 +151,18 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="flex w-full max-w-3xl max-h-[90vh] rounded-xl bg-white shadow-xl">
+      <div className="flex w-full max-w-3xl max-h-[90vh] rounded-xl bg-[var(--bg-surface)] shadow-xl">
         {/* Form */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-base font-semibold text-[#1A1A1A]">Create Post</h3>
-            <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#6B7280]">
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">Create Post</h3>
+            <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {error && (
-            <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+            <div className="mb-3 rounded-lg bg-[rgba(239,68,68,0.1)] px-3 py-2 text-xs text-red-600">
               {error}
             </div>
           )}
@@ -165,7 +170,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
           <div className="space-y-4">
             {/* Title */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#6B7280]">Title *</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Title *</label>
               <Input
                 placeholder="Post title"
                 value={title}
@@ -175,7 +180,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Platform selector */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#6B7280]">Platform *</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Platform *</label>
               <div className="flex gap-2">
                 {PLATFORMS.map((p) => (
                   <button
@@ -185,7 +190,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
                       "flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
                       platform === p.value
                         ? "border-current shadow-sm"
-                        : "border-[#E5E7EB] text-[#6B7280] hover:border-[#9CA3AF]"
+                        : "border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#9CA3AF]"
                     )}
                     style={platform === p.value ? { borderColor: p.color, color: p.color } : undefined}
                   >
@@ -198,17 +203,17 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
                 ))}
               </div>
               {selectedPlatform && (
-                <p className="mt-1.5 text-[10px] text-[#9CA3AF]">{selectedPlatform.hint}</p>
+                <p className="mt-1.5 text-[10px] text-[var(--text-muted)]">{selectedPlatform.hint}</p>
               )}
             </div>
 
             {/* Brand selector */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#6B7280]">Brand *</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Brand *</label>
               <select
                 value={brandId}
                 onChange={(e) => setBrandId(e.target.value)}
-                className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
               >
                 <option value="">Select brand</option>
                 {brands.map((b) => (
@@ -219,11 +224,11 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Content */}
             <div>
-              <label className="mb-1 flex items-center justify-between text-xs font-medium text-[#6B7280]">
+              <label className="mb-1 flex items-center justify-between text-xs font-medium text-[var(--text-secondary)]">
                 <span>Content</span>
                 <span className={cn(
                   "text-[10px]",
-                  isOverLimit ? "text-red-500 font-semibold" : "text-[#9CA3AF]"
+                  isOverLimit ? "text-red-500 font-semibold" : "text-[var(--text-muted)]"
                 )}>
                   {contentLength}/{charLimit}
                 </span>
@@ -239,7 +244,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Media URLs */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+              <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                 <span className="flex items-center gap-1">
                   <Image className="h-3 w-3" /> Media URLs
                 </span>
@@ -273,7 +278,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Schedule */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#6B7280]">Schedule (optional)</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Schedule (optional)</label>
               <Input
                 type="datetime-local"
                 value={scheduledAt}
@@ -283,7 +288,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Hashtags / Mentions */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+              <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                 <span className="flex items-center gap-1">
                   <Hash className="h-3 w-3" /> Hashtags & <AtSign className="h-3 w-3" /> Mentions
                 </span>
@@ -316,7 +321,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Linked task */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#6B7280]">Linked Task ID (optional)</label>
+              <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">Linked Task ID (optional)</label>
               <Input
                 placeholder="Task ID"
                 value={taskId}
@@ -338,10 +343,10 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
         </div>
 
         {/* Preview panel */}
-        <div className="w-64 border-l border-[#E5E7EB] bg-[#FAFAFA] p-4 overflow-y-auto rounded-r-xl">
-          <h4 className="mb-3 text-xs font-semibold text-[#6B7280] uppercase">Preview</h4>
+        <div className="w-64 border-l border-[var(--border-subtle)] bg-[#FAFAFA] p-4 overflow-y-auto rounded-r-xl">
+          <h4 className="mb-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">Preview</h4>
 
-          <div className="rounded-lg border border-[#E5E7EB] bg-white p-3">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3">
             {/* Platform indicator */}
             <div className="mb-2 flex items-center gap-2">
               {selectedPlatform && (
@@ -350,26 +355,26 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
                   style={{ backgroundColor: selectedPlatform.color }}
                 />
               )}
-              <span className="text-[10px] font-medium text-[#6B7280]">
+              <span className="text-[10px] font-medium text-[var(--text-secondary)]">
                 {selectedPlatform?.label || "Platform"}
               </span>
             </div>
 
             {/* Title */}
-            <p className="text-xs font-semibold text-[#1A1A1A]">
+            <p className="text-xs font-semibold text-[var(--text-primary)]">
               {title || "Post title"}
             </p>
 
             {/* Content preview */}
             {content && (
-              <p className="mt-1.5 text-[10px] text-[#6B7280] line-clamp-6 whitespace-pre-wrap">
+              <p className="mt-1.5 text-[10px] text-[var(--text-secondary)] line-clamp-6 whitespace-pre-wrap">
                 {content}
               </p>
             )}
 
             {/* Media indicator */}
             {mediaUrls.length > 0 && (
-              <div className="mt-2 flex items-center gap-1 text-[10px] text-[#9CA3AF]">
+              <div className="mt-2 flex items-center gap-1 text-[10px] text-[var(--text-muted)]">
                 <Image className="h-3 w-3" />
                 {mediaUrls.length} media file{mediaUrls.length > 1 ? "s" : ""}
               </div>
@@ -379,7 +384,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
             {tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {tags.map((tag) => (
-                  <span key={tag} className="text-[9px] text-[#2E86AB]">
+                  <span key={tag} className="text-[9px] text-[var(--accent-primary)]">
                     {tag.startsWith("@") ? tag : `#${tag}`}
                   </span>
                 ))}
@@ -388,7 +393,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Schedule indicator */}
             {scheduledAt && (
-              <div className="mt-2 border-t border-[#F0F2F5] pt-1.5 text-[9px] text-[#9CA3AF]">
+              <div className="mt-2 border-t border-[#F0F2F5] pt-1.5 text-[9px] text-[var(--text-muted)]">
                 Scheduled: {new Date(scheduledAt).toLocaleString("en-IN", {
                   day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
                 })}
@@ -397,7 +402,7 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Brand */}
             {brandId && (
-              <div className="mt-1 text-[9px] text-[#9CA3AF]">
+              <div className="mt-1 text-[9px] text-[var(--text-muted)]">
                 Brand: {brands.find((b) => b.id === brandId)?.name || "Unknown"}
               </div>
             )}

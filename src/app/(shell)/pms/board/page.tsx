@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = { title: "PMS Board" };
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import type { TaskStatus } from "@prisma/client";

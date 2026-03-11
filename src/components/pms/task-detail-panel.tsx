@@ -51,13 +51,13 @@ interface TaskDetailPanelProps {
 const STATUS_FLOW = ["CREATED", "ASSIGNED", "IN_PROGRESS", "REVIEW", "APPROVED", "DONE"];
 
 const STATUS_COLORS: Record<string, string> = {
-  CREATED: "bg-gray-100 text-gray-700",
-  ASSIGNED: "bg-blue-100 text-blue-700",
-  IN_PROGRESS: "bg-yellow-100 text-yellow-700",
-  REVIEW: "bg-purple-100 text-purple-700",
-  APPROVED: "bg-green-100 text-green-700",
-  DONE: "bg-emerald-100 text-emerald-700",
-  CANCELLED: "bg-red-100 text-red-700",
+  CREATED: "bg-[var(--bg-elevated)] text-gray-700",
+  ASSIGNED: "bg-[rgba(59,130,246,0.15)] text-blue-700",
+  IN_PROGRESS: "bg-[rgba(234,179,8,0.15)] text-yellow-700",
+  REVIEW: "bg-[rgba(168,85,247,0.15)] text-purple-700",
+  APPROVED: "bg-[rgba(34,197,94,0.15)] text-green-700",
+  DONE: "bg-[rgba(16,185,129,0.15)] text-emerald-700",
+  CANCELLED: "bg-[rgba(239,68,68,0.15)] text-red-700",
 };
 
 export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailPanelProps) {
@@ -116,26 +116,26 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
   if (!taskId) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-20 flex w-[420px] flex-col border-l border-[#E5E7EB] bg-white shadow-xl">
+    <div className="fixed inset-y-0 right-0 z-20 flex w-[420px] flex-col border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 py-3">
-        <h3 className="text-sm font-semibold text-[#1A1A1A]">Task Detail</h3>
-        <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#6B7280]">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Task Detail</h3>
+        <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
           <X className="h-5 w-5" />
         </button>
       </div>
 
       {loading || !task ? (
-        <div className="flex flex-1 items-center justify-center text-sm text-[#9CA3AF]">
+        <div className="flex flex-1 items-center justify-center text-sm text-[var(--text-muted)]">
           Loading...
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
           {/* Title + Status */}
-          <div className="border-b border-[#E5E7EB] p-4">
-            <h2 className="mb-2 text-base font-semibold text-[#1A1A1A]">{task.title}</h2>
+          <div className="border-b border-[var(--border-subtle)] p-4">
+            <h2 className="mb-2 text-base font-semibold text-[var(--text-primary)]">{task.title}</h2>
             {task.description && (
-              <p className="mb-3 text-sm text-[#6B7280]">{task.description}</p>
+              <p className="mb-3 text-sm text-[var(--text-secondary)]">{task.description}</p>
             )}
 
             {/* Status progression */}
@@ -147,7 +147,7 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
                   </span>
                   <button
                     onClick={() => handleStatusChange("CREATED")}
-                    className="cursor-pointer rounded-full border border-dashed border-[#2E86AB] px-2.5 py-1 text-[10px] font-medium text-[#2E86AB] hover:bg-[#2E86AB]/10"
+                    className="cursor-pointer rounded-full border border-dashed border-[#2E86AB] px-2.5 py-1 text-[10px] font-medium text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10"
                   >
                     Reopen
                   </button>
@@ -168,9 +168,9 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
                       className={cn(
                         "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors",
                         isCurrent && STATUS_COLORS[s],
-                        isPast && "bg-[#F0F2F5] text-[#9CA3AF] line-through",
-                        isNext && "cursor-pointer border border-dashed border-[#2E86AB] text-[#2E86AB] hover:bg-[#2E86AB]/10",
-                        !isCurrent && !isPast && !isNext && "bg-[#F8F9FA] text-[#D1D5DB]"
+                        isPast && "bg-[var(--bg-elevated)] text-[var(--text-muted)] line-through",
+                        isNext && "cursor-pointer border border-dashed border-[#2E86AB] text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10",
+                        !isCurrent && !isPast && !isNext && "bg-[var(--bg-surface)] text-[var(--text-muted)]"
                       )}
                     >
                       {s.replace(/_/g, " ")}
@@ -182,42 +182,42 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
           </div>
 
           {/* Meta fields */}
-          <div className="border-b border-[#E5E7EB] p-4 space-y-3">
+          <div className="border-b border-[var(--border-subtle)] p-4 space-y-3">
             <div className="flex items-center gap-3 text-sm">
-              <User className="h-4 w-4 text-[#9CA3AF]" />
-              <span className="text-[#6B7280]">Assignee:</span>
+              <User className="h-4 w-4 text-[var(--text-muted)]" />
+              <span className="text-[var(--text-secondary)]">Assignee:</span>
               {task.assignee ? (
                 <div className="flex items-center gap-1.5">
                   <Avatar className="h-5 w-5">
                     <AvatarImage src={task.assignee.avatar || undefined} />
-                    <AvatarFallback className="bg-[#2E86AB] text-[8px] text-white">
+                    <AvatarFallback className="bg-[var(--accent-primary)] text-[8px] text-white">
                       {task.assignee.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium text-[#1A1A1A]">{task.assignee.name}</span>
+                  <span className="font-medium text-[var(--text-primary)]">{task.assignee.name}</span>
                 </div>
               ) : (
-                <span className="text-[#9CA3AF]">Unassigned</span>
+                <span className="text-[var(--text-muted)]">Unassigned</span>
               )}
             </div>
 
             <div className="flex items-center gap-3 text-sm">
-              <Flag className="h-4 w-4 text-[#9CA3AF]" />
-              <span className="text-[#6B7280]">Priority:</span>
-              <Badge className={cn("text-[10px]", STATUS_COLORS[task.priority] || "bg-gray-100 text-gray-700")}>
+              <Flag className="h-4 w-4 text-[var(--text-muted)]" />
+              <span className="text-[var(--text-secondary)]">Priority:</span>
+              <Badge className={cn("text-[10px]", STATUS_COLORS[task.priority] || "bg-[var(--bg-elevated)] text-gray-700")}>
                 {task.priority}
               </Badge>
             </div>
 
             {task.dueDate && (
               <div className="flex items-center gap-3 text-sm">
-                <Calendar className="h-4 w-4 text-[#9CA3AF]" />
-                <span className="text-[#6B7280]">Due:</span>
+                <Calendar className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="text-[var(--text-secondary)]">Due:</span>
                 <span className={cn(
                   "font-medium",
                   new Date(task.dueDate) < new Date() && task.status !== "DONE"
                     ? "text-red-500"
-                    : "text-[#1A1A1A]"
+                    : "text-[var(--text-primary)]"
                 )}>
                   {new Date(task.dueDate).toLocaleDateString("en-IN", {
                     day: "numeric",
@@ -230,23 +230,23 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
 
             {task.department && (
               <div className="flex items-center gap-3 text-sm">
-                <Clock className="h-4 w-4 text-[#9CA3AF]" />
-                <span className="text-[#6B7280]">Department:</span>
-                <span className="font-medium text-[#1A1A1A]">{task.department.name}</span>
+                <Clock className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="text-[var(--text-secondary)]">Department:</span>
+                <span className="font-medium text-[var(--text-primary)]">{task.department.name}</span>
               </div>
             )}
 
             {task.brand && (
               <div className="flex items-center gap-3 text-sm">
-                <span className="ml-7 text-[#6B7280]">Brand:</span>
-                <span className="font-medium text-[#1A1A1A]">{task.brand.name}</span>
+                <span className="ml-7 text-[var(--text-secondary)]">Brand:</span>
+                <span className="font-medium text-[var(--text-primary)]">{task.brand.name}</span>
               </div>
             )}
 
             {task.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
                 {task.tags.map((t) => (
-                  <span key={t.name} className="rounded-full bg-[#F0F2F5] px-2 py-0.5 text-[10px] text-[#6B7280]">
+                  <span key={t.name} className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">
                     {t.name}
                   </span>
                 ))}
@@ -255,15 +255,15 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
           </div>
 
           {/* Tabs: Comments / Activity */}
-          <div className="border-b border-[#E5E7EB]">
+          <div className="border-b border-[var(--border-subtle)]">
             <div className="flex">
               <button
                 onClick={() => setTab("comments")}
                 className={cn(
                   "flex items-center gap-1.5 px-4 py-2.5 text-sm transition-colors",
                   tab === "comments"
-                    ? "border-b-2 border-[#2E86AB] font-medium text-[#2E86AB]"
-                    : "text-[#6B7280] hover:text-[#1A1A1A]"
+                    ? "border-b-2 border-[#2E86AB] font-medium text-[var(--accent-primary)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 )}
               >
                 <MessageSquare className="h-3.5 w-3.5" />
@@ -274,8 +274,8 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
                 className={cn(
                   "flex items-center gap-1.5 px-4 py-2.5 text-sm transition-colors",
                   tab === "activity"
-                    ? "border-b-2 border-[#2E86AB] font-medium text-[#2E86AB]"
-                    : "text-[#6B7280] hover:text-[#1A1A1A]"
+                    ? "border-b-2 border-[#2E86AB] font-medium text-[var(--accent-primary)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 )}
               >
                 <Activity className="h-3.5 w-3.5" />
@@ -305,16 +305,16 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
                 {/* Comment list */}
                 <div className="space-y-3 pt-2">
                   {task.comments.map((c) => (
-                    <div key={c.id} className="rounded-lg bg-[#F8F9FA] p-3">
+                    <div key={c.id} className="rounded-lg bg-[var(--bg-surface)] p-3">
                       <div className="mb-1.5 flex items-center gap-2">
                         <Avatar className="h-5 w-5">
                           <AvatarImage src={c.author.avatar || undefined} />
-                          <AvatarFallback className="bg-[#2E86AB] text-[8px] text-white">
+                          <AvatarFallback className="bg-[var(--accent-primary)] text-[8px] text-white">
                             {c.author.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs font-medium text-[#1A1A1A]">{c.author.name}</span>
-                        <span className="text-[10px] text-[#9CA3AF]">
+                        <span className="text-xs font-medium text-[var(--text-primary)]">{c.author.name}</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">
                           {new Date(c.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
@@ -323,11 +323,11 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
                           })}
                         </span>
                       </div>
-                      <p className="text-sm text-[#6B7280]">{c.content}</p>
+                      <p className="text-sm text-[var(--text-secondary)]">{c.content}</p>
                     </div>
                   ))}
                   {task.comments.length === 0 && (
-                    <p className="text-center text-xs text-[#9CA3AF]">No comments yet</p>
+                    <p className="text-center text-xs text-[var(--text-muted)]">No comments yet</p>
                   )}
                 </div>
               </div>
@@ -335,8 +335,8 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
               <div className="space-y-2">
                 {task.activities.map((a) => (
                   <div key={a.id} className="flex gap-2 text-xs">
-                    <span className="font-medium text-[#1A1A1A]">{a.actor.name}</span>
-                    <span className="text-[#6B7280]">
+                    <span className="font-medium text-[var(--text-primary)]">{a.actor.name}</span>
+                    <span className="text-[var(--text-secondary)]">
                       {a.action === "status_changed"
                         ? `changed status from ${a.oldValue} to ${a.newValue}`
                         : a.action === "commented"
@@ -345,7 +345,7 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
                             ? "created this task"
                             : `updated ${a.field}`}
                     </span>
-                    <span className="ml-auto text-[#9CA3AF]">
+                    <span className="ml-auto text-[var(--text-muted)]">
                       {new Date(a.createdAt).toLocaleDateString("en-IN", {
                         day: "numeric",
                         month: "short",
@@ -354,7 +354,7 @@ export function TaskDetailPanel({ taskId, onClose, onStatusChange }: TaskDetailP
                   </div>
                 ))}
                 {task.activities.length === 0 && (
-                  <p className="text-center text-xs text-[#9CA3AF]">No activity yet</p>
+                  <p className="text-center text-xs text-[var(--text-muted)]">No activity yet</p>
                 )}
               </div>
             )}

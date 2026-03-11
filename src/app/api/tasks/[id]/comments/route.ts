@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
 import { notifyTaskComment } from "@/lib/notifications";
 
 export async function POST(
@@ -10,6 +10,7 @@ export async function POST(
   const session = await getAuthSession();
   if (!session) return unauthorized();
 
+  try {
   const { id } = await params;
   const { content } = await req.json();
 
@@ -51,4 +52,7 @@ export async function POST(
   }
 
   return NextResponse.json(comment, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

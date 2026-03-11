@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 import { daftarEvents } from "@/lib/event-bus";
@@ -84,50 +84,54 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
-  const { title, content, platform, brandId, scheduledAt, mediaUrls, metadata, taskId } = body;
+  try {
+    const body = await req.json();
+    const { title, content, platform, brandId, scheduledAt, mediaUrls, metadata, taskId } = body;
 
-  if (!title) return badRequest("Title is required");
-  if (!platform) return badRequest("Platform is required");
-  if (!brandId) return badRequest("Brand ID is required");
+    if (!title) return badRequest("Title is required");
+    if (!platform) return badRequest("Platform is required");
+    if (!brandId) return badRequest("Brand ID is required");
 
-  const validPlatforms = ["youtube", "x", "instagram", "linkedin", "facebook"];
-  if (!validPlatforms.includes(platform)) {
-    return badRequest("Invalid platform. Must be one of: " + validPlatforms.join(", "));
-  }
-
-  // CLIENT users can only create posts for their brands
-  if (session.user.role === "CLIENT") {
-    if (!session.user.accessibleBrandIds.includes(brandId)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const validPlatforms = ["youtube", "x", "instagram", "linkedin", "facebook"];
+    if (!validPlatforms.includes(platform)) {
+      return badRequest("Invalid platform. Must be one of: " + validPlatforms.join(", "));
     }
-  }
 
-  const post = await prisma.contentPost.create({
-    data: {
-      title,
-      content: content || null,
-      platform,
-      brandId,
-      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-      mediaUrls: mediaUrls || undefined,
-      metadata: metadata || undefined,
-      taskId: taskId || null,
-      status: scheduledAt ? "SCHEDULED" : "DRAFT",
+    // CLIENT users can only create posts for their brands
+    if (session.user.role === "CLIENT") {
+      if (!session.user.accessibleBrandIds.includes(brandId)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    const post = await prisma.contentPost.create({
+      data: {
+        title,
+        content: content || null,
+        platform,
+        brandId,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+        mediaUrls: mediaUrls || undefined,
+        metadata: metadata || undefined,
+        taskId: taskId || null,
+        status: scheduledAt ? "SCHEDULED" : "DRAFT",
+        createdById: session.user.id,
+      },
+      include: {
+        brand: { select: { id: true, name: true } },
+      },
+    });
+
+    daftarEvents.emitEvent("post.created", {
+      postId: post.id,
+      title: post.title,
+      platform: post.platform,
+      brandId: post.brandId,
       createdById: session.user.id,
-    },
-    include: {
-      brand: { select: { id: true, name: true } },
-    },
-  });
+    });
 
-  daftarEvents.emitEvent("post.created", {
-    postId: post.id,
-    title: post.title,
-    platform: post.platform,
-    brandId: post.brandId,
-    createdById: session.user.id,
-  });
-
-  return NextResponse.json(post, { status: 201 });
+    return NextResponse.json(post, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

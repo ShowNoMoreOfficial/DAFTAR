@@ -103,7 +103,7 @@ function JsonField({
 
   return (
     <div>
-      <label className="text-sm font-medium text-[#1A1A1A]">{label}</label>
+      <label className="text-sm font-medium text-[var(--text-primary)]">{label}</label>
       <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -202,16 +202,16 @@ function WorkflowsTab() {
     if (res.ok) fetchWorkflows();
   }
 
-  if (loading) return <p className="text-sm text-[#6B7280]">Loading workflows...</p>;
+  if (loading) return <p className="text-sm text-[var(--text-secondary)]">Loading workflows...</p>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-[#6B7280]">
+        <p className="text-sm text-[var(--text-secondary)]">
           Define reusable workflow templates with stages, triggers, and escalation rules.
         </p>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger className="inline-flex items-center gap-2 rounded-md bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E86AB]/90">
+          <DialogTrigger className="inline-flex items-center gap-2 rounded-md bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-primary)]/90">
             <Plus className="h-4 w-4" />
             Add Workflow
           </DialogTrigger>
@@ -221,7 +221,7 @@ function WorkflowsTab() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
               <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Name</label>
+                <label className="text-sm font-medium text-[var(--text-primary)]">Name</label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -230,7 +230,7 @@ function WorkflowsTab() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Description</label>
+                <label className="text-sm font-medium text-[var(--text-primary)]">Description</label>
                 <Input
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -238,11 +238,11 @@ function WorkflowsTab() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Department</label>
+                <label className="text-sm font-medium text-[var(--text-primary)]">Department</label>
                 <select
                   value={form.departmentId}
                   onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm"
                 >
                   <option value="">None (General)</option>
                   {departments.map((d) => (
@@ -271,15 +271,15 @@ function WorkflowsTab() {
                   id="isDefault"
                   checked={form.isDefault}
                   onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
-                  className="h-4 w-4 rounded border-[#E5E7EB]"
+                  className="h-4 w-4 rounded border-[var(--border-subtle)]"
                 />
-                <label htmlFor="isDefault" className="text-sm text-[#1A1A1A]">
+                <label htmlFor="isDefault" className="text-sm text-[var(--text-primary)]">
                   Default workflow
                 </label>
               </div>
               <button
                 type="submit"
-                className="w-full rounded-md bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E86AB]/90"
+                className="w-full rounded-md bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-primary)]/90"
               >
                 {editingId ? "Update" : "Create"} Workflow
               </button>
@@ -292,35 +292,35 @@ function WorkflowsTab() {
         {workflows.map((wf) => {
           const stageCount = Array.isArray(wf.stages) ? wf.stages.length : 0;
           return (
-            <div key={wf.id} className="rounded-xl border border-[#E5E7EB] bg-white p-5">
+            <div key={wf.id} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
-                  <Workflow className="h-5 w-5 text-[#2E86AB]" />
-                  <h3 className="font-medium text-[#1A1A1A]">{wf.name}</h3>
+                  <Workflow className="h-5 w-5 text-[var(--accent-primary)]" />
+                  <h3 className="font-medium text-[var(--text-primary)]">{wf.name}</h3>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => openEdit(wf)} className="rounded p-1 hover:bg-[#F3F4F6]">
-                    <Pencil className="h-4 w-4 text-[#9CA3AF]" />
+                  <button onClick={() => openEdit(wf)} className="rounded p-1 hover:bg-[var(--bg-elevated)]">
+                    <Pencil className="h-4 w-4 text-[var(--text-muted)]" />
                   </button>
-                  <button onClick={() => handleDelete(wf.id)} className="rounded p-1 hover:bg-[#F3F4F6]">
-                    <Trash2 className="h-4 w-4 text-[#9CA3AF]" />
+                  <button onClick={() => handleDelete(wf.id)} className="rounded p-1 hover:bg-[var(--bg-elevated)]">
+                    <Trash2 className="h-4 w-4 text-[var(--text-muted)]" />
                   </button>
                 </div>
               </div>
               {wf.description && (
-                <p className="mt-1 text-sm text-[#6B7280]">{wf.description}</p>
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">{wf.description}</p>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
                 {wf.department && (
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                  <Badge variant="secondary" className="bg-[rgba(59,130,246,0.1)] text-blue-700">
                     {wf.department.name}
                   </Badge>
                 )}
-                <Badge variant="secondary" className="bg-gray-50 text-gray-600">
+                <Badge variant="secondary" className="bg-[var(--bg-elevated)] text-gray-600">
                   {stageCount} stage{stageCount !== 1 ? "s" : ""}
                 </Badge>
                 {wf.isDefault && (
-                  <Badge className="bg-[#A23B72]/10 text-[#A23B72]">Default</Badge>
+                  <Badge className="bg-[var(--accent-secondary)]/10 text-[var(--accent-secondary)]">Default</Badge>
                 )}
                 {!wf.isActive && (
                   <Badge variant="secondary">Inactive</Badge>
@@ -330,7 +330,7 @@ function WorkflowsTab() {
           );
         })}
         {workflows.length === 0 && (
-          <p className="col-span-full text-center text-sm text-[#9CA3AF] py-8">
+          <p className="col-span-full text-center text-sm text-[var(--text-muted)] py-8">
             No workflow templates yet. Click &quot;Add Workflow&quot; to create one.
           </p>
         )}
@@ -416,16 +416,16 @@ function PlatformsTab() {
     if (res.ok) fetchPlatforms();
   }
 
-  if (loading) return <p className="text-sm text-[#6B7280]">Loading platforms...</p>;
+  if (loading) return <p className="text-sm text-[var(--text-secondary)]">Loading platforms...</p>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-[#6B7280]">
+        <p className="text-sm text-[var(--text-secondary)]">
           Configure platform-specific deliverable types, posting rules, and analytics metrics.
         </p>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger className="inline-flex items-center gap-2 rounded-md bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E86AB]/90">
+          <DialogTrigger className="inline-flex items-center gap-2 rounded-md bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-primary)]/90">
             <Plus className="h-4 w-4" />
             Add Platform
           </DialogTrigger>
@@ -435,7 +435,7 @@ function PlatformsTab() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
               <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Platform Key</label>
+                <label className="text-sm font-medium text-[var(--text-primary)]">Platform Key</label>
                 <Input
                   value={form.platform}
                   onChange={(e) => setForm({ ...form, platform: e.target.value })}
@@ -445,7 +445,7 @@ function PlatformsTab() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-[#1A1A1A]">Display Name</label>
+                <label className="text-sm font-medium text-[var(--text-primary)]">Display Name</label>
                 <Input
                   value={form.displayName}
                   onChange={(e) => setForm({ ...form, displayName: e.target.value })}
@@ -474,13 +474,13 @@ function PlatformsTab() {
                   id="platformActive"
                   checked={form.isActive}
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                  className="h-4 w-4 rounded border-[#E5E7EB]"
+                  className="h-4 w-4 rounded border-[var(--border-subtle)]"
                 />
-                <label htmlFor="platformActive" className="text-sm text-[#1A1A1A]">Active</label>
+                <label htmlFor="platformActive" className="text-sm text-[var(--text-primary)]">Active</label>
               </div>
               <button
                 type="submit"
-                className="w-full rounded-md bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E86AB]/90"
+                className="w-full rounded-md bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-primary)]/90"
               >
                 {editingId ? "Update" : "Create"} Platform
               </button>
@@ -493,24 +493,24 @@ function PlatformsTab() {
         {platforms.map((pc) => {
           const typeCount = Array.isArray(pc.deliverableTypes) ? pc.deliverableTypes.length : 0;
           return (
-            <div key={pc.id} className="rounded-xl border border-[#E5E7EB] bg-white p-5">
+            <div key={pc.id} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
-                  <Monitor className="h-5 w-5 text-[#2E86AB]" />
-                  <h3 className="font-medium text-[#1A1A1A]">{pc.displayName}</h3>
+                  <Monitor className="h-5 w-5 text-[var(--accent-primary)]" />
+                  <h3 className="font-medium text-[var(--text-primary)]">{pc.displayName}</h3>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => openEdit(pc)} className="rounded p-1 hover:bg-[#F3F4F6]">
-                    <Pencil className="h-4 w-4 text-[#9CA3AF]" />
+                  <button onClick={() => openEdit(pc)} className="rounded p-1 hover:bg-[var(--bg-elevated)]">
+                    <Pencil className="h-4 w-4 text-[var(--text-muted)]" />
                   </button>
-                  <button onClick={() => handleDelete(pc.id)} className="rounded p-1 hover:bg-[#F3F4F6]">
-                    <Trash2 className="h-4 w-4 text-[#9CA3AF]" />
+                  <button onClick={() => handleDelete(pc.id)} className="rounded p-1 hover:bg-[var(--bg-elevated)]">
+                    <Trash2 className="h-4 w-4 text-[var(--text-muted)]" />
                   </button>
                 </div>
               </div>
-              <p className="mt-1 text-xs text-[#9CA3AF] font-mono">{pc.platform}</p>
+              <p className="mt-1 text-xs text-[var(--text-muted)] font-mono">{pc.platform}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Badge variant="secondary" className="bg-gray-50 text-gray-600">
+                <Badge variant="secondary" className="bg-[var(--bg-elevated)] text-gray-600">
                   {typeCount} deliverable type{typeCount !== 1 ? "s" : ""}
                 </Badge>
                 <Badge variant={pc.isActive ? "default" : "secondary"}>
@@ -521,7 +521,7 @@ function PlatformsTab() {
           );
         })}
         {platforms.length === 0 && (
-          <p className="col-span-full text-center text-sm text-[#9CA3AF] py-8">
+          <p className="col-span-full text-center text-sm text-[var(--text-muted)] py-8">
             No platform configs yet. Click &quot;Add Platform&quot; to create one.
           </p>
         )}
@@ -601,13 +601,13 @@ function RolesTab() {
     }
   }
 
-  if (loading) return <p className="text-sm text-[#6B7280]">Loading role configs...</p>;
+  if (loading) return <p className="text-sm text-[var(--text-secondary)]">Loading role configs...</p>;
 
   const configuredRoles = new Set(roleConfigs.map((rc) => rc.role));
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-[#6B7280]">
+      <p className="text-sm text-[var(--text-secondary)]">
         Configure dashboard views, notification triggers, report access, and GI conversation boundaries per role.
       </p>
 
@@ -639,7 +639,7 @@ function RolesTab() {
             />
             <button
               type="submit"
-              className="w-full rounded-md bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E86AB]/90"
+              className="w-full rounded-md bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-primary)]/90"
             >
               Save Configuration
             </button>
@@ -652,17 +652,17 @@ function RolesTab() {
           const config = roleConfigs.find((rc) => rc.role === role);
           const isConfigured = configuredRoles.has(role);
           return (
-            <div key={role} className="rounded-xl border border-[#E5E7EB] bg-white p-5">
+            <div key={role} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-[#A23B72]" />
-                  <h3 className="font-medium text-[#1A1A1A]">{role.replace("_", " ")}</h3>
+                  <Shield className="h-5 w-5 text-[var(--accent-secondary)]" />
+                  <h3 className="font-medium text-[var(--text-primary)]">{role.replace("_", " ")}</h3>
                 </div>
                 <button
                   onClick={() => config ? openEdit(config) : openNew(role)}
-                  className="rounded p-1 hover:bg-[#F3F4F6]"
+                  className="rounded p-1 hover:bg-[var(--bg-elevated)]"
                 >
-                  <Pencil className="h-4 w-4 text-[#9CA3AF]" />
+                  <Pencil className="h-4 w-4 text-[var(--text-muted)]" />
                 </button>
               </div>
               <div className="mt-3">
@@ -720,11 +720,11 @@ function DepartmentsTab() {
     }
   }
 
-  if (loading) return <p className="text-sm text-[#6B7280]">Loading departments...</p>;
+  if (loading) return <p className="text-sm text-[var(--text-secondary)]">Loading departments...</p>;
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-[#6B7280]">
+      <p className="text-sm text-[var(--text-secondary)]">
         Edit department configuration: workflow stages, KPIs, gamification rules.
       </p>
 
@@ -739,12 +739,12 @@ function DepartmentsTab() {
               value={configJson}
               onChange={setConfigJson}
             />
-            <p className="text-xs text-[#9CA3AF]">
+            <p className="text-xs text-[var(--text-muted)]">
               Include workflow stages, KPIs, gamification rules, and any department-specific settings.
             </p>
             <button
               type="submit"
-              className="w-full rounded-md bg-[#2E86AB] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E86AB]/90"
+              className="w-full rounded-md bg-[var(--accent-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-primary)]/90"
             >
               Save Config
             </button>
@@ -756,17 +756,17 @@ function DepartmentsTab() {
         {departments.map((dept) => {
           const hasConfig = dept.config && Object.keys(dept.config as object).length > 0;
           return (
-            <div key={dept.id} className="rounded-xl border border-[#E5E7EB] bg-white p-5">
+            <div key={dept.id} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-[#2E86AB]" />
-                  <h3 className="font-medium text-[#1A1A1A]">{dept.name}</h3>
+                  <Building2 className="h-5 w-5 text-[var(--accent-primary)]" />
+                  <h3 className="font-medium text-[var(--text-primary)]">{dept.name}</h3>
                 </div>
-                <button onClick={() => openEdit(dept)} className="rounded p-1 hover:bg-[#F3F4F6]">
-                  <Pencil className="h-4 w-4 text-[#9CA3AF]" />
+                <button onClick={() => openEdit(dept)} className="rounded p-1 hover:bg-[var(--bg-elevated)]">
+                  <Pencil className="h-4 w-4 text-[var(--text-muted)]" />
                 </button>
               </div>
-              <p className="mt-1 text-xs text-[#9CA3AF] font-mono">{dept.type}</p>
+              <p className="mt-1 text-xs text-[var(--text-muted)] font-mono">{dept.type}</p>
               <div className="mt-3">
                 <Badge variant={hasConfig ? "default" : "secondary"}>
                   {hasConfig ? "Configured" : "Default"}
@@ -776,7 +776,7 @@ function DepartmentsTab() {
           );
         })}
         {departments.length === 0 && (
-          <p className="col-span-full text-center text-sm text-[#9CA3AF] py-8">
+          <p className="col-span-full text-center text-sm text-[var(--text-muted)] py-8">
             No departments found.
           </p>
         )}
@@ -792,10 +792,10 @@ export default function ConfigPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2">
-          <Settings2 className="h-5 w-5 text-[#2E86AB]" />
-          <h1 className="text-xl font-semibold text-[#1A1A1A]">System Configuration</h1>
+          <Settings2 className="h-5 w-5 text-[var(--accent-primary)]" />
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">System Configuration</h1>
         </div>
-        <p className="mt-1 text-sm text-[#6B7280]">
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
           Configuration-over-code settings. Define workflows, platforms, roles, and department configs without changing code.
         </p>
       </div>

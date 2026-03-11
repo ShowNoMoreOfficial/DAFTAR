@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
 
 export async function GET() {
   const session = await getAuthSession();
@@ -27,26 +27,30 @@ export async function POST(req: NextRequest) {
     return unauthorized();
   }
 
-  const { title, description, type, metric, targetValue, departmentId, startsAt, endsAt, bonusPoints } =
-    await req.json();
+  try {
+    const { title, description, type, metric, targetValue, departmentId, startsAt, endsAt, bonusPoints } =
+      await req.json();
 
-  if (!title || !type || !metric || !startsAt || !endsAt) {
-    return badRequest("Missing required fields");
+    if (!title || !type || !metric || !startsAt || !endsAt) {
+      return badRequest("Missing required fields");
+    }
+
+    const challenge = await prisma.microChallenge.create({
+      data: {
+        title,
+        description: description || "",
+        type,
+        metric,
+        targetValue: targetValue || null,
+        departmentId: departmentId || null,
+        startsAt: new Date(startsAt),
+        endsAt: new Date(endsAt),
+        bonusPoints: bonusPoints || 25,
+      },
+    });
+
+    return NextResponse.json(challenge, { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
   }
-
-  const challenge = await prisma.microChallenge.create({
-    data: {
-      title,
-      description: description || "",
-      type,
-      metric,
-      targetValue: targetValue || null,
-      departmentId: departmentId || null,
-      startsAt: new Date(startsAt),
-      endsAt: new Date(endsAt),
-      bonusPoints: bonusPoints || 25,
-    },
-  });
-
-  return NextResponse.json(challenge, { status: 201 });
 }
