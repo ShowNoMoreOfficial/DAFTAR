@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ function formatDue(dateStr: string): { label: string; isOverdue: boolean; isSoon
 }
 
 export function UpcomingDeadlines() {
+  const router = useRouter();
   const [tasks, setTasks] = useState<UpcomingTask[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,7 +99,8 @@ export function UpcomingDeadlines() {
               return (
                 <div
                   key={task.id}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[#F8F9FA]"
+                  className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-[#F8F9FA]"
+                  onClick={() => router.push(`/pms?taskId=${task.id}`)}
                 >
                   {due.isOverdue ? (
                     <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />

@@ -252,9 +252,17 @@ export class SkillOrchestrator {
       const taskType: TaskType =
         DOMAIN_TASK_MAP[skill.domain] ?? "drafting";
 
-      // System prompt: skill instructions + learning context
+      // Build platform/content-type context if provided
+      const ctx = req.context as Record<string, unknown> | undefined;
+      const platformHint = ctx?.targetPlatform ? `\nTARGET PLATFORM: ${ctx.targetPlatform}` : "";
+      const contentTypeHint = ctx?.contentType ? `\nCONTENT TYPE: ${String(ctx.contentType).replace(/_/g, " ")}` : "";
+      const brandHint = ctx?.brand && typeof ctx.brand === "object" && (ctx.brand as Record<string, unknown>).brandName
+        ? `\nBRAND: ${(ctx.brand as Record<string, unknown>).brandName}`
+        : "";
+
+      // System prompt: skill instructions + learning context + platform context
       const systemPrompt = [
-        `You are executing the "${skill.meta.name}" skill.`,
+        `You are executing the "${skill.meta.name}" skill.${platformHint}${contentTypeHint}${brandHint}`,
         skill.instructions,
         skill.learningLog
           ? `\n## Previous Learnings\n${skill.learningLog}`

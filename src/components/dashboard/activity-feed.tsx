@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   CheckCircle,
@@ -57,6 +58,7 @@ function describeActivity(a: Activity): string {
 }
 
 export function ActivityFeed() {
+  const router = useRouter();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -94,7 +96,11 @@ export function ActivityFeed() {
         ) : (
           <div className="space-y-3">
             {activities.map((a) => (
-              <div key={a.id} className="flex items-start gap-3">
+              <div
+                key={a.id}
+                className="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-0.5 transition-colors hover:bg-[#F8F9FA]"
+                onClick={() => router.push(`/pms?taskId=${a.task.id}`)}
+              >
                 <Avatar className="h-7 w-7 shrink-0">
                   <AvatarImage src={a.actor.avatar || undefined} />
                   <AvatarFallback className="bg-[#2E86AB] text-[10px] text-white">

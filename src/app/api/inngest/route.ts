@@ -12,6 +12,7 @@ import { ingestVrittiArticle } from "@/lib/inngest/vritti-workflows";
 import {
   factDossierSync,
   gapAnalysisOnIngest,
+  contentPiecePipeline,
 } from "@/lib/yantri/inngest/functions";
 import {
   viralMicroPipeline,
@@ -35,6 +36,7 @@ export const { GET, POST, PUT } = serve({
     khabriHourlyScan,
     ingestVrittiArticle,
     // Yantri pipeline functions
+    contentPiecePipeline,
     factDossierSync,
     gapAnalysisOnIngest,
     viralMicroPipeline,

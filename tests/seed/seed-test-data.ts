@@ -483,6 +483,7 @@ async function main() {
   const tierAssignments = [
     { actionType: "task_reassignment", tier: 3 },
     { actionType: "deadline_extension", tier: 2 },
+    { actionType: "workload_rebalance", tier: 2 },
     { actionType: "leaderboard_update", tier: 4 },
     { actionType: "performance_warning", tier: 1 },
     { actionType: "budget_allocation", tier: 1 },
@@ -765,6 +766,142 @@ async function main() {
   });
   console.log("  ✓ 3 workflow templates");
 
+  // ─── 18. Khabri: Trend + Signals (pipeline test data) ─────────
+  console.log("Creating Khabri test data (trend + signals)...");
+
+  let testTrend = await prisma.trend.findFirst({
+    where: { name: "India Semiconductor Policy" },
+  });
+  if (!testTrend) {
+    testTrend = await prisma.trend.create({
+      data: {
+        name: "India Semiconductor Policy",
+        lifecycle: "emerging",
+        velocityScore: 72,
+      },
+    });
+  }
+
+  const signalSeeds = [
+    {
+      title: "India's semiconductor chip manufacturing push — $10B investment",
+      content: "The Indian government has announced a $10 billion incentive package to attract global semiconductor manufacturers. Three new fabs planned in Gujarat and Tamil Nadu.",
+      source: "Reuters",
+      sourceCredibility: 85,
+      eventType: "policy_announcement",
+      sentiment: "positive",
+      stakeholders: [
+        { name: "Narendra Modi", type: "person", salience: 0.9 },
+        { name: "Ministry of Electronics", type: "organization", salience: 0.7 },
+      ],
+      eventMarkers: { date: "2026-03-10", type: "policy", region: "India" },
+    },
+    {
+      title: "TSMC considers India for next-gen chip packaging facility",
+      content: "Taiwan Semiconductor Manufacturing Company is evaluating locations in India for an advanced chip packaging plant, potentially bringing 5,000 jobs.",
+      source: "Nikkei Asia",
+      sourceCredibility: 80,
+      eventType: "corporate_move",
+      sentiment: "positive",
+      stakeholders: [
+        { name: "TSMC", type: "organization", salience: 0.9 },
+        { name: "India IT Ministry", type: "organization", salience: 0.6 },
+      ],
+      eventMarkers: { date: "2026-03-09", type: "business", region: "India" },
+    },
+    {
+      title: "China's chip export restrictions tighten — India positioned as alternative",
+      content: "New US restrictions on Chinese chip exports create opportunity for India as an alternative manufacturing hub. Analysts project India could capture 10% of global chip market by 2035.",
+      source: "Bloomberg",
+      sourceCredibility: 90,
+      eventType: "geopolitical",
+      sentiment: "neutral",
+      stakeholders: [
+        { name: "US Commerce Department", type: "organization", salience: 0.8 },
+        { name: "India", type: "geo", salience: 0.7 },
+      ],
+      eventMarkers: { date: "2026-03-08", type: "geopolitics", region: "Global" },
+    },
+  ];
+
+  for (const signal of signalSeeds) {
+    const existing = await prisma.signal.findFirst({
+      where: { title: signal.title },
+    });
+    if (!existing) {
+      await prisma.signal.create({
+        data: {
+          ...signal,
+          trendId: testTrend.id,
+          detectedAt: new Date(),
+        },
+      });
+    }
+  }
+  console.log(`  ✓ 1 Trend + ${signalSeeds.length} Signals`);
+
+  // ─── 19. Yantri: NarrativeTree + ContentPieces (pipeline-ready) ──
+  console.log("Creating Yantri pipeline test data...");
+
+  const existingTree = await prisma.narrativeTree.findFirst({
+    where: { title: "India Semiconductor Policy — Strategic Analysis" },
+  });
+
+  let testTree = existingTree;
+  if (!testTree) {
+    testTree = await prisma.narrativeTree.create({
+      data: {
+        title: "India Semiconductor Policy — Strategic Analysis",
+        summary: "India's $10B semiconductor push, TSMC expansion, and geopolitical implications. Multiple angles for content across platforms.",
+        status: "INCOMING",
+        urgency: "high",
+        createdById: adminUser.id,
+        nodes: {
+          create: signalSeeds.map((s, i) => ({
+            signalTitle: s.title.slice(0, 150),
+            signalScore: 80 - i * 10,
+            signalData: { source: s.source, stakeholders: s.stakeholders, sentiment: s.sentiment },
+          })),
+        },
+      },
+    });
+  }
+
+  // Create PLANNED ContentPieces ready for pipeline.run
+  const contentPieceSeeds = [
+    {
+      platform: "YOUTUBE" as const,
+      bodyText: "[Strategist Angle] India's $10B semiconductor gamble — why it matters for global tech supply chains\n\n[Reasoning] High-interest geopolitical narrative with clear Indian audience hook. YouTube long-form allows deep dive into policy implications.",
+    },
+    {
+      platform: "X_THREAD" as const,
+      bodyText: "[Strategist Angle] Thread: India vs China in the global chip wars — 5 things you need to know\n\n[Reasoning] Snackable format for X audience. Thread structure enables sequential revelation of key facts.",
+    },
+    {
+      platform: "META_CAROUSEL" as const,
+      bodyText: "[Strategist Angle] The Semiconductor Story: India's $10B Bet (Visual Explainer)\n\n[Reasoning] Carousel format ideal for stat-heavy visual storytelling. Instagram audience responds well to infographic-style breakdowns.",
+    },
+  ];
+
+  for (const cp of contentPieceSeeds) {
+    const existing = await prisma.contentPiece.findFirst({
+      where: { bodyText: { startsWith: cp.bodyText.slice(0, 80) }, brandId: squirrelsBrand.id },
+    });
+    if (!existing) {
+      await prisma.contentPiece.create({
+        data: {
+          ...cp,
+          brandId: squirrelsBrand.id,
+          treeId: testTree.id,
+          status: "PLANNED",
+        },
+      });
+    }
+  }
+  console.log(`  ✓ 1 NarrativeTree + ${contentPieceSeeds.length} ContentPieces (PLANNED)`);
+  console.log(`    Tree ID: ${testTree.id}`);
+  console.log(`    To run pipeline: POST /api/yantri/pipeline/run { "contentPieceId": "<piece-id>" }`);
+
   // ─── Summary ──────────────────────────────────────────────────
   console.log("\n✅ Test seed complete!\n");
   console.log("Summary:");
@@ -779,12 +916,14 @@ async function main() {
   console.log("  - 1 Draft invoice (INV-TEST-001)");
   console.log("  - 1 Org-wide announcement");
   console.log("  - 4 GI config entries");
-  console.log("  - 7 GI tier assignments");
+  console.log("  - 8 GI tier assignments (incl. workload_rebalance)");
   console.log("  - 7 Role configs");
   console.log("  - 11 Achievements");
   console.log("  - 4 Platform configs");
   console.log("  - 2 Feedback channels");
   console.log("  - 3 Workflow templates");
+  console.log("  - 1 Trend + 3 Signals (Khabri)");
+  console.log("  - 1 NarrativeTree + 3 ContentPieces (Yantri, PLANNED)");
   console.log("\nTest user emails:");
   Object.entries(TEST_EMAILS).forEach(([role, email]) => {
     console.log(`  ${role.padEnd(12)} → ${email}`);

@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { routeToModel } from "@/lib/yantri/model-router";
 import { analyzeGap } from "@/lib/yantri/gap-analysis";
 import { runStrategist } from "@/lib/yantri/strategist";
+import { skillOrchestrator } from "@/lib/skill-orchestrator";
+import {
+  engineRouter,
+  type ContentType,
+} from "@/lib/yantri/engine-router";
+import { factCheck, type FactDeviation } from "@/lib/yantri/fact-checker";
 
 type DossierEvent = {
   data: { treeId: string };
@@ -10,6 +16,22 @@ type DossierEvent = {
 
 type TreeUpdatedEvent = {
   data: { treeId: string };
+};
+
+type PipelineRunEvent = {
+  data: { contentPieceId: string };
+};
+
+// Map ContentPlatform enum → EngineRouter ContentType
+const PLATFORM_TO_CONTENT_TYPE: Record<string, ContentType> = {
+  YOUTUBE: "VIDEO_SCRIPT",
+  X_THREAD: "TWEET_THREAD",
+  X_SINGLE: "TWEET_SINGLE",
+  BLOG: "BLOG_ARTICLE",
+  LINKEDIN: "LINKEDIN_POST",
+  META_REEL: "INSTAGRAM_REEL",
+  META_CAROUSEL: "INSTAGRAM_CAROUSEL",
+  META_POST: "FACEBOOK_POST",
 };
 
 // ─── factDossierSync ─────────────────────────────────────────────────────────
@@ -118,7 +140,7 @@ RULES:
 );
 
 // ─── gapAnalysisOnIngest ──────────────────────────────────────────────────
-// Triggered by "yantri/tree.updated"
+// Triggered by "yantri/tree.updated" or "yantri/tree.created"
 
 export const gapAnalysisOnIngest = yantriInngest.createFunction(
   {
@@ -126,7 +148,7 @@ export const gapAnalysisOnIngest = yantriInngest.createFunction(
     retries: 2,
     concurrency: { limit: 3 },
   },
-  { event: "yantri/tree.updated" },
+  [{ event: "yantri/tree.updated" }, { event: "yantri/tree.created" }],
   async ({ event, step }) => {
     const { treeId } = event.data as TreeUpdatedEvent["data"];
 
@@ -235,6 +257,239 @@ export const gapAnalysisOnIngest = yantriInngest.createFunction(
       reasoning: gapResult.reasoning,
       decisionsCount: decisions.length,
       createdPieces,
+    };
+  }
+);
+
+// ─── contentPiecePipeline ─────────────────────────────────────────────────
+// Triggered by "yantri/pipeline.run"
+// Runs the full content pipeline for a ContentPiece:
+//   1. Fetch piece + brand + tree context
+//   2. Build/load FactDossier (research)
+//   3. Draft content via SkillOrchestrator
+//   4. Fact-check with retries
+//   5. Update ContentPiece with drafted content
+
+const MAX_FACT_CHECK_RETRIES = 2;
+
+export const contentPiecePipeline = yantriInngest.createFunction(
+  {
+    id: "content-piece-pipeline",
+    name: "Yantri: Content Piece Pipeline",
+    retries: 2,
+    concurrency: { limit: 5 },
+  },
+  { event: "yantri/pipeline.run" },
+  async ({ event, step }) => {
+    const { contentPieceId } = event.data as PipelineRunEvent["data"];
+
+    // ── Step 1: Fetch content piece with context ────────────
+    const piece = await step.run("fetch-piece", async () => {
+      const p = await prisma.contentPiece.findUniqueOrThrow({
+        where: { id: contentPieceId },
+        include: {
+          brand: { select: { id: true, name: true, slug: true, config: true } },
+          tree: {
+            include: {
+              nodes: { select: { signalTitle: true, signalScore: true, signalData: true } },
+              dossier: { select: { structuredData: true, sources: true, rawResearch: true } },
+            },
+          },
+        },
+      });
+      return p;
+    });
+
+    const contentType = PLATFORM_TO_CONTENT_TYPE[piece.platform] ?? "BLOG_ARTICLE";
+    const brandName = piece.brand.name;
+
+    // ── Step 2: Resolve research context ────────────────────
+    const researchContext = await step.run("resolve-research", async () => {
+      // If tree has a dossier, use it
+      if (piece.tree?.dossier) {
+        const d = piece.tree.dossier;
+        const structured = typeof d.structuredData === "string"
+          ? d.structuredData
+          : JSON.stringify(d.structuredData, null, 2);
+        return {
+          dossier: structured,
+          sources: (d.sources ?? []).join("\n"),
+          raw: d.rawResearch ?? "",
+        };
+      }
+
+      // If tree exists but no dossier, trigger dossier build and use bodyText
+      if (piece.tree) {
+        // Fire-and-forget dossier build for future use
+        await yantriInngest.send({
+          name: "yantri/dossier.build",
+          data: { treeId: piece.tree.id },
+        });
+      }
+
+      // Fallback: quick research via LLM
+      const researchPrompt = piece.researchPrompt ??
+        `Research the following topic for ${brandName} (${piece.platform} content). Be concise, data-dense, and cite sources.`;
+      const result = await routeToModel("research", researchPrompt, piece.bodyText.slice(0, 3000));
+      return { dossier: "", sources: "", raw: result.raw };
+    });
+
+    // Build narrative markdown from tree signals + bodyText + research
+    const narrativeMarkdown = [
+      `# ${piece.bodyText.slice(0, 200)}`,
+      "",
+      piece.tree?.nodes.map((n: { signalTitle: string; signalScore: number }) =>
+        `- Signal: "${n.signalTitle}" (score: ${n.signalScore})`
+      ).join("\n") ?? "",
+      "",
+      researchContext.dossier ? `## Research\n${researchContext.dossier}` : "",
+      researchContext.raw ? `## Additional Context\n${researchContext.raw.slice(0, 2000)}` : "",
+    ].filter(Boolean).join("\n");
+
+    // ── Step 3: Route to engine and draft content ───────────
+    const route = await step.run("route-engine", async () => {
+      const chain = engineRouter.resolve(contentType);
+      const primarySkill = engineRouter.getPrimaryDraftSkill(contentType);
+      return {
+        contentType,
+        platform: chain.platform,
+        skillPaths: chain.stages.map((s) => s.skillPath),
+        primarySkill: primarySkill.skillPath,
+      };
+    });
+
+    let draftContent = await step.run("draft-content", async () => {
+      // Try skill-based drafting first
+      const skillFileExists = await skillOrchestrator.skillExists(route.primarySkill);
+
+      if (skillFileExists) {
+        const result = await skillOrchestrator.executeSkill({
+          skillPath: route.primarySkill,
+          context: {
+            narrative: narrativeMarkdown,
+            brand: { brandName, brandSlug: piece.brand.slug, config: piece.brand.config },
+            targetPlatform: route.platform,
+            contentType: route.contentType,
+            skillChain: route.skillPaths,
+            bodyText: piece.bodyText,
+          },
+          brandId: piece.brandId,
+          platform: route.platform,
+        });
+
+        if (result.success && result.output?.draft) {
+          return result.output.draft as string;
+        }
+      }
+
+      // Fallback: direct LLM call
+      const systemPrompt = `You are a professional content creator for "${brandName}".
+Create ${contentType.replace(/_/g, " ").toLowerCase()} content for ${route.platform}.
+Use the research and narrative context provided. Be engaging, factual, and platform-appropriate.
+Output the complete content ready for review.`;
+
+      const result = await routeToModel("drafting", systemPrompt, narrativeMarkdown);
+      return (result.parsed as { draft?: string })?.draft ?? result.raw;
+    });
+
+    // ── Step 4: Fact-check with retries ─────────────────────
+    let factCheckPassed = false;
+    let factCheckConfidence = 0;
+    let deviations: FactDeviation[] = [];
+
+    for (let attempt = 0; attempt <= MAX_FACT_CHECK_RETRIES; attempt++) {
+      const factResult = await step.run(`fact-check-attempt-${attempt}`, async () => {
+        return factCheck(draftContent, {
+          title: piece.bodyText.slice(0, 200),
+          content: narrativeMarkdown,
+          source: piece.tree?.nodes[0]
+            ? `signal: ${(piece.tree.nodes[0] as { signalTitle: string }).signalTitle}`
+            : "content-piece",
+          stakeholders: null,
+          eventMarkers: null,
+          detectedAt: new Date().toISOString(),
+        }, {
+          brandId: piece.brandId,
+          deliverableId: contentPieceId,
+        });
+      });
+
+      factCheckPassed = factResult.passed;
+      factCheckConfidence = factResult.confidence;
+      deviations = factResult.deviations;
+
+      if (factResult.passed) break;
+
+      // Re-draft with corrections if retries remain
+      if (attempt < MAX_FACT_CHECK_RETRIES) {
+        draftContent = await step.run(`redraft-attempt-${attempt + 1}`, async () => {
+          const correctionPrompt = `You are a content editor for "${brandName}".
+The following content failed fact-checking. Fix ALL factual deviations listed below, then return the corrected version.
+
+DEVIATIONS:
+${factResult.deviations.map((d, i) => `${i + 1}. [${d.severity}] ${d.claim}: ${d.issue}`).join("\n")}
+
+ORIGINAL CONTENT:
+${draftContent}`;
+
+          const result = await routeToModel("drafting", correctionPrompt, "Fix the deviations and return corrected content.");
+          return (result.parsed as { draft?: string })?.draft ?? result.raw;
+        });
+      }
+    }
+
+    // ── Step 5: Save draft and update status ────────────────
+    await step.run("save-draft", async () => {
+      await prisma.contentPiece.update({
+        where: { id: contentPieceId },
+        data: {
+          status: "DRAFTED",
+          bodyText: draftContent,
+          postingPlan: JSON.parse(JSON.stringify({
+            factCheck: { passed: factCheckPassed, confidence: factCheckConfidence, deviations: deviations.length },
+            contentType: route.contentType,
+            platform: route.platform,
+            skillsUsed: route.skillPaths,
+            draftedAt: new Date().toISOString(),
+          })),
+        },
+      });
+
+      // Record skill execution
+      const skill = await prisma.skill.findFirst({
+        where: { path: { contains: route.primarySkill } },
+        select: { id: true },
+      });
+
+      if (skill) {
+        await prisma.skillExecution.create({
+          data: {
+            skillId: skill.id,
+            brandId: piece.brandId,
+            platform: route.platform,
+            inputContext: { contentPieceId, contentType: route.contentType },
+            outputSummary: {
+              contentLength: draftContent.length,
+              factCheckPassed,
+              factCheckConfidence,
+              deviations: deviations.length,
+            },
+            modelUsed: "gemini",
+            status: factCheckPassed ? "completed" : "partial",
+          },
+        });
+      }
+    });
+
+    return {
+      contentPieceId,
+      status: "drafted",
+      contentType: route.contentType,
+      platform: route.platform,
+      factCheckPassed,
+      factCheckConfidence,
+      deviationsCount: deviations.length,
+      contentLength: draftContent.length,
     };
   }
 );
