@@ -35,25 +35,25 @@ function getVoiceRules(brand: { voiceRules: unknown }): string {
   return "";
 }
 
+let cachedResearch: string | null = null;
+
 async function getResearch(): Promise<string> {
-  // Try to get existing dossier
-  const dossier = await prisma.factDossier.findFirst({
-    orderBy: { createdAt: "desc" },
-  });
-  if (dossier?.rawResearch) {
-    console.log("  Using existing FactDossier research");
-    return dossier.rawResearch;
+  if (cachedResearch) {
+    console.log("  Using cached research from this session");
+    return cachedResearch;
   }
 
-  // Fallback: use Gemini for research
-  console.log("  No dossier found, doing live research via Gemini...");
+  // Always do live research for the test topic (existing dossiers are about different topics)
+  console.log("  Doing live research via Gemini...");
   const { routeToModel } = await import("../src/lib/yantri/model-router");
   const result = await routeToModel(
     "research",
     `Research the following topic for The Squirrels YouTube channel.
-Be concise, data-dense, and cite sources. Include key statistics, timeline, stakeholders, and implications for India.`,
+Be concise, data-dense, and cite sources. Include key statistics, timeline, stakeholders, and implications for India.
+Focus on: investment amounts, timelines, technology partnerships, strategic implications, global semiconductor supply chain context.`,
     TEST_TOPIC
   );
+  cachedResearch = result.raw;
   return result.raw;
 }
 
@@ -127,11 +127,12 @@ async function testCinematic() {
       platform: "YOUTUBE",
       pipelineType: "cinematic",
       copyMarkdown: fullScript,
-      scriptData: {
-        sections: result.script.sections as unknown as Record<string, unknown>[],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      scriptData: JSON.parse(JSON.stringify({
+        sections: result.script.sections,
         runtimeEstimate: result.script.runtimeEstimate,
         actStructure: result.script.actStructure,
-      } as unknown as Record<string, unknown>,
+      })) as any,
       postingPlan: result.postingPlan as object,
       status: "REVIEW",
     },
@@ -262,12 +263,13 @@ async function testCarousel() {
       platform: "META_CAROUSEL",
       pipelineType: "carousel",
       copyMarkdown: result.caption,
-      carouselData: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      carouselData: JSON.parse(JSON.stringify({
         slides: result.slides,
         narrativeArc: result.narrativeArc,
         slideCount: result.slideCount,
         hashtags: result.hashtags,
-      },
+      })) as any,
       status: "REVIEW",
     },
   });
