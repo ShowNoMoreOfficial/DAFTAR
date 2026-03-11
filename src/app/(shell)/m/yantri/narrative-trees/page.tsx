@@ -1,124 +1,130 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GitBranch, FileText, Loader2, RefreshCw } from "lucide-react";
+import {
+  GitBranch, Loader2, AlertTriangle, Inbox, Factory, CheckCircle2, Ban, ArrowRight,
+} from "lucide-react";
 
 interface NarrativeTree {
   id: string;
-  title?: string;
-  rootTrend?: string;
+  title: string;
   summary: string | null;
   status: string;
-  branchCount?: number;
-  signalCount?: number;
-  lastUpdated?: string;
-  updatedAt?: string;
+  urgency: string;
+  createdAt: string;
+  createdBy: { name: string };
+  _count: { narratives: number };
+  narratives: { brandId: string; platform: string; status: string }[];
 }
 
-function statusColor(status: string) {
-  switch (status) {
-    case "ACTIVE":
-    case "DISCOVERING": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "DEVELOPING": return "bg-blue-50 text-blue-700 border-blue-200";
-    case "ARCHIVED": return "bg-gray-100 text-gray-600 border-gray-200";
-    default: return "bg-amber-50 text-amber-700 border-amber-200";
-  }
-}
+const STATUSES = ["ALL", "INCOMING", "IN_PRODUCTION", "APPROVED", "COMPLETED", "SKIPPED"] as const;
+
+const STATUS_CFG: Record<string, { label: string; color: string; icon: typeof Inbox }> = {
+  INCOMING: { label: "Incoming", color: "bg-blue-50 text-blue-700 border-blue-200", icon: Inbox },
+  EVALUATING: { label: "Evaluating", color: "bg-amber-50 text-amber-700 border-amber-200", icon: Inbox },
+  APPROVED: { label: "Approved", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
+  IN_PRODUCTION: { label: "In Production", color: "bg-purple-50 text-purple-700 border-purple-200", icon: Factory },
+  COMPLETED: { label: "Completed", color: "bg-gray-50 text-gray-600 border-gray-200", icon: CheckCircle2 },
+  SKIPPED: { label: "Skipped", color: "bg-gray-50 text-gray-500 border-gray-200", icon: Ban },
+};
 
 export default function NarrativeTreesPage() {
   const [trees, setTrees] = useState<NarrativeTree[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
 
-  async function loadTrees() {
+  const fetchTrees = useCallback(async () => {
     setLoading(true);
     try {
-      const url = filter === "ALL"
-        ? "/api/m/yantri/narrative-trees"
-        : "/api/m/yantri/narrative-trees?status=" + filter;
+      const url = filter === "ALL" ? "/api/yantri/narratives" : "/api/yantri/narratives?status=" + filter;
       const res = await fetch(url);
       if (res.ok) setTrees(await res.json());
-    } catch { /* silent */ }
-    setLoading(false);
-  }
+    } catch { /* ignore */ } finally { setLoading(false); }
+  }, [filter]);
 
-  useEffect(() => { loadTrees(); }, [filter]);
-
-  const statuses = ["ALL", "DISCOVERING", "DEVELOPING", "ARCHIVED"];
+  useEffect(() => { fetchTrees(); }, [fetchTrees]);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-[#1A1A1A]">Narrative Trees</h1>
-          <p className="text-sm text-[#6B7280] mt-1">Signal clusters organized into narrative arcs</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={loadTrees} disabled={loading}>
-          <RefreshCw className={"h-4 w-4 mr-2 " + (loading ? "animate-spin" : "")} />
-          Refresh
-        </Button>
+        <h1 className="text-xl font-bold text-[#1A1A1A]">Narrative Trees</h1>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        {statuses.map((s) => (
-          <button
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {STATUSES.map((s) => (
+          <Button
             key={s}
+            variant={filter === s ? "default" : "outline"}
+            size="sm"
+            className={filter === s ? "bg-[#2E86AB] hover:bg-[#2E86AB]/90 text-white" : ""}
             onClick={() => setFilter(s)}
-            className={"px-3 py-1.5 text-xs font-medium rounded-full border transition-colors " + (
-              filter === s
-                ? "bg-[#2E86AB] text-white border-[#2E86AB]"
-                : "bg-white text-[#6B7280] border-[#E5E7EB] hover:border-[#2E86AB]"
-            )}
           >
-            {s}
-          </button>
+            {s === "ALL" ? "All" : (STATUS_CFG[s]?.label || s)}
+          </Button>
         ))}
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-[#6B7280]" />
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-[#2E86AB]" />
         </div>
       ) : trees.length === 0 ? (
         <Card className="border-[#E5E7EB]">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <GitBranch className="h-10 w-10 text-[#D1D5DB] mb-3" />
-            <p className="text-sm text-[#6B7280]">No narrative trees found.</p>
+            <p className="text-sm text-[#6B7280]">No narratives found.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {trees.map((tree) => (
-            <Card key={tree.id} className="border-[#E5E7EB] hover:border-[#2E86AB]/30 transition-colors">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <h3 className="text-sm font-semibold text-[#1A1A1A]">{tree.rootTrend || tree.title}</h3>
-                  <Badge className={"shrink-0 text-[10px] font-semibold border " + statusColor(tree.status)}>
-                    {tree.status}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="flex items-center gap-1 text-xs text-[#6B7280]">
-                    <GitBranch className="h-3.5 w-3.5" />
-                    <span>{tree.branchCount ?? 0} branches</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-[#6B7280]">
-                    <FileText className="h-3.5 w-3.5" />
-                    <span>{tree.signalCount ?? 0} signals</span>
-                  </div>
-                </div>
-                {tree.summary && (
-                  <p className="text-xs text-[#6B7280] line-clamp-3 mb-3">{tree.summary}</p>
-                )}
-                <div className="text-[10px] text-[#9CA3AF]">
-                  Updated {new Date(tree.updatedAt || tree.lastUpdated || "").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-3">
+          {trees.map((tree) => {
+            const sc = STATUS_CFG[tree.status] || STATUS_CFG.INCOMING;
+            const platforms = [...new Set(tree.narratives.map((n) => n.platform))];
+            return (
+              <Link key={tree.id} href={"/m/yantri/narrative-trees/" + tree.id}>
+                <Card className="border-[#E5E7EB] hover:border-[#2E86AB]/30 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-sm font-semibold text-[#1A1A1A]">{tree.title}</h3>
+                          {tree.urgency === "breaking" && (
+                            <Badge className="bg-red-500 text-white text-[9px]">
+                              <AlertTriangle className="h-2.5 w-2.5 mr-0.5" /> Breaking
+                            </Badge>
+                          )}
+                          {tree.urgency === "high" && (
+                            <Badge className="bg-amber-500 text-white text-[9px]">High</Badge>
+                          )}
+                        </div>
+                        {tree.summary && <p className="text-xs text-[#6B7280] line-clamp-1 mb-2">{tree.summary}</p>}
+                        <div className="flex items-center gap-3 text-xs text-[#9CA3AF]">
+                          <span>{tree._count.narratives} deliverable{tree._count.narratives !== 1 ? "s" : ""}</span>
+                          {platforms.length > 0 && (
+                            <span className="flex gap-1">
+                              {platforms.map((p) => (
+                                <Badge key={p} variant="outline" className="text-[9px] py-0">{p}</Badge>
+                              ))}
+                            </span>
+                          )}
+                          <span>by {tree.createdBy.name}</span>
+                          <span>{new Date(tree.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge className={"text-[10px] font-semibold border " + sc.color}>{sc.label}</Badge>
+                        <ArrowRight className="h-4 w-4 text-[#D1D5DB]" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

@@ -8,22 +8,24 @@ import { Loader2, Zap, ArrowRight, Radio, GitBranch, Send } from "lucide-react";
 
 interface PipelineRun {
   id: string;
-  signalTitle: string;
-  brandName: string;
+  title: string;
   status: string;
-  startedAt: string;
+  urgency: string;
+  createdBy: string;
+  createdAt: string;
+  deliverables: number;
+  platforms: string[];
 }
 
-const STAGE_ORDER = ["pending", "researching", "drafting", "review", "approved", "distributed"];
+const STAGE_ORDER = ["INCOMING", "APPROVED", "IN_PRODUCTION", "COMPLETED"];
 
 function stageColor(status: string) {
   switch (status) {
-    case "pending": return "bg-gray-100 text-gray-600";
-    case "researching": return "bg-amber-50 text-amber-700";
-    case "drafting": return "bg-blue-50 text-blue-700";
-    case "review": return "bg-purple-50 text-purple-700";
-    case "approved": return "bg-emerald-50 text-emerald-700";
-    case "distributed": return "bg-teal-50 text-teal-700";
+    case "INCOMING": return "bg-blue-50 text-blue-700";
+    case "EVALUATING": return "bg-amber-50 text-amber-700";
+    case "APPROVED": return "bg-emerald-50 text-emerald-700";
+    case "IN_PRODUCTION": return "bg-purple-50 text-purple-700";
+    case "COMPLETED": return "bg-gray-100 text-gray-600";
     default: return "bg-gray-100 text-gray-600";
   }
 }
@@ -38,7 +40,7 @@ export default function YantriWorkspacePage() {
         const res = await fetch("/api/pipeline/runs");
         if (res.ok) {
           const data = await res.json();
-          setRuns(data.runs || []);
+          setRuns(Array.isArray(data) ? data : data.runs || []);
         }
       } catch { /* silent */ }
       setLoading(false);
@@ -99,18 +101,30 @@ export default function YantriWorkspacePage() {
       ) : (
         <div className="space-y-3">
           {runs.map((run) => (
-            <Card key={run.id} className="border-[#E5E7EB]">
+            <Card key={run.id} className="border-[#E5E7EB] hover:border-[#2E86AB]/30 transition-colors cursor-pointer"
+              onClick={() => window.location.href = "/m/yantri/narrative-trees/" + run.id}>
               <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-[#1A1A1A]">{run.signalTitle}</h3>
-                  <p className="text-xs text-[#6B7280] mt-0.5">{run.brandName}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-[#1A1A1A]">{run.title}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-[#9CA3AF]">
+                    <span>{run.deliverables} deliverable{run.deliverables !== 1 ? "s" : ""}</span>
+                    {run.platforms.length > 0 && (
+                      <span>{run.platforms.join(", ")}</span>
+                    )}
+                    <span>by {run.createdBy}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
+                  {run.urgency !== "normal" && (
+                    <Badge className={run.urgency === "breaking" ? "bg-red-500 text-white text-[9px]" : "bg-amber-500 text-white text-[9px]"}>
+                      {run.urgency}
+                    </Badge>
+                  )}
                   <Badge className={"text-[10px] font-semibold " + stageColor(run.status)}>
-                    {run.status}
+                    {run.status.replace("_", " ")}
                   </Badge>
                   <span className="text-[10px] text-[#9CA3AF]">
-                    {new Date(run.startedAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                    {new Date(run.createdAt).toLocaleDateString([], { month: "short", day: "numeric" })}
                   </span>
                 </div>
               </CardContent>

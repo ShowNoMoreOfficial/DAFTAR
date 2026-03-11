@@ -101,6 +101,8 @@ model User {
   articleVersionEdits ArticleVersion[]   @relation("VersionEditor")
   // HOCCR Phase 1
   employeeProfile     EmployeeProfile?
+  // Yantri Narratives
+  narrativeTrees      NarrativeTree[]    @relation("NarrativeCreator")
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
@@ -216,6 +218,7 @@ model Brand {
   posts               ContentPost[]
   platformConnections PlatformConnection[]
   articles            Article[]            @relation("ArticleBrand")
+  narratives          Narrative[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 
@@ -1455,6 +1458,61 @@ model TrendRelation {
 
   @@unique([sourceTrendId, relatedTrendId])
   @@map("trend_relations")
+}
+
+// ─── Narrative Pipeline (Yantri) ────────────────────────
+
+enum NarrativeStatus {
+  INCOMING // Signal just arrived from Khabri
+  EVALUATING // Being evaluated for brand relevance
+  APPROVED // Editorial approved — ready for deliverables
+  IN_PRODUCTION // Deliverables being created
+  COMPLETED // All deliverables done
+  SKIPPED // Not relevant, skipped
+  ARCHIVED // Old, no longer active
+}
+
+model NarrativeTree {
+  id          String          @id @default(cuid())
+  title       String
+  summary     String?         @db.Text
+  status      NarrativeStatus @default(INCOMING)
+  signalData  Json? // Original signal data from Khabri
+  signalId    String? // External Khabri signal ID
+  trendId     String? // Link to Trend if exists
+  urgency     String          @default("normal") // breaking, high, normal, low
+  createdById String
+  createdBy   User            @relation("NarrativeCreator", fields: [createdById], references: [id])
+  narratives  Narrative[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("narrative_trees")
+}
+
+model Narrative {
+  id              String         @id @default(cuid())
+  tree            NarrativeTree  @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  treeId          String
+  brand           Brand          @relation(fields: [brandId], references: [id])
+  brandId         String
+  platform        String // youtube, x, instagram, linkedin, facebook
+  angle           String? // Editorial angle for this brand+platform
+  formatNotes     String?        @db.Text // What type of content (long-form video, thread, reel, etc.)
+  status          NarrativeStatus @default(INCOMING)
+  taskId          String? // Link to PMS Task once created
+  contentPostId   String? // Link to ContentPost once created
+  deliverableId   String? // Link to ClientDeliverable once created
+  editorialNotes  String?        @db.Text
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([treeId, brandId, platform])
+  @@index([brandId])
+  @@index([status])
+  @@map("narratives")
 }
 
 // ─── Content Performance Tracking ───────────────────────

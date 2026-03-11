@@ -5,11 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, TrendingUp, Target, Clock, Zap } from "lucide-react";
 
 interface PerformanceSummary {
+  total: number;
+  incoming: number;
+  inProduction: number;
+  completed: number;
+  skipped: number;
   totalDeliverables: number;
-  avgApprovalRate: number;
-  avgTurnaroundHours: number;
-  topSkills: { path: string; score: number }[];
-  byBrand: { name: string; deliverables: number; approvalRate: number }[];
+  approvalRate: number;
 }
 
 export default function YantriPerformancePage() {
@@ -35,13 +37,7 @@ export default function YantriPerformancePage() {
     );
   }
 
-  const summary = data || {
-    totalDeliverables: 0,
-    avgApprovalRate: 0,
-    avgTurnaroundHours: 0,
-    topSkills: [],
-    byBrand: [],
-  };
+  const s = data || { total: 0, incoming: 0, inProduction: 0, completed: 0, skipped: 0, totalDeliverables: 0, approvalRate: 0 };
 
   return (
     <div>
@@ -52,10 +48,10 @@ export default function YantriPerformancePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Total Deliverables", value: String(summary.totalDeliverables), icon: TrendingUp, color: "text-[#2E86AB]" },
-          { label: "Approval Rate", value: summary.avgApprovalRate + "%", icon: Target, color: "text-emerald-600" },
-          { label: "Avg Turnaround", value: summary.avgTurnaroundHours + "h", icon: Clock, color: "text-amber-600" },
-          { label: "Skills Used", value: String(summary.topSkills.length), icon: Zap, color: "text-purple-600" },
+          { label: "Total Narratives", value: String(s.total), icon: TrendingUp, color: "text-[#2E86AB]" },
+          { label: "Approval Rate", value: s.approvalRate + "%", icon: Target, color: "text-emerald-600" },
+          { label: "Total Deliverables", value: String(s.totalDeliverables), icon: Clock, color: "text-amber-600" },
+          { label: "Completed", value: String(s.completed), icon: Zap, color: "text-purple-600" },
         ].map((stat) => (
           <Card key={stat.label} className="border-[#E5E7EB]">
             <CardContent className="p-5">
@@ -69,45 +65,30 @@ export default function YantriPerformancePage() {
         ))}
       </div>
 
-      {summary.topSkills.length > 0 && (
-        <Card className="border-[#E5E7EB] mb-6">
-          <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-[#1A1A1A] mb-4">Top Performing Skills</h2>
-            <div className="space-y-3">
-              {summary.topSkills.map((skill) => (
-                <div key={skill.path} className="flex items-center justify-between">
-                  <span className="text-sm text-[#6B7280] font-mono">{skill.path}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 h-2 bg-[#F0F2F5] rounded-full">
-                      <div className="h-2 bg-[#2E86AB] rounded-full" style={{ width: (skill.score * 10) + "%" }} />
-                    </div>
-                    <span className="text-xs font-semibold text-[#1A1A1A] w-8">{skill.score}</span>
+      <Card className="border-[#E5E7EB]">
+        <CardContent className="p-5">
+          <h2 className="text-sm font-semibold text-[#1A1A1A] mb-4">Pipeline Breakdown</h2>
+          <div className="space-y-3">
+            {[
+              { label: "Incoming (awaiting review)", count: s.incoming, color: "bg-blue-500" },
+              { label: "In Production", count: s.inProduction, color: "bg-purple-500" },
+              { label: "Completed", count: s.completed, color: "bg-emerald-500" },
+              { label: "Skipped", count: s.skipped, color: "bg-gray-400" },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center gap-3">
+                <div className={"w-3 h-3 rounded-full shrink-0 " + row.color} />
+                <span className="text-sm text-[#6B7280] flex-1">{row.label}</span>
+                <span className="text-sm font-bold text-[#1A1A1A]">{row.count}</span>
+                {s.total > 0 && (
+                  <div className="w-20 h-2 bg-[#F0F2F5] rounded-full">
+                    <div className={"h-2 rounded-full " + row.color} style={{ width: Math.round((row.count / s.total) * 100) + "%" }} />
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {summary.byBrand.length > 0 && (
-        <Card className="border-[#E5E7EB]">
-          <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-[#1A1A1A] mb-4">Performance by Brand</h2>
-            <div className="space-y-3">
-              {summary.byBrand.map((brand) => (
-                <div key={brand.name} className="flex items-center justify-between p-3 rounded-lg bg-[#F8F9FA]">
-                  <span className="text-sm font-medium text-[#1A1A1A]">{brand.name}</span>
-                  <div className="flex items-center gap-4 text-xs text-[#6B7280]">
-                    <span>{brand.deliverables} deliverables</span>
-                    <span>{brand.approvalRate}% approval</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

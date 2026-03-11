@@ -136,7 +136,7 @@ export default function KhabriSignalsPage() {
     setSentToYantri((prev) => new Set(prev).add(signalId));
 
     try {
-      await fetch("/api/pipeline/trigger", {
+      const res = await fetch("/api/pipeline/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -146,6 +146,7 @@ export default function KhabriSignalsPage() {
           urgency: (signal.impactScore ?? 0) > 8 ? "breaking" : (signal.impactScore ?? 0) > 6 ? "high" : "normal",
         }),
       });
+      if (!res.ok) throw new Error("Failed");
     } catch {
       // Revert on failure
       setSentToYantri((prev) => {
