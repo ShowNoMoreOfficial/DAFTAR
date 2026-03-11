@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Trigger downstream processing: dossier build + gap analysis
-    await yantriInngest.send([
+    // Trigger downstream processing: dossier build + gap analysis (non-blocking)
+    yantriInngest.send([
       {
         name: "yantri/dossier.build",
         data: { treeId: tree.id },
@@ -67,7 +67,9 @@ export async function POST(req: NextRequest) {
         name: "yantri/tree.updated",
         data: { treeId: tree.id },
       },
-    ]);
+    ]).catch((err) => {
+      console.warn("[pipeline/trigger] Inngest event send failed (non-critical):", err instanceof Error ? err.message : err);
+    });
 
     return NextResponse.json({
       success: true,

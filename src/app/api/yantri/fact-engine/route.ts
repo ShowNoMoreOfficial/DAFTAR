@@ -270,10 +270,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Step 4: Send Inngest event for deeper async synthesis
-    await yantriInngest.send({
+    // Step 4: Send Inngest event for deeper async synthesis (non-blocking)
+    yantriInngest.send({
       name: "yantri/dossier.build",
       data: { treeId },
+    }).catch((err) => {
+      console.warn("[fact-engine] Inngest event send failed (non-critical):", err instanceof Error ? err.message : err);
     });
 
     return NextResponse.json(
