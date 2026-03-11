@@ -19,6 +19,18 @@ export async function POST(req: NextRequest) {
     return badRequest("trendTitle is required");
   }
 
+  // Verify user exists in DB (session JWT may contain stale ID)
+  const userExists = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true },
+  });
+  if (!userExists) {
+    return NextResponse.json(
+      { error: "User not found. Please sign out and sign in again." },
+      { status: 403 }
+    );
+  }
+
   try {
     const tree = await prisma.narrativeTree.create({
       data: {
