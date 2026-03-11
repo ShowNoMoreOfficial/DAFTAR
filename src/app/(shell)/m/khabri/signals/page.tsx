@@ -89,11 +89,12 @@ export default function KhabriSignalsPage() {
   const [sources, setSources] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [sentToYantri, setSentToYantri] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const fetchSignals = useCallback(async () => {
     setLoading(true);
     try {
-      // Try mock endpoint first, fall back to live
+      // Fetch both mock and live signals in parallel, merge results
       const params = new URLSearchParams();
       if (activeSearch) params.set("search", activeSearch);
       if (sourceFilter) params.set("source", sourceFilter);
@@ -101,20 +102,46 @@ export default function KhabriSignalsPage() {
       params.set("page", String(page));
       params.set("pageSize", "20");
 
-      let res = await fetch(`/api/m/khabri/signals?${params}`);
-      if (!res.ok) {
-        // Fall back to live Khabri API
-        const endpoint = activeSearch
-          ? `/api/khabri/signals/search?q=${encodeURIComponent(activeSearch)}&page=${page}&pageSize=20`
-          : `/api/khabri/signals?page=${page}&pageSize=20`;
-        res = await fetch(endpoint);
+      const [mockRes, liveRes] = await Promise.all([
+        fetch(`/api/m/khabri/signals?${params}`).catch(() => null),
+        fetch(
+          activeSearch
+            ? `/api/khabri/signals/search?q=${encodeURIComponent(activeSearch)}&page=${page}&pageSize=20`
+            : `/api/khabri/signals?page=${page}&pageSize=20`
+        ).catch(() => null),
+      ]);
+
+      let allSignals: MockSignal[] = [];
+      let liveMeta: KhabriMeta | null = null;
+      const allSources: string[] = [];
+
+      // Get mock signals
+      if (mockRes && mockRes.ok) {
+        const mockData = await mockRes.json();
+        const mockSignals = (mockData.data || []).map((s: MockSignal) => ({ ...s, _source: "mock" }));
+        allSignals.push(...mockSignals);
+        if (mockData.sources) allSources.push(...mockData.sources);
       }
-      if (res.ok) {
-        const data = await res.json();
-        setSignals(data.data || []);
-        setMeta(data.meta || null);
-        if (data.sources) setSources(data.sources);
+
+      // Get live signals from Khabri API
+      if (liveRes && liveRes.ok) {
+        const liveData = await liveRes.json();
+        const liveSignals = (liveData.data || []).map((s: MockSignal) => ({ ...s, _source: "live" }));
+        allSignals.push(...liveSignals);
+        liveMeta = liveData.meta || null;
       }
+
+      // Deduplicate by id
+      const seen = new Set<string>();
+      allSignals = allSignals.filter((s) => {
+        if (seen.has(s.id)) return false;
+        seen.add(s.id);
+        return true;
+      });
+
+      setSignals(allSignals);
+      setMeta(liveMeta || { total: allSignals.length, page: 1, pageSize: allSignals.length, hasMore: false });
+      if (allSources.length > 0) setSources([...new Set(allSources)]);
     } catch {
       // ignore
     } finally {
@@ -147,18 +174,33 @@ export default function KhabriSignalsPage() {
         }),
       });
       if (!res.ok) throw new Error("Failed");
+      setToast({ message: `"${signal.title.substring(0, 50)}..." sent to Yantri`, type: "success" });
+      setTimeout(() => setToast(null), 4000);
     } catch {
-      // Revert on failure
       setSentToYantri((prev) => {
         const next = new Set(prev);
         next.delete(signalId);
         return next;
       });
+      setToast({ message: "Failed to send to Yantri. Please try again.", type: "error" });
+      setTimeout(() => setToast(null), 4000);
     }
   };
 
   return (
     <div className="p-6 space-y-4">
+      {/* Toast notification */}
+      {toast && (
+        <div className={cn(
+          "fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium max-w-md animate-in fade-in slide-in-from-top-2",
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        )}>
+          {toast.message}
+          {toast.type === "success" && (
+            <a href="/m/yantri" className="ml-2 underline text-emerald-100 hover:text-white">Open Yantri &rarr;</a>
+          )}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

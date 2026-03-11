@@ -24,20 +24,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     roles: ["CLIENT"],
   },
   {
-    id: "yantri",
-    label: "Yantri",
-    icon: "Brain",
-    href: "/m/yantri",
-    roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER"],
-    children: [
-      { id: "yantri-dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/m/yantri", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-      { id: "yantri-narrative-trees", label: "Narrative Trees", icon: "GitBranch", href: "/m/yantri/narrative-trees", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-      { id: "yantri-brands", label: "Brands", icon: "Palette", href: "/m/yantri/brands", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-      { id: "yantri-workspace", label: "Workspace", icon: "Layers", href: "/m/yantri/workspace", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-      { id: "yantri-performance", label: "Performance", icon: "BarChart3", href: "/m/yantri/performance", roles: ["ADMIN", "DEPT_HEAD"] },
-    ],
-  },
-  {
     id: "khabri",
     label: "Khabri",
     icon: "Newspaper",
@@ -50,6 +36,20 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       { id: "khabri-narratives", label: "Narratives", icon: "GitBranch", href: "/m/khabri/narratives", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
       { id: "khabri-geo", label: "Geo Intel", icon: "Globe2", href: "/m/khabri/geo", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
       { id: "khabri-analytics", label: "Analytics", icon: "BarChart3", href: "/m/khabri/analytics", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+    ],
+  },
+  {
+    id: "yantri",
+    label: "Yantri",
+    icon: "Brain",
+    href: "/m/yantri",
+    roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER"],
+    children: [
+      { id: "yantri-dashboard", label: "Dashboard", icon: "LayoutDashboard", href: "/m/yantri", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-narrative-trees", label: "Narrative Trees", icon: "GitBranch", href: "/m/yantri/narrative-trees", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-brands", label: "Brands", icon: "Palette", href: "/m/yantri/brands", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-workspace", label: "Workspace", icon: "Layers", href: "/m/yantri/workspace", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+      { id: "yantri-performance", label: "Performance", icon: "BarChart3", href: "/m/yantri/performance", roles: ["ADMIN", "DEPT_HEAD"] },
     ],
   },
   {

@@ -186,6 +186,20 @@ async function main() {
 
   console.log("Sample client and brands created");
 
+  // ─── Brand Platforms ──────────────────────────────────
+  const allBrands = await prisma.brand.findMany();
+  const defaultPlatforms = ["youtube", "x", "instagram", "linkedin"];
+  for (const brand of allBrands) {
+    for (const platform of defaultPlatforms) {
+      await prisma.brandPlatform.upsert({
+        where: { brandId_platform: { brandId: brand.id, platform } },
+        create: { brandId: brand.id, platform, isActive: true },
+        update: {},
+      });
+    }
+  }
+  console.log("Brand platforms configured");
+
   // ─── GI Default Tier Assignments ───────────────────────
   const tierAssignments = [
     { actionType: "task_reassignment", tier: 3 },
