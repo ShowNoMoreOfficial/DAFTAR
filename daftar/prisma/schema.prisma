@@ -1,0 +1,1931 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector] // Requires pgvector extension for embeddings
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  HEAD_HR
+  DEPT_HEAD
+  MEMBER
+  CLIENT
+  FINANCE
+  CONTRACTOR
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+enum DepartmentType {
+  MEDIA
+  TECH
+  MARKETING
+  PRODUCTION
+  PPC
+  PHOTOGRAPHY
+  HR_OPS
+  FINANCE_DEPT
+  CUSTOM
+}
+
+// ─── Yantri Pipeline Enums ──────────────────────────────
+
+enum ContentPlatform {
+  YOUTUBE
+  X_THREAD
+  X_SINGLE
+  BLOG
+  LINKEDIN
+  META_REEL
+  META_CAROUSEL
+  META_POST
+}
+
+enum ContentPipelineStatus {
+  PLANNED
+  RESEARCHING
+  SCRIPTING
+  GENERATING_ASSETS
+  STORYBOARDING
+  DRAFTED
+  REVIEW
+  APPROVED
+  RELAYED
+  PUBLISHED
+  KILLED
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO_CLIP
+  BROLL
+  CAROUSEL_SLIDE
+  THUMBNAIL
+  SOCIAL_CARD
+  AUDIO
+}
+
+enum NodeType {
+  SIGNAL
+  HYPOTHESIS
+}
+
+// ─── Invitations ────────────────────────────────────────
+
+model Invite {
+  id           String       @id @default(cuid())
+  email        String
+  role         Role         @default(MEMBER)
+  departmentId String?
+  department   Department?  @relation("DeptInvites", fields: [departmentId], references: [id])
+  status       InviteStatus @default(PENDING)
+  token        String       @unique @default(cuid())
+  invitedById  String
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([email])
+  @@index([token])
+  @@map("invites")
+}
+
+// ─── Core Models ─────────────────────────────────────────
+
+model User {
+  id                  String             @id @default(cuid())
+  email               String             @unique
+  name                String
+  avatar              String?
+  role                Role               @default(MEMBER)
+  isActive            Boolean            @default(false)
+  primaryDepartment   Department?        @relation("PrimaryDept", fields: [primaryDeptId], references: [id])
+  primaryDeptId       String?
+  departments         DepartmentMember[]
+  brandAccess         UserBrandAccess[]
+  permissionOverrides UserPermission[]
+  projectTags         ProjectMember[]
+  sidebarPreference   SidebarPreference?
+  client              Client?
+  accounts            Account[]
+  sessions            Session[]
+  // PMS relations
+  createdTasks        Task[]             @relation("TaskCreator")
+  assignedTasks       Task[]             @relation("TaskAssignee")
+  taskComments        TaskComment[]      @relation("CommentAuthor")
+  taskActivities      TaskActivity[]     @relation("ActivityActor")
+  credibilityScore    CredibilityScore?
+  // HOCCR relations
+  createdReports      Report[]           @relation("ReportCreator")
+  // Notifications
+  notifications       Notification[]
+  // Gamification
+  achievements        UserAchievement[]
+  streak              UserStreak?
+  // Vritti
+  authoredArticles    Article[]          @relation("ArticleAuthor")
+  editedArticles      Article[]          @relation("ArticleEditor")
+  reviewedArticles    Article[]          @relation("ArticleReviewer")
+  uploadedMedia       ArticleMedia[]     @relation("MediaUploader")
+  editorialComments   EditorialComment[] @relation("EditorialComments")
+  articleVersionEdits ArticleVersion[]   @relation("VersionEditor")
+  // HOCCR Phase 1
+  employeeProfile     EmployeeProfile?
+  // Yantri Narratives
+  narrativeTrees      NarrativeTree[]    @relation("NarrativeCreator")
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── Department ──────────────────────────────────────────
+
+model Department {
+  id           String             @id @default(cuid())
+  name         String             @unique
+  type         DepartmentType
+  description  String?
+  config       Json?
+  headId       String?
+  members      DepartmentMember[]
+  primaryUsers User[]             @relation("PrimaryDept")
+  projects     Project[]
+  tasks        Task[]             @relation("DeptTasks")
+  positions    HiringPosition[]   @relation("DeptPositions")
+  reports      Report[]           @relation("DeptReports")
+  workflows    WorkflowTemplate[]
+  expenses     Expense[]          @relation("DeptExpenses")
+  invites      Invite[]           @relation("DeptInvites")
+  // HOCCR Phase 1
+  metrics      DepartmentMetrics?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@map("departments")
+}
+
+model DepartmentMember {
+  id           String     @id @default(cuid())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId String
+  isPrimary    Boolean    @default(false)
+  joinedAt     DateTime   @default(now())
+
+  @@unique([userId, departmentId])
+  @@map("department_members")
+}
+
+// ─── Client & Brand ──────────────────────────────────────
+
+model Client {
+  id        String    @id @default(cuid())
+  name      String
+  email     String?
+  company   String?
+  userId    String?   @unique
+  user      User?     @relation(fields: [userId], references: [id])
+  brands    Brand[]
+  invoices  Invoice[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("clients")
+}
+
+model Brand {
+  id                   String               @id @default(cuid())
+  name                 String
+  slug                 String               @unique
+  client               Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId             String
+  config               Json?
+  // Yantri editorial fields
+  tagline              String?
+  identityMarkdown     String?              @db.Text
+  language             String?
+  tone                 String?
+  editorialCovers      String? // JSON array of topics
+  editorialNever       String? // JSON array of exclusions
+  audienceSize         String?
+  audienceDemographics String? // JSON object
+  audienceGeography    String? // JSON object
+  audienceInterests    String? // JSON object
+  audienceDescription  String?
+  activePlatforms      String? // JSON array of { name, role }
+  voiceRules           Json? // Voice rules
+  editorialPriorities  String? // JSON array
+  contentFrequency     String? // JSON object
+  // Relations
+  platforms            BrandPlatform[]
+  userAccess           UserBrandAccess[]
+  tasks                Task[]
+  invoices             Invoice[]
+  posts                ContentPost[]
+  platformConnections  PlatformConnection[]
+  articles             Article[]            @relation("ArticleBrand")
+  narratives           Narrative[]
+  contentPieces        ContentPiece[]
+  deliverables         Deliverable[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@map("brands")
+}
+
+model UserBrandAccess {
+  id      String  @id @default(cuid())
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brandId String
+  role    String?
+
+  @@unique([userId, brandId])
+  @@map("user_brand_access")
+}
+
+model BrandPlatform {
+  id       String  @id @default(cuid())
+  brand    Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brandId  String
+  platform String
+  config   Json?
+  isActive Boolean @default(true)
+
+  @@unique([brandId, platform])
+  @@map("brand_platforms")
+}
+
+// ─── Projects ────────────────────────────────────────────
+
+model Project {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  department  Department      @relation(fields: [deptId], references: [id])
+  deptId      String
+  members     ProjectMember[]
+  tasks       Task[]
+  status      String          @default("active")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String  @id @default(cuid())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  role      String?
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+// ─── Permissions ─────────────────────────────────────────
+
+model UserPermission {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  permission String
+  granted    Boolean  @default(true)
+  grantedBy  String
+  createdAt  DateTime @default(now())
+
+  @@map("user_permissions")
+}
+
+// ─── Sidebar ─────────────────────────────────────────────
+
+model SidebarPreference {
+  id        String @id @default(cuid())
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String @unique
+  pinned    Json   @default("[]")
+  collapsed Json   @default("[]")
+  order     Json   @default("[]")
+
+  @@map("sidebar_preferences")
+}
+
+// ─── PMS: Tasks ─────────────────────────────────────────
+
+enum TaskStatus {
+  CREATED
+  ASSIGNED
+  IN_PROGRESS
+  REVIEW
+  APPROVED
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id               String       @id @default(cuid())
+  title            String
+  description      String?      @db.Text
+  status           TaskStatus   @default(CREATED)
+  priority         TaskPriority @default(MEDIUM)
+  difficultyWeight Int          @default(1)
+
+  // Relations
+  creator      User        @relation("TaskCreator", fields: [creatorId], references: [id])
+  creatorId    String
+  assignee     User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assigneeId   String?
+  department   Department? @relation("DeptTasks", fields: [departmentId], references: [id])
+  departmentId String?
+  brand        Brand?      @relation(fields: [brandId], references: [id])
+  brandId      String?
+  project      Project?    @relation(fields: [projectId], references: [id])
+  projectId    String?
+
+  // Dates
+  dueDate     DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Sub-relations
+  comments   TaskComment[]
+  activities TaskActivity[]
+  tags       TaskTag[]
+
+  @@index([assigneeId, status])
+  @@index([departmentId, status])
+  @@index([status])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  author    User     @relation("CommentAuthor", fields: [authorId], references: [id])
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("task_comments")
+}
+
+model TaskActivity {
+  id        String   @id @default(cuid())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  actor     User     @relation("ActivityActor", fields: [actorId], references: [id])
+  actorId   String
+  action    String
+  field     String?
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+
+  @@map("task_activities")
+}
+
+model TaskTag {
+  id     String @id @default(cuid())
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+  name   String
+
+  @@unique([taskId, name])
+  @@map("task_tags")
+}
+
+// ─── PMS: Credibility Scoring ───────────────────────────
+
+model CredibilityScore {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String   @unique
+  reliability    Float    @default(50)
+  quality        Float    @default(50)
+  consistency    Float    @default(50)
+  overallScore   Float    @default(50)
+  tasksCompleted Int      @default(0)
+  tasksOnTime    Int      @default(0)
+  tasksLate      Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@map("credibility_scores")
+}
+
+// ─── HOCCR: Hiring Pipeline ─────────────────────────────
+
+enum CandidateStatus {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+  WITHDRAWN
+}
+
+model HiringPosition {
+  id           String            @id @default(cuid())
+  title        String
+  department   Department        @relation("DeptPositions", fields: [departmentId], references: [id])
+  departmentId String
+  description  String?           @db.Text
+  requirements Json?
+  isOpen       Boolean           @default(true)
+  candidates   HiringCandidate[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@map("hiring_positions")
+}
+
+model HiringCandidate {
+  id            String          @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  resumeUrl     String?
+  status        CandidateStatus @default(APPLIED)
+  position      HiringPosition  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  positionId    String
+  notes         String?         @db.Text
+  rating        Int?
+  interviewDate DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("hiring_candidates")
+}
+
+// ─── HOCCR: Reports ─────────────────────────────────────
+
+enum ReportType {
+  DEPARTMENT_PERFORMANCE
+  TEAM_WORKLOAD
+  TASK_COMPLETION
+  HIRING_PIPELINE
+  CUSTOM
+}
+
+model Report {
+  id            String      @id @default(cuid())
+  title         String
+  type          ReportType
+  description   String?
+  config        Json?
+  generatedData Json?
+  createdBy     User        @relation("ReportCreator", fields: [createdById], references: [id])
+  createdById   String
+  department    Department? @relation("DeptReports", fields: [departmentId], references: [id])
+  departmentId  String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("reports")
+}
+
+// ─── HOCCR: Culture & Sentiment ─────────────────────────
+
+enum SentimentLevel {
+  VERY_NEGATIVE
+  NEGATIVE
+  NEUTRAL
+  POSITIVE
+  VERY_POSITIVE
+}
+
+model SentimentEntry {
+  id           String         @id @default(cuid())
+  userId       String
+  departmentId String?
+  sentiment    SentimentLevel @default(NEUTRAL)
+  score        Float          @default(3.0) // 1-5 scale
+  source       String         @default("manual") // manual, pulse, gi_detected
+  notes        String?        @db.Text
+  isAnonymous  Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+
+  @@index([userId, createdAt])
+  @@index([departmentId, createdAt])
+  @@map("sentiment_entries")
+}
+
+model Recognition {
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  category   String // kudos, teamwork, innovation, quality, leadership
+  message    String   @db.Text
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@index([toUserId, createdAt])
+  @@index([fromUserId])
+  @@map("recognitions")
+}
+
+model EngagementMetric {
+  id                   String   @id @default(cuid())
+  userId               String
+  departmentId         String?
+  period               String // "2026-W10", "2026-03"
+  taskCompletionRate   Float    @default(0)
+  avgResponseTime      Float    @default(0) // hours
+  collaborationScore   Float    @default(0) // 0-100
+  activeDays           Int      @default(0)
+  recognitionsGiven    Int      @default(0)
+  recognitionsReceived Int      @default(0)
+  overallScore         Float    @default(0) // 0-100
+  computedAt           DateTime @default(now())
+
+  @@unique([userId, period])
+  @@index([departmentId, period])
+  @@map("engagement_metrics")
+}
+
+// ─── HOCCR: Operations ──────────────────────────────────
+
+model Bottleneck {
+  id           String    @id @default(cuid())
+  type         String // task_blocked, approval_delayed, capacity_exceeded, dependency_waiting
+  severity     String    @default("medium") // low, medium, high, critical
+  title        String
+  description  String?   @db.Text
+  departmentId String?
+  taskId       String?
+  blockedById  String? // user causing the block
+  affectedIds  Json? // array of affected user/task ids
+  status       String    @default("active") // active, acknowledged, resolved
+  detectedAt   DateTime  @default(now())
+  resolvedAt   DateTime?
+
+  @@index([status, severity])
+  @@index([departmentId])
+  @@map("bottlenecks")
+}
+
+model CapacitySnapshot {
+  id              String   @id @default(cuid())
+  userId          String
+  departmentId    String?
+  period          String // "2026-W10"
+  totalCapacity   Int      @default(40) // hours/week
+  allocatedHours  Float    @default(0)
+  activeTaskCount Int      @default(0)
+  totalWeight     Float    @default(0)
+  utilizationPct  Float    @default(0) // 0-100
+  computedAt      DateTime @default(now())
+
+  @@unique([userId, period])
+  @@index([departmentId, period])
+  @@map("capacity_snapshots")
+}
+
+// ─── HOCCR: Cross-Department Dependencies ───────────────
+
+model CrossDeptDependency {
+  id               String    @id @default(cuid())
+  fromDeptId       String
+  toDeptId         String
+  taskId           String?
+  description      String
+  status           String    @default("waiting") // waiting, acknowledged, resolved, escalated
+  priority         String    @default("medium") // low, medium, high, critical
+  createdById      String
+  acknowledgedById String?
+  resolvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([fromDeptId, status])
+  @@index([toDeptId, status])
+  @@map("cross_dept_dependencies")
+}
+
+// ─── Notifications ──────────────────────────────────────
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_STATUS_CHANGED
+  TASK_COMMENT
+  TASK_OVERDUE
+  APPROVAL_PENDING
+  APPROVAL_COMPLETED
+  DELIVERABLE_READY
+  GI_SUGGESTION
+  GI_REVIEW
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  // JSON map of NotificationType -> {enabled: boolean, channels: ["in_app", "email"]}
+  preferences     Json     @default("{}")
+  quietHoursStart String? // "22:00"
+  quietHoursEnd   String? // "08:00"
+  updatedAt       DateTime @updatedAt
+
+  @@map("notification_preferences")
+}
+
+// ─── Finance ────────────────────────────────────────────
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  SALARY
+  SOFTWARE
+  EQUIPMENT
+  TRAVEL
+  MARKETING
+  PRODUCTION
+  OFFICE
+  MISCELLANEOUS
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  number      String        @unique
+  brand       Brand?        @relation(fields: [brandId], references: [id])
+  brandId     String?
+  client      Client?       @relation(fields: [clientId], references: [id])
+  clientId    String?
+  status      InvoiceStatus @default(DRAFT)
+  amount      Float
+  tax         Float         @default(0)
+  totalAmount Float
+  dueDate     DateTime
+  paidAt      DateTime?
+  description String?
+  items       Json?
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status])
+  @@index([clientId])
+  @@map("invoices")
+}
+
+model Expense {
+  id           String          @id @default(cuid())
+  title        String
+  amount       Float
+  category     ExpenseCategory
+  department   Department?     @relation("DeptExpenses", fields: [departmentId], references: [id])
+  departmentId String?
+  description  String?
+  receiptUrl   String?
+  approvedBy   String?
+  createdById  String
+  date         DateTime        @default(now())
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([category])
+  @@index([departmentId])
+  @@map("expenses")
+}
+
+// ─── Configuration-over-Code ──────────────────────────────
+
+model WorkflowTemplate {
+  id           String      @id @default(cuid())
+  name         String      @unique
+  description  String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  stages       Json // Array of stage definitions [{name, order, participants, approvalGate, autoGenRules}]
+  triggers     Json? // What events start this workflow
+  escalation   Json? // Escalation rules
+  isDefault    Boolean     @default(false)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("workflow_templates")
+}
+
+model PlatformConfig {
+  id               String   @id @default(cuid())
+  platform         String   @unique // youtube, x, instagram, linkedin, facebook
+  displayName      String
+  deliverableTypes Json // [{type, formatSpecs, dimensions}]
+  postingRules     Json? // frequency limits, hashtag rules, etc
+  analyticsMetrics Json? // metrics tracked per platform
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("platform_configs")
+}
+
+model RoleConfig {
+  id             String   @id @default(cuid())
+  role           Role     @unique
+  dashboardViews Json // accessible screens
+  notifications  Json? // event triggers for alerts
+  reportAccess   Json? // visible dashboards
+  giConversation Json? // GI topic boundaries
+  updatedAt      DateTime @updatedAt
+
+  @@map("role_configs")
+}
+
+// ─── Gamification ──────────────────────────────────────
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., "first_task", "streak_7", "quality_master"
+  name        String
+  description String
+  icon        String // emoji or icon name
+  category    String // milestone, streak, quality, speed, collaboration, special
+  threshold   Int      @default(1) // e.g., complete 10 tasks, 7-day streak
+  points      Int      @default(10)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  unlocks UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+  notified      Boolean     @default(false)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+model UserStreak {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String   @unique
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastActivityAt DateTime @default(now())
+  totalXp        Int      @default(0)
+  level          Int      @default(1)
+  updatedAt      DateTime @updatedAt
+
+  @@map("user_streaks")
+}
+
+model MicroChallenge {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  type          String // speed, quality, volume, collaboration
+  metric        String // e.g., "fastest_task_completion", "most_first_pass_approvals"
+  targetValue   Float? // optional target to beat
+  currentRecord Json? // {userId, value, recordedAt}
+  departmentId  String? // null = org-wide
+  startsAt      DateTime
+  endsAt        DateTime
+  bonusPoints   Int      @default(25)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  entries ChallengeEntry[]
+
+  @@index([isActive, endsAt])
+  @@map("micro_challenges")
+}
+
+model ChallengeEntry {
+  id          String         @id @default(cuid())
+  challenge   MicroChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId String
+  userId      String
+  value       Float
+  taskId      String?
+  submittedAt DateTime       @default(now())
+
+  @@unique([challengeId, userId])
+  @@map("challenge_entries")
+}
+
+model VariableReward {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // surprise_bonus, spotlight, badge_upgrade, streak_save
+  title     String
+  message   String
+  points    Int       @default(0)
+  metadata  Json?
+  claimed   Boolean   @default(false)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, claimed])
+  @@map("variable_rewards")
+}
+
+// ─── GI Configuration ───────────────────────────────────
+
+model GIConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  updatedBy   String
+  updatedAt   DateTime @updatedAt
+
+  @@map("gi_configs")
+}
+
+model GITierAssignment {
+  id         String   @id @default(cuid())
+  actionType String   @unique
+  tier       Int
+  updatedBy  String
+  updatedAt  DateTime @updatedAt
+
+  @@map("gi_tier_assignments")
+}
+
+// ─── Relay: Content Distribution ────────────────────────
+
+enum PostStatus {
+  DRAFT
+  QUEUED
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+model ContentPost {
+  id             String         @id @default(cuid())
+  title          String
+  content        String?        @db.Text
+  platform       String // youtube, x, instagram, linkedin, facebook
+  brandId        String
+  brand          Brand          @relation(fields: [brandId], references: [id])
+  status         PostStatus     @default(DRAFT)
+  scheduledAt    DateTime?
+  publishedAt    DateTime?
+  publishedUrl   String?
+  platformPostId String? // ID from the platform after publishing
+  mediaUrls      Json? // array of media URLs
+  metadata       Json? // platform-specific data (hashtags, thumbnails, etc.)
+  taskId         String? // link to originating PMS task
+  createdById    String
+  errorMessage   String?
+  analytics      PostAnalytics?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([brandId, platform])
+  @@index([status, scheduledAt])
+  @@index([platform, status])
+  @@map("content_posts")
+}
+
+model PostAnalytics {
+  id             String      @id @default(cuid())
+  post           ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId         String      @unique
+  views          Int         @default(0)
+  likes          Int         @default(0)
+  comments       Int         @default(0)
+  shares         Int         @default(0)
+  clicks         Int         @default(0)
+  reach          Int         @default(0)
+  impressions    Int         @default(0)
+  engagementRate Float       @default(0)
+  rawData        Json? // full platform analytics response
+  lastSyncedAt   DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@map("post_analytics")
+}
+
+model PlatformConnection {
+  id             String    @id @default(cuid())
+  brandId        String
+  brand          Brand     @relation(fields: [brandId], references: [id])
+  platform       String // youtube, x, instagram, linkedin, facebook
+  accessToken    String?   @db.Text
+  refreshToken   String?   @db.Text
+  accountId      String? // platform account/page ID
+  accountName    String?
+  tokenExpiresAt DateTime?
+  isActive       Boolean   @default(true)
+  config         Json? // platform-specific config
+  connectedAt    DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([brandId, platform])
+  @@map("platform_connections")
+}
+
+model ContentCalendarEntry {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  brandId         String
+  platform        String
+  deliverableType String // video, carousel, reel, thread, post, story
+  date            DateTime
+  assigneeId      String?
+  status          String   @default("planned") // planned, in_progress, ready, posted
+  postId          String? // links to ContentPost when created
+  metadata        Json?
+  createdById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([brandId, date])
+  @@index([date])
+  @@map("content_calendar")
+}
+
+// ─── Communication ──────────────────────────────────────
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Announcement {
+  id           String               @id @default(cuid())
+  title        String
+  content      String               @db.Text
+  type         String               @default("general") // general, urgent, policy, celebration
+  priority     AnnouncementPriority @default(NORMAL)
+  scope        String               @default("org") // org, department, brand
+  scopeId      String? // departmentId or brandId if scoped
+  authorId     String
+  departmentId String? // null = org-wide
+  isPinned     Boolean              @default(false)
+  expiresAt    DateTime?
+  readBy       AnnouncementRead[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([departmentId, createdAt])
+  @@index([scope, scopeId])
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id             String       @id @default(cuid())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  announcementId String
+  userId         String
+  readAt         DateTime     @default(now())
+
+  @@unique([announcementId, userId])
+  @@map("announcement_reads")
+}
+
+model FeedbackChannel {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  type        String          @default("suggestion") // suggestion, concern, idea, general
+  isAnonymous Boolean         @default(true)
+  isActive    Boolean         @default(true)
+  entries     FeedbackEntry[]
+  createdAt   DateTime        @default(now())
+
+  @@map("feedback_channels")
+}
+
+model FeedbackEntry {
+  id          String          @id @default(cuid())
+  channel     FeedbackChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId   String
+  userId      String? // null if anonymous
+  content     String          @db.Text
+  status      String          @default("open") // open, acknowledged, in_progress, resolved, closed
+  response    String?         @db.Text
+  respondedBy String?
+  respondedAt DateTime?
+  upvotes     Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([channelId, status])
+  @@map("feedback_entries")
+}
+
+// ─── Vritti: CMS ───────────────────────────────────────
+
+enum ArticleStatus {
+  IDEA
+  DRAFTING
+  EDITING
+  REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+model ArticleCategory {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  slug        String            @unique
+  description String?
+  color       String? // hex color for UI
+  parentId    String?
+  parent      ArticleCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    ArticleCategory[] @relation("CategoryTree")
+  articles    Article[]
+  createdAt   DateTime          @default(now())
+
+  @@map("article_categories")
+}
+
+model Article {
+  id             String             @id @default(cuid())
+  title          String
+  slug           String             @unique
+  excerpt        String?            @db.Text
+  body           String?            @db.Text // rich text / markdown
+  status         ArticleStatus      @default(IDEA)
+  categoryId     String?
+  category       ArticleCategory?   @relation(fields: [categoryId], references: [id])
+  brandId        String?
+  brand          Brand?             @relation("ArticleBrand", fields: [brandId], references: [id])
+  tags           String[] // array of tag strings
+  coverImageUrl  String?
+  seoTitle       String?
+  seoDescription String?
+  authorId       String
+  author         User               @relation("ArticleAuthor", fields: [authorId], references: [id])
+  editorId       String? // assigned editor
+  editor         User?              @relation("ArticleEditor", fields: [editorId], references: [id])
+  reviewerId     String? // assigned reviewer
+  reviewer       User?              @relation("ArticleReviewer", fields: [reviewerId], references: [id])
+  wordCount      Int                @default(0)
+  readTimeMin    Int                @default(0)
+  publishedAt    DateTime?
+  scheduledAt    DateTime?
+  metadata       Json? // custom fields, layout config
+  versions       ArticleVersion[]
+  media          ArticleMedia[]
+  comments       EditorialComment[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([status, categoryId])
+  @@index([authorId, status])
+  @@index([brandId])
+  @@index([publishedAt])
+  @@map("articles")
+}
+
+model ArticleVersion {
+  id         String   @id @default(cuid())
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleId  String
+  version    Int
+  title      String
+  body       String?  @db.Text
+  editedById String
+  editedBy   User     @relation("VersionEditor", fields: [editedById], references: [id])
+  changeNote String?
+  createdAt  DateTime @default(now())
+
+  @@unique([articleId, version])
+  @@map("article_versions")
+}
+
+model ArticleMedia {
+  id           String   @id @default(cuid())
+  article      Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  articleId    String?
+  fileName     String
+  fileUrl      String
+  fileType     String // image, video, document, audio
+  fileSize     Int      @default(0) // bytes
+  altText      String?
+  caption      String?
+  uploadedById String
+  uploadedBy   User     @relation("MediaUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([articleId])
+  @@index([fileType])
+  @@map("article_media")
+}
+
+model EditorialComment {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("EditorialComments", fields: [authorId], references: [id])
+  content   String   @db.Text
+  type      String   @default("comment") // comment, suggestion, revision_request
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([articleId, resolved])
+  @@map("editorial_comments")
+}
+
+// ─── Client Portal ─────────────────────────────────────
+
+model ClientDeliverable {
+  id           String    @id @default(cuid())
+  clientId     String
+  brandId      String
+  title        String
+  description  String?   @db.Text
+  type         String // video, article, graphic, report, social_post
+  fileUrl      String?
+  thumbnailUrl String?
+  status       String    @default("pending") // pending, ready_for_review, approved, revision_requested, final
+  taskId       String? // links to originating PMS task
+  postId       String? // links to ContentPost if applicable
+  feedback     String?   @db.Text
+  approvedAt   DateTime?
+  approvedBy   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([clientId, brandId])
+  @@index([status])
+  @@map("client_deliverables")
+}
+
+model ClientReport {
+  id          String   @id @default(cuid())
+  clientId    String
+  brandId     String
+  title       String
+  period      String // "2026-03", "2026-Q1"
+  type        String   @default("monthly") // weekly, monthly, quarterly
+  metrics     Json // {views, engagement, posts_published, top_content, growth}
+  summary     String?  @db.Text
+  generatedAt DateTime @default(now())
+
+  @@index([clientId, brandId])
+  @@index([period])
+  @@map("client_reports")
+}
+
+// ─── GI: Pattern History (Adolescent) ──────────────────
+
+model GIPatternLog {
+  id           String    @id @default(cuid())
+  userId       String?
+  departmentId String?
+  patternType  String // velocity_trend, quality_trend, workload_shift, engagement_drop, collaboration_pattern
+  description  String    @db.Text
+  data         Json // {trend, periods, values, comparison}
+  severity     String    @default("info") // info, warning, critical
+  isActive     Boolean   @default(true)
+  detectedAt   DateTime  @default(now())
+  expiresAt    DateTime?
+
+  @@index([userId, patternType])
+  @@index([departmentId, patternType])
+  @@index([isActive, detectedAt])
+  @@map("gi_pattern_logs")
+}
+
+model GIMotivationProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  // Calibrated preferences for personalized nudges
+  preferredTone   String   @default("balanced") // encouraging, direct, balanced, competitive
+  nudgeFrequency  String   @default("normal") // minimal, normal, frequent
+  motivators      Json     @default("[]") // ["achievement", "recognition", "mastery", "autonomy"]
+  demotivators    Json     @default("[]") // ["micromanagement", "repetition", "isolation"]
+  responseHistory Json     @default("{}") // {insight_type: {shown, clicked, dismissed}}
+  lastCalibrated  DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("gi_motivation_profiles")
+}
+
+// ─── GI: Adult (v4) — Predictive & Autonomous ──────────
+
+enum GIActionStatus {
+  PENDING // Awaiting approval (Tier 2)
+  APPROVED // Approved by user
+  EXECUTED // Auto-executed (Tier 3/4)
+  REJECTED // User rejected
+  UNDONE // User undid the action
+  FAILED // Execution failed
+}
+
+model GIAutonomousAction {
+  id           String         @id @default(cuid())
+  actionType   String // task_reassignment, deadline_extension, workload_rebalance, scheduling, notification_batch
+  tier         Int // 1=inform, 2=suggest, 3=act_notify, 4=act_silent
+  status       GIActionStatus @default(PENDING)
+  description  String         @db.Text
+  targetUserId String? // user affected by the action
+  targetEntity String? // e.g. "task:cuid123" or "dept:cuid456"
+  actionData   Json // {type-specific payload for execution}
+  reasoning    String?        @db.Text // why the GI decided to take this action
+  result       Json? // outcome data after execution
+  triggeredBy  String? // prediction or pattern that triggered this
+  approvedById String? // who approved (for Tier 2)
+  executedAt   DateTime?
+  undoneAt     DateTime?
+  expiresAt    DateTime? // auto-expire pending actions
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([status, tier])
+  @@index([targetUserId, status])
+  @@index([actionType, createdAt])
+  @@map("gi_autonomous_actions")
+}
+
+model GIPrediction {
+  id           String    @id @default(cuid())
+  type         String // deadline_risk, capacity_crunch, quality_decline, burnout_risk, bottleneck_forming, dependency_stall
+  confidence   Float // 0-1 confidence score
+  severity     String    @default("medium") // low, medium, high, critical
+  title        String
+  description  String    @db.Text
+  data         Json // {prediction-specific data, evidence, factors}
+  targetUserId String?
+  departmentId String?
+  entityRef    String? // "task:id", "dept:id", etc.
+  isActive     Boolean   @default(true)
+  actionTaken  String? // what was done about it
+  actionId     String? // links to GIAutonomousAction
+  accuracy     Float? // retrospective: was the prediction correct? 0-1
+  resolvedAt   DateTime?
+  predictsAt   DateTime // when the predicted event is expected to occur
+  createdAt    DateTime  @default(now())
+
+  @@index([type, isActive])
+  @@index([targetUserId, isActive])
+  @@index([departmentId, isActive])
+  @@index([predictsAt])
+  @@map("gi_predictions")
+}
+
+model GILearningLog {
+  id           String   @id @default(cuid())
+  category     String // rhythm, preference, pattern, correction, outcome
+  key          String // e.g. "team_peak_hours", "approval_avg_time", "dept_velocity_baseline"
+  value        Json // learned data
+  confidence   Float    @default(0.5) // how confident in this learning
+  observations Int      @default(1) // number of data points
+  departmentId String?
+  userId       String?
+  isActive     Boolean  @default(true)
+  lastObserved DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([category, key, departmentId, userId])
+  @@index([category, isActive])
+  @@map("gi_learning_logs")
+}
+
+// ─── Skills Ecosystem ─────────────────────────────────────
+
+model Skill {
+  id           String             @id @default(cuid())
+  path         String             @unique // e.g. "/narrative/editorial/topic-selection.md"
+  domain       String // signals, narrative, production, platforms, distribution, analytics, brand, gi, workflows, system
+  module       String // khabri, yantri, pms, relay, hoccr, daftar, gi
+  name         String
+  description  String?            @db.Text
+  version      Int                @default(1)
+  isActive     Boolean            @default(true)
+  metadata     Json? // extra config: trigger, inputs, outputs, dependencies, scripts
+  executions   SkillExecution[]
+  learningLogs SkillLearningLog[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([domain])
+  @@index([module])
+  @@index([isActive])
+  @@map("skills")
+}
+
+model SkillExecution {
+  id               String   @id @default(cuid())
+  skill            Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId          String
+  deliverableId    String? // links to the deliverable this execution produced
+  brandId          String?
+  platform         String?
+  inputContext     Json // what context was provided
+  outputSummary    Json // what the skill produced
+  modelUsed        String // which LLM processed this skill
+  tokensUsed       Int?
+  durationMs       Int?
+  performanceScore Float? // scored later by analytics (0-10)
+  status           String   @default("completed") // completed, failed, partial
+  errorMessage     String?  @db.Text
+  executedById     String? // user who triggered, null if system
+  executedAt       DateTime @default(now())
+
+  @@index([skillId, executedAt])
+  @@index([brandId])
+  @@index([platform])
+  @@index([status])
+  @@map("skill_executions")
+}
+
+model SkillLearningLog {
+  id          String   @id @default(cuid())
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId     String
+  entry       Json // the learning entry: { pattern, recommendation, data, metrics }
+  source      String   @default("auto") // "auto" or "manual" (admin-edited)
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([skillId, createdAt])
+  @@map("skill_learning_logs")
+}
+
+// ─── Signal Intelligence (Khabri) ───────────────────────
+
+model Trend {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?         @db.Text
+  lifecycle     String          @default("emerging") // emerging, peaking, declining, resurgent
+  velocityScore Float?
+  signals       Signal[]
+  relatedTrends TrendRelation[] @relation("SourceTrend")
+  relatedFrom   TrendRelation[] @relation("RelatedTrend")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([lifecycle])
+  @@map("trends")
+}
+
+model Signal {
+  id                String                      @id @default(cuid())
+  trend             Trend                       @relation(fields: [trendId], references: [id], onDelete: Cascade)
+  trendId           String
+  title             String
+  content           String?                     @db.Text
+  source            String
+  sourceCredibility Float? // 0-1 score
+  eventType         String? // war, political, economic, social, etc.
+  stakeholders      Json? // Key people/orgs involved
+  eventMarkers      Json? // Timestamps, locations, key facts
+  visualAnchors     Json? // Image URLs, video clips, infographic links
+  geoRelevance      Json? // { "india": 0.9, "us": 0.3, "global": 0.7 }
+  sentiment         String? // positive, negative, neutral, mixed
+  embedding         Unsupported("vector(768)")? // Embeddings for similarity search
+  detectedAt        DateTime                    @default(now())
+  isDuplicate       Boolean                     @default(false)
+  duplicateOfId     String?
+
+  @@index([trendId])
+  @@index([source])
+  @@index([detectedAt])
+  @@map("signals")
+}
+
+model TrendRelation {
+  id             String @id @default(cuid())
+  sourceTrend    Trend  @relation("SourceTrend", fields: [sourceTrendId], references: [id], onDelete: Cascade)
+  sourceTrendId  String
+  relatedTrend   Trend  @relation("RelatedTrend", fields: [relatedTrendId], references: [id], onDelete: Cascade)
+  relatedTrendId String
+  relationship   String // "causes", "related_to", "contradicts", "escalates"
+  strength       Float // 0-1
+
+  @@unique([sourceTrendId, relatedTrendId])
+  @@map("trend_relations")
+}
+
+// ─── Narrative Pipeline (Yantri) ────────────────────────
+
+enum NarrativeStatus {
+  INCOMING // Signal just arrived from Khabri
+  EVALUATING // Being evaluated for brand relevance
+  APPROVED // Editorial approved — ready for deliverables
+  IN_PRODUCTION // Deliverables being created
+  COMPLETED // All deliverables done
+  SKIPPED // Not relevant, skipped
+  ARCHIVED // Old, no longer active
+}
+
+model NarrativeTree {
+  id            String          @id @default(cuid())
+  title         String
+  summary       String?         @db.Text
+  embedding     String?         @db.Text // Serialized embedding vector (JSON array of floats) for pgvector similarity
+  status        NarrativeStatus @default(INCOMING)
+  signalData    Json? // Original signal data from Khabri
+  signalId      String? // External Khabri signal ID
+  trendId       String? // Link to Trend if exists
+  urgency       String          @default("normal") // breaking, high, normal, low
+  createdById   String
+  createdBy     User            @relation("NarrativeCreator", fields: [createdById], references: [id])
+  narratives    Narrative[]
+  nodes         NarrativeNode[]
+  dossier       FactDossier?
+  contentPieces ContentPiece[]
+  deliverables  Deliverable[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("narrative_trees")
+}
+
+model Narrative {
+  id             String          @id @default(cuid())
+  tree           NarrativeTree   @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  treeId         String
+  brand          Brand           @relation(fields: [brandId], references: [id])
+  brandId        String
+  platform       String // youtube, x, instagram, linkedin, facebook
+  angle          String? // Editorial angle for this brand+platform
+  formatNotes    String?         @db.Text // What type of content (long-form video, thread, reel, etc.)
+  status         NarrativeStatus @default(INCOMING)
+  taskId         String? // Link to PMS Task once created
+  contentPostId  String? // Link to ContentPost once created
+  deliverableId  String? // Link to ClientDeliverable once created
+  editorialNotes String?         @db.Text
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([treeId, brandId, platform])
+  @@index([brandId])
+  @@index([status])
+  @@map("narratives")
+}
+
+// ─── Yantri: Narrative Nodes ─────────────────────────────
+
+model NarrativeNode {
+  id           String        @id @default(cuid())
+  treeId       String
+  tree         NarrativeTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  nodeType     NodeType      @default(SIGNAL)
+  signalData   Json // Raw Khabri payload
+  signalTitle  String // Quick-access headline
+  signalScore  Int           @default(0)
+  identifiedAt DateTime      @default(now())
+
+  @@index([treeId])
+  @@map("narrative_nodes")
+}
+
+// ─── Yantri: Fact Dossier ────────────────────────────────
+
+model FactDossier {
+  id             String        @id @default(cuid())
+  treeId         String        @unique
+  tree           NarrativeTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  structuredData Json // { facts, stats, quotes, timeline }
+  sources        String[] // Array of source URLs
+  visualAssets   String[] // URLs to scraped images/charts
+  rawResearch    String?       @db.Text // Full research text before synthesis
+  lastUpdated    DateTime      @updatedAt
+  createdAt      DateTime      @default(now())
+
+  @@map("fact_dossiers")
+}
+
+// ─── Yantri: Content Pieces ──────────────────────────────
+
+model ContentPiece {
+  id              String                @id @default(cuid())
+  brandId         String
+  brand           Brand                 @relation(fields: [brandId], references: [id])
+  treeId          String?
+  tree            NarrativeTree?        @relation(fields: [treeId], references: [id])
+  platform        ContentPlatform
+  status          ContentPipelineStatus @default(PLANNED)
+  bodyText        String                @db.Text
+  researchPrompt  String?               @db.Text
+  postingPlan     Json? // Timing, hashtags, engagement strategy
+  visualPrompts   String?               @db.Text // Nano Banana structural prompts
+  performanceData Json? // Fed back from Relay
+  approvedAt      DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([brandId])
+  @@index([status])
+  @@index([platform])
+  @@map("content_pieces")
+}
+
+// ─── Yantri: Deliverables ────────────────────────────────
+
+model Deliverable {
+  id             String                @id @default(cuid())
+  brandId        String
+  brand          Brand                 @relation(fields: [brandId], references: [id])
+  treeId         String?
+  tree           NarrativeTree?        @relation(fields: [treeId], references: [id])
+  platform       ContentPlatform
+  pipelineType   String                @default("standard") // standard, viral_micro, carousel, cinematic
+  status         ContentPipelineStatus @default(PLANNED)
+  copyMarkdown   String?               @db.Text
+  storyboardUrl  String?
+  scriptData     Json? // Full script structure for YouTube
+  carouselData   Json? // Slide-by-slide carousel data
+  postingPlan    Json? // Timing, hashtags, engagement strategy
+  researchPrompt String?               @db.Text
+  factDossierId  String?
+  assets         Asset[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([brandId])
+  @@index([status])
+  @@index([platform])
+  @@index([pipelineType])
+  @@map("deliverables")
+}
+
+model Asset {
+  id            String      @id @default(cuid())
+  deliverableId String
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  type          AssetType
+  url           String
+  promptUsed    String?     @db.Text
+  slideIndex    Int? // For carousel slides — ordering
+  metadata      Json? // Additional metadata (dimensions, duration, etc.)
+  createdAt     DateTime    @default(now())
+
+  @@index([deliverableId])
+  @@index([type])
+  @@map("assets")
+}
+
+// ─── Yantri: Prompt Templates ────────────────────────────
+
+model PromptTemplate {
+  id           String   @id @default(cuid())
+  platform     String // "twitter", "linkedin", "youtube", "meta", "blog"
+  name         String // e.g., "Standard X Thread", "Contrarian Growth Post"
+  systemPrompt String   @db.Text
+  userFormat   String   @db.Text // Template for how context is structured
+  isActive     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([platform, isActive])
+  @@map("prompt_templates")
+}
+
+// ─── Yantri: Legacy Models ───────────────────────────────
+
+model PlatformRule {
+  id                String   @id @default(cuid())
+  narrativeType     String
+  primaryPlatform   String
+  secondaryPlatform String?
+  brandName         String?
+  sendWhen          String // JSON array
+  neverSend         String // JSON array
+  speedPriority     String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("platform_rules")
+}
+
+model TrendBatch {
+  id         String          @id @default(cuid())
+  importedAt DateTime        @default(now())
+  source     String          @default("khabri_manual")
+  trends     ImportedTrend[]
+
+  @@map("trend_batches")
+}
+
+model ImportedTrend {
+  id             String               @id @default(cuid())
+  rank           Int
+  score          Int
+  headline       String
+  reason         String
+  informationGap String?
+  status         String               @default("pending")
+  skipReason     String?
+  batchId        String
+  batch          TrendBatch           @relation(fields: [batchId], references: [id])
+  createdAt      DateTime             @default(now())
+  narratives     EditorialNarrative[]
+
+  @@index([batchId])
+  @@index([status])
+  @@map("imported_trends")
+}
+
+model EditorialNarrative {
+  id                String        @id @default(cuid())
+  angle             String
+  whyThisAngle      String
+  informationGap    String
+  priority          Int
+  platform          String
+  secondaryPlatform String?
+  format            String
+  urgency           String
+  status            String        @default("planned")
+  trendId           String
+  trend             ImportedTrend @relation(fields: [trendId], references: [id])
+  brandId           String
+  researchPrompt    String?
+  researchResults   String?       @db.Text
+  enginePrompt      String?       @db.Text
+  packageData       String?       @db.Text
+  finalContent      String?       @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([trendId])
+  @@index([brandId])
+  @@index([status])
+  @@map("editorial_narratives")
+}
+
+model EditorialLog {
+  id             String   @id @default(cuid())
+  action         String
+  reasoning      String
+  trendHeadline  String
+  narrativeAngle String?
+  platform       String?
+  brandName      String?
+  createdAt      DateTime @default(now())
+
+  @@index([action])
+  @@map("editorial_logs")
+}
+
+model PerformanceData {
+  id             String    @id @default(cuid())
+  narrativeId    String?
+  platform       String
+  brandName      String
+  contentType    String
+  impressions    Int?
+  engagementRate Float?
+  replies        Int?
+  retweets       Int?
+  bookmarks      Int?
+  views          Int?
+  watchTime      Float?
+  ctr            Float?
+  notes          String?
+  publishedAt    DateTime?
+  recordedAt     DateTime  @default(now())
+
+  @@index([platform])
+  @@index([brandName])
+  @@index([recordedAt])
+  @@map("performance_data")
+}
+
+// ─── Content Performance Tracking ───────────────────────
+
+model ContentPerformance {
+  id               String    @id @default(cuid())
+  deliverableId    String
+  brandId          String
+  platform         String
+  publishedAt      DateTime?
+  metrics          Json // { views, likes, comments, shares, retention, ctr, etc. }
+  revenueGenerated Float?
+  skillsUsed       String[] // Skill paths that created this content
+  narrativeAngle   String?
+  hookType         String?
+  performanceTier  String? // "top_10", "above_avg", "average", "below_avg", "poor"
+  benchmarkDelta   Float? // % above or below brand+platform average
+  lastUpdated      DateTime  @updatedAt
+
+  @@index([brandId, platform])
+  @@index([performanceTier])
+  @@map("content_performances")
+}
+
+model StrategyTest {
+  id         String    @id @default(cuid())
+  name       String
+  hypothesis String    @db.Text
+  skillPath  String // Which skill is being tested
+  brandId    String
+  platform   String
+  variant    String // "A" or "B"
+  startDate  DateTime
+  endDate    DateTime?
+  results    Json?
+  conclusion String? // "A wins", "B wins", "inconclusive"
+  status     String    @default("active") // active, completed, cancelled
+
+  @@index([status])
+  @@index([brandId, platform])
+  @@map("strategy_tests")
+}
+
+// ─── Multi-Tenant SaaS Foundation ───────────────────────
+
+model Organization {
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  domain         String?   @unique // custom domain
+  logo           String?
+  plan           String    @default("starter") // starter, professional, enterprise
+  planExpiresAt  DateTime?
+  settings       Json? // org-level settings (timezone, locale, branding)
+  features       Json? // feature flags per plan
+  maxUsers       Int       @default(10)
+  isActive       Boolean   @default(true)
+  onboardingStep String    @default("created") // created, profile, departments, invite, complete
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  subscriptions SaaSSubscription[]
+  products      SaaSProduct[]
+
+  @@map("organizations")
+}
+
+model SaaSProduct {
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  product        String // daftar, hoccr, relay, yantri, khabri
+  displayName    String
+  description    String?       @db.Text
+  isActive       Boolean       @default(true)
+  config         Json? // product-specific configuration
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  subscriptions SaaSSubscription[]
+
+  @@unique([organizationId, product])
+  @@map("saas_products")
+}
+
+model SaaSSubscription {
+  id                 String       @id @default(cuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id])
+  productId          String
+  product            SaaSProduct  @relation(fields: [productId], references: [id])
+  plan               String // starter, professional, enterprise
+  status             String       @default("active") // active, trial, past_due, cancelled, paused
+  trialEndsAt        DateTime?
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  amount             Float        @default(0)
+  currency           String       @default("INR")
+  metadata           Json?
+  cancelledAt        DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([organizationId, productId])
+  @@index([status])
+  @@map("saas_subscriptions")
+}
+
+// ============================================================================
+// RING 1: HOCCR (HR & Operations Intelligence) - Phase 1 Additions
+// ============================================================================
+
+model EmployeeProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  sentimentScore Float? // 0.0 to 10.0 (Tracked by GI interactions)
+  capacity       Int      @default(100) // Percentage of workload
+  skills         String[] // e.g., ["Video Editing", "Copywriting"]
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  @@map("employee_profiles")
+}
+
+model DepartmentMetrics {
+  id           String @id @default(cuid())
+  departmentId String @unique
+  velocity     Float // Average tasks completed per week
+  openBlockers Int    @default(0)
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  recordedAt DateTime   @default(now())
+
+  @@map("department_metrics")
+}

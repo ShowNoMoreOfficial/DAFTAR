@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
+      ]
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_TOKEN_HERE"
+      }
+    },
+    "inngest": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@inngest/mcp@latest"
+      ]
+    }
+  }
+}
