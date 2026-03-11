@@ -12,7 +12,6 @@ export async function POST(request: Request) {
 
   const narrative = await prisma.editorialNarrative.findUnique({
     where: { id: narrativeId },
-    include: { trend: true, brand: true },
   });
 
   if (!narrative) return NextResponse.json({ error: "Narrative not found" }, { status: 404 });
@@ -20,14 +19,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No research results yet" }, { status: 400 });
   }
 
+  // Fetch related brand separately
+  const brand = await prisma.brand.findUnique({ where: { id: narrative.brandId } });
+
   const { systemPrompt, userMessage } = buildEnginePrompt(
     narrative.angle,
     narrative.platform,
     narrative.format,
-    narrative.brand.name ?? "Unknown Brand",
-    Array.isArray(narrative.brand.voiceRules)
-      ? (narrative.brand.voiceRules as string[]).join("; ")
-      : String(narrative.brand.voiceRules ?? ""),
+    brand?.name ?? "Unknown Brand",
+    Array.isArray(brand?.voiceRules)
+      ? (brand.voiceRules as string[]).join("; ")
+      : String(brand?.voiceRules ?? ""),
     narrative.researchResults
   );
 

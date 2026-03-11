@@ -12,10 +12,12 @@ export async function POST(request: Request) {
 
   const narrative = await prisma.editorialNarrative.findUnique({
     where: { id: narrativeId },
-    include: { trend: true, brand: true },
+    include: { trend: true },
   });
 
   if (!narrative) return NextResponse.json({ error: "Narrative not found" }, { status: 404 });
+
+  const brand = await prisma.brand.findUnique({ where: { id: narrative.brandId } });
 
   let keyDataPoints = "No research data available yet";
   if (narrative.researchResults) {
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
   const { systemPrompt, userMessage } = buildPackagingPrompt(
     narrative.angle,
     narrative.platform,
-    narrative.brand.name ?? "Unknown Brand",
+    brand?.name ?? "Unknown Brand",
     keyDataPoints
   );
 

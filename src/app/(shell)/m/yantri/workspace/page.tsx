@@ -37,7 +37,7 @@ export default function YantriWorkspacePage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/pipeline/runs");
+        const res = await fetch("/api/yantri/pipeline/status");
         if (res.ok) {
           const data = await res.json();
           setRuns(Array.isArray(data) ? data : data.runs || []);

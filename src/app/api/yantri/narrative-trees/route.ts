@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { NarrativeTreeStatus } from "@prisma/client";
+import { NarrativeStatus } from "@prisma/client";
 
-const VALID_STATUSES = new Set<string>(Object.values(NarrativeTreeStatus));
+const VALID_STATUSES = new Set<string>(Object.values(NarrativeStatus));
 
 // ---------------------------------------------------------------------------
 // GET /api/yantri/narrative-trees
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   }
 
   const where: Record<string, unknown> = {};
-  if (status) where.status = status as NarrativeTreeStatus;
+  if (status) where.status = status as NarrativeStatus;
 
   const trees = await prisma.narrativeTree.findMany({
     where,

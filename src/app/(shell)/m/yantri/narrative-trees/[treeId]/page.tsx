@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -89,7 +90,7 @@ interface ContentPiece {
 
 interface NarrativeTreeDetail {
   id: string;
-  rootTrend: string;
+  title: string;
   summary: string | null;
   status: string;
   nodes: NarrativeNode[];
@@ -172,7 +173,7 @@ export default function NarrativeTreeDetailPage() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "graph">("list");
-  const [allTrees, setAllTrees] = useState<{ id: string; rootTrend: string; status: string }[]>([]);
+  const [allTrees, setAllTrees] = useState<{ id: string; title: string; status: string }[]>([]);
   const [hypothesisInput, setHypothesisInput] = useState("");
   const [showHypothesisDialog, setShowHypothesisDialog] = useState(false);
   const [addingHypothesis, setAddingHypothesis] = useState(false);
@@ -336,12 +337,10 @@ export default function NarrativeTreeDetailPage() {
                 <GitBranch className="w-8 h-8 text-zinc-600" />
               </div>
               <p className="text-zinc-400 font-semibold text-sm">{error || "Tree not found."}</p>
-              <Button asChild variant="outline" className="mt-4 border-zinc-700 text-zinc-400 hover:text-foreground">
-                <Link href="/m/yantri/narrative-trees">
+              <Link href="/m/yantri/narrative-trees" className={cn(buttonVariants({ variant: "outline" }), "mt-4 border-zinc-700 text-zinc-400 hover:text-foreground")}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Trees
-                </Link>
-              </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -370,7 +369,7 @@ export default function NarrativeTreeDetailPage() {
               <GitBranch className="w-5 h-5" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground leading-snug">
-              {tree.rootTrend}
+              {tree.title}
             </h1>
           </div>
           <div className="flex items-center gap-3 flex-wrap mt-3">
@@ -423,26 +422,28 @@ export default function NarrativeTreeDetailPage() {
             </Button>
           )}
           <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="w-3.5 h-3.5" />
-                )}
-                Delete
-              </Button>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                  disabled={deleting}
+                />
+              }
+            >
+              {deleting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+              Delete
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-zinc-950 border-zinc-800 rounded-2xl max-w-[calc(100vw-2rem)] sm:max-w-lg">
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-foreground">Delete Narrative Tree</AlertDialogTitle>
                 <AlertDialogDescription className="text-zinc-400">
-                  This will permanently delete &ldquo;{tree.rootTrend}&rdquo; along with all its nodes and dossier.
+                  This will permanently delete &ldquo;{tree.title}&rdquo; along with all its nodes and dossier.
                   Content pieces linked to this tree will be unlinked but not deleted. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -595,7 +596,7 @@ export default function NarrativeTreeDetailPage() {
           <TreeVisualizer
             tree={{
               id: tree.id,
-              rootTrend: tree.rootTrend,
+              title: tree.title,
               status: tree.status,
               nodes: tree.nodes.map((n) => ({
                 id: n.id,
@@ -646,7 +647,7 @@ export default function NarrativeTreeDetailPage() {
                 <div className="w-4 h-4 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] shrink-0" />
                 <div>
                   <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Root Trend</div>
-                  <div className="text-sm font-bold text-foreground leading-snug">{tree.rootTrend}</div>
+                  <div className="text-sm font-bold text-foreground leading-snug">{tree.title}</div>
                 </div>
               </div>
 

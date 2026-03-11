@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { NarrativeTreeStatus } from "@prisma/client";
+import { NarrativeStatus } from "@prisma/client";
 
-const VALID_STATUSES = new Set<string>(Object.values(NarrativeTreeStatus));
+const VALID_STATUSES = new Set<string>(Object.values(NarrativeStatus));
 
 // ---------------------------------------------------------------------------
 // GET /api/yantri/narrative-trees/[treeId]
@@ -69,7 +69,7 @@ export async function PUT(
   }
 
   const data: Record<string, unknown> = {};
-  if (body.status) data.status = body.status as NarrativeTreeStatus;
+  if (body.status) data.status = body.status as NarrativeStatus;
   if (typeof body.summary === "string") data.summary = body.summary;
 
   if (Object.keys(data).length === 0) {

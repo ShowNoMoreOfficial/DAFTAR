@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
   FileText,
@@ -114,12 +115,10 @@ export default function PromptLibraryPage() {
             Manage AI prompts for each platform. Set one active per platform for production use.
           </p>
         </div>
-        <Button asChild className="gap-2 bg-indigo-600 hover:bg-indigo-700 font-semibold">
-          <Link href="/m/yantri/prompt-library/new">
+        <Link href="/m/yantri/prompt-library/new" className={cn(buttonVariants(), "gap-2 bg-indigo-600 hover:bg-indigo-700 font-semibold")}>
             <Plus className="w-4 h-4" />
             New Template
-          </Link>
-        </Button>
+        </Link>
       </div>
 
       {/* Platform Filter */}

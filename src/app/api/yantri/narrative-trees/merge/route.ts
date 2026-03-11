@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   // Mark source tree as MERGED
   await prisma.narrativeTree.update({
     where: { id: sourceTreeId },
-    data: { status: "MERGED" },
+    data: { status: "ARCHIVED" },
   });
 
   // Trigger dossier rebuild on the target tree

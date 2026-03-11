@@ -35,7 +35,6 @@ export async function analyzeGap(treeId: string): Promise<GapAnalysisResult> {
   });
 
   const activeBrands = await prisma.brand.findMany({
-    where: { isActive: true },
     select: { id: true, name: true, activePlatforms: true, editorialCovers: true },
   });
 

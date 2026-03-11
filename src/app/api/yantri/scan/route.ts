@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         where: { id: batchId },
         include: { trends: { orderBy: { rank: "asc" } } },
       }),
-      prisma.brand.findMany({ where: { isActive: true } }),
+      prisma.brand.findMany(),
       prisma.platformRule.findMany(),
     ]);
 
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
           trendId: trend.id,
           brandId: brand.id,
         },
-        include: { brand: true, trend: true },
+        include: { trend: true },
       });
 
       // Update trend status

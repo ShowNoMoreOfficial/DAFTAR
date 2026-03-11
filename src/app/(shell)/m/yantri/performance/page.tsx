@@ -21,7 +21,7 @@ export default function YantriPerformancePage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/pipeline/performance");
+        const res = await fetch("/api/yantri/performance/summary");
         if (res.ok) setData(await res.json());
       } catch { /* silent */ }
       setLoading(false);

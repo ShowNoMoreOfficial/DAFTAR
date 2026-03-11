@@ -12,7 +12,8 @@
 import { prisma } from "@/lib/prisma";
 import { generateEmbedding, toPgVector, findSimilarTree } from "./embeddings";
 import { callGemini } from "./gemini";
-import { inngest } from "@/lib/yantri/inngest/client";
+import { yantriInngest } from "@/lib/yantri/inngest/client";
+import { Prisma } from "@prisma/client";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ async function createNewCluster(
       summary,
       embedding: embedding ? toPgVector(embedding) : null,
       status: "INCOMING",
-      signalData: signal.metadata ?? null,
+      signalData: (signal.metadata ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       signalId: signal.signalId ?? null,
       urgency: detectUrgency(signal),
       createdById,
@@ -128,7 +129,7 @@ async function mergeIntoCluster(
         eventMarkers: signal.eventMarkers ?? null,
         detectedAt: signal.detectedAt ?? new Date().toISOString(),
         metadata: signal.metadata ?? null,
-      },
+      } as Prisma.InputJsonValue,
       signalScore: 0,
     },
   });
@@ -179,7 +180,7 @@ export async function ingestSignal(
 
       // Trigger re-processing of the merged tree
       if (!options?.skipTrigger) {
-        await inngest.send({
+        await yantriInngest.send({
           name: "yantri/tree.updated",
           data: { treeId: similar.id, trigger: "signal_merged" },
         });
@@ -197,7 +198,7 @@ export async function ingestSignal(
 
   // 5. Trigger downstream processing
   if (!options?.skipTrigger) {
-    await inngest.send({
+    await yantriInngest.send({
       name: "yantri/tree.created",
       data: {
         treeId: result.treeId,
@@ -209,6 +210,86 @@ export async function ingestSignal(
 
   console.log(`[IngestHelper] New tree created: "${result.title}" (${result.treeId})`);
   return result;
+}
+
+// ─── Simple signal type for processSignalsToTrees ────────
+
+export interface SimpleSignal {
+  title: string;
+  score?: number;
+  reason?: string;
+  source: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProcessSignalsResult {
+  ingested: number;
+  newTrees: { treeId: string; title: string }[];
+  appendedTo: { treeId: string; title: string }[];
+  skipped: { title: string; reason: string }[];
+  archived: number;
+}
+
+/**
+ * Converts simple signals (from trend imports, clustering, etc.) into
+ * NarrativeTrees via the ingestSignal pipeline.
+ */
+export async function processSignalsToTrees(
+  signals: SimpleSignal[],
+  createdById?: string,
+): Promise<ProcessSignalsResult> {
+  const userId = createdById ?? "system";
+  const newTrees: ProcessSignalsResult["newTrees"] = [];
+  const appendedTo: ProcessSignalsResult["appendedTo"] = [];
+  const skipped: ProcessSignalsResult["skipped"] = [];
+
+  for (const signal of signals) {
+    try {
+      const ingestInput: IngestSignal = {
+        title: signal.title,
+        content: signal.reason ?? null,
+        source: signal.source,
+        metadata: signal.metadata,
+      };
+      const result = await ingestSignal(ingestInput, userId, {
+        skipEmbedding: false,
+        skipDedup: false,
+        skipTrigger: true,
+      });
+      if (result.isNew) {
+        newTrees.push({ treeId: result.treeId, title: result.title });
+      } else if (result.merged) {
+        appendedTo.push({ treeId: result.treeId, title: result.title });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      skipped.push({ title: signal.title, reason: message });
+    }
+  }
+
+  // Archive stale trees (7+ days without new signals)
+  let archived = 0;
+  try {
+    const staleDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const staleResult = await prisma.narrativeTree.updateMany({
+      where: {
+        status: "INCOMING",
+        updatedAt: { lt: staleDate },
+      },
+      data: { status: "ARCHIVED" },
+    });
+    archived = staleResult.count;
+  } catch {
+    // Non-critical — don't fail the whole operation
+  }
+
+  return {
+    ingested: newTrees.length + appendedTo.length,
+    newTrees,
+    appendedTo,
+    skipped,
+    archived,
+  };
 }
 
 // ─── Batch ingest ────────────────────────────────────────

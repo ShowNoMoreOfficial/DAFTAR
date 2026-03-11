@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     const narrative = await prisma.editorialNarrative.findUnique({
       where: { id: narrativeId },
-      include: { trend: true, brand: true },
+      include: { trend: true },
     });
 
     if (!narrative) {
@@ -26,18 +26,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const voiceRules = Array.isArray(narrative.brand.voiceRules)
-      ? (narrative.brand.voiceRules as string[]).join("; ")
-      : String(narrative.brand.voiceRules ?? "");
+    const brand = await prisma.brand.findUnique({ where: { id: narrative.brandId } });
+
+    const voiceRules = Array.isArray(brand?.voiceRules)
+      ? (brand.voiceRules as string[]).join("; ")
+      : String(brand?.voiceRules ?? "");
 
     const { systemPrompt, userMessage } = await buildContentGenerationPrompt(
       narrative.platform,
       narrative.angle,
       narrative.format,
-      narrative.brand.name ?? "Unknown Brand",
-      narrative.brand.tone ?? "neutral",
+      brand?.name ?? "Unknown Brand",
+      brand?.tone ?? "neutral",
       voiceRules,
-      narrative.brand.language ?? "en",
+      brand?.language ?? "en",
       narrative.researchResults,
       narrative.trend.headline
     );
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
         trendHeadline: narrative.trend.headline,
         narrativeAngle: narrative.angle,
         platform: narrative.platform,
-        brandName: narrative.brand.name ?? "Unknown Brand",
+        brandName: brand?.name ?? "Unknown Brand",
       },
     });
 

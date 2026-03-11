@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Platform, ContentStatus } from "@prisma/client";
+import { ContentPlatform, ContentPipelineStatus } from "@prisma/client";
 
-const VALID_PLATFORMS = new Set<string>(Object.values(Platform));
-const VALID_STATUSES = new Set<string>(Object.values(ContentStatus));
-const DELETABLE_STATUSES = new Set<ContentStatus>([ContentStatus.PLANNED, ContentStatus.KILLED]);
+const VALID_PLATFORMS = new Set<string>(Object.values(ContentPlatform));
+const VALID_STATUSES = new Set<string>(Object.values(ContentPipelineStatus));
+const DELETABLE_STATUSES = new Set<string>(["PLANNED", "KILLED"]);
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -74,7 +74,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
         { status: 400 },
       );
     }
-    data.platform = body.platform as Platform;
+    data.platform = body.platform as ContentPlatform;
   }
 
   if (body.status !== undefined) {
@@ -84,13 +84,13 @@ export async function PUT(request: Request, { params }: RouteContext) {
         { status: 400 },
       );
     }
-    data.status = body.status as ContentStatus;
+    data.status = body.status as ContentPipelineStatus;
 
     // Automatic timestamp side-effects
-    if (body.status === ContentStatus.APPROVED) {
+    if (body.status === "APPROVED") {
       data.approvedAt = new Date();
     }
-    if (body.status === ContentStatus.PUBLISHED) {
+    if (body.status === "PUBLISHED") {
       data.publishedAt = new Date();
     }
   }
@@ -118,11 +118,11 @@ export async function PUT(request: Request, { params }: RouteContext) {
   if (body.status !== undefined && body.status !== existing.status) {
     const newStatus = body.status as string;
     let action: string;
-    if (newStatus === ContentStatus.KILLED) {
+    if (newStatus === "KILLED") {
       action = "killed";
-    } else if (newStatus === ContentStatus.PUBLISHED) {
+    } else if (newStatus === "PUBLISHED") {
       action = "published";
-    } else if (newStatus === ContentStatus.APPROVED) {
+    } else if (newStatus === "APPROVED") {
       action = "approved";
     } else {
       action = "status_change";

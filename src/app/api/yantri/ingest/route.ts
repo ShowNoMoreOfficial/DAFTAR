@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { processSignalsToTrees, type IngestSignal } from "@/lib/yantri/ingest-helper";
+import { processSignalsToTrees, type SimpleSignal } from "@/lib/yantri/ingest-helper";
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 
 function validateSignal(
   signal: unknown,
   index: number
-): { valid: true; data: IngestSignal } | { valid: false; error: string } {
+): { valid: true; data: SimpleSignal } | { valid: false; error: string } {
   if (!signal || typeof signal !== "object") {
     return { valid: false, error: `signals[${index}]: must be an object` };
   }
@@ -35,7 +35,7 @@ function validateSignal(
       title: s.title.trim(),
       score: s.score,
       reason: s.reason.trim(),
-      source: typeof s.source === "string" ? s.source.trim() : undefined,
+      source: typeof s.source === "string" ? s.source.trim() : "",
       metadata: typeof s.metadata === "object" && s.metadata !== null
         ? (s.metadata as Record<string, unknown>)
         : undefined,
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     // Validate each signal
-    const validatedSignals: IngestSignal[] = [];
+    const validatedSignals: SimpleSignal[] = [];
     const validationErrors: string[] = [];
 
     for (let i = 0; i < body.signals.length; i++) {

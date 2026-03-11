@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-import { ContentStatus } from "@prisma/client";
+import { ContentPipelineStatus } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // GET /api/yantri/pipeline/status
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     });
 
     const stats: Record<string, number> = {};
-    for (const s of Object.values(ContentStatus)) {
+    for (const s of Object.values(ContentPipelineStatus)) {
       stats[s] = 0;
     }
     for (const row of statusCounts) {

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -36,18 +37,14 @@ export default function TrendsPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">Trend Batches</h1>
-        <Button asChild>
-          <Link href="/m/yantri/trends/import">+ Import Trends</Link>
-        </Button>
+        <Link href="/m/yantri/trends/import" className={buttonVariants()}>+ Import Trends</Link>
       </div>
 
       {batches.length === 0 ? (
         <Card className="p-12 text-center">
           <CardContent className="p-0">
             <p className="text-muted-foreground mb-4">No trend batches yet.</p>
-            <Button asChild>
-              <Link href="/m/yantri/trends/import">Import Your First Trends</Link>
-            </Button>
+            <Link href="/m/yantri/trends/import" className={buttonVariants()}>Import Your First Trends</Link>
           </CardContent>
         </Card>
       ) : (
@@ -103,11 +100,9 @@ export default function TrendsPage() {
                         Re-run
                       </Button>
                     )}
-                    <Button asChild size="sm">
-                      <Link href={`/m/yantri/plan/${batch.id}`}>
+                    <Link href={`/m/yantri/plan/${batch.id}`} className={buttonVariants({ size: "sm" })}>
                         {hasNarratives ? "View Plan" : "Run Yantri"}
-                      </Link>
-                    </Button>
+                    </Link>
                     <Button
                       variant="outline"
                       size="sm"

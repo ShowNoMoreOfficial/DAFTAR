@@ -11,7 +11,7 @@ export async function GET() {
     include: {
       trends: {
         orderBy: { rank: "asc" },
-        include: { editorialNarratives: { select: { id: true } } },
+        include: { narratives: { select: { id: true } } },
       },
     },
   });

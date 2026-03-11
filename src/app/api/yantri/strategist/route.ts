@@ -57,9 +57,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Fetch all active brands
-    const activeBrands = await prisma.brand.findMany({
-      where: { isActive: true },
-    });
+    const activeBrands = await prisma.brand.findMany();
 
     if (activeBrands.length === 0) {
       return NextResponse.json(
@@ -71,12 +69,7 @@ export async function POST(request: Request) {
     // 4. Run the strategist
     const decisions: StrategyDecision[] = await runStrategist({
       treeId,
-      brands: activeBrands.map((b) => ({
-        ...b,
-        tone: b.tone ?? "",
-        language: b.language ?? "en",
-        activePlatforms: b.activePlatforms ?? [],
-      })),
+      brands: activeBrands,
       dossier: {
         structuredData: tree.dossier.structuredData,
         sources: tree.dossier.sources,

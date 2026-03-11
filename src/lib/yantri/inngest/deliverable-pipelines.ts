@@ -64,11 +64,19 @@ async function autoCluster(
     return similarTree.id;
   }
 
+  // Resolve a system user for automated tree creation
+  const systemUser = await prisma.user.findFirst({
+    where: { role: "ADMIN" },
+    select: { id: true },
+  });
+  const systemUserId = systemUser?.id ?? "system";
+
   const newTree = await prisma.narrativeTree.create({
     data: {
       title: angleText.slice(0, 200),
       summary: `Auto-clustered from deliverable pipeline: ${platform}`,
       embedding: JSON.stringify(embedding),
+      createdById: systemUserId,
       nodes: {
         create: {
           signalTitle: angleText.slice(0, 150),

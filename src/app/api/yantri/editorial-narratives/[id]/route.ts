@@ -9,10 +9,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const narrative = await prisma.editorialNarrative.findUnique({
     where: { id },
-    include: { brand: true, trend: true },
+    include: { trend: true },
   });
   if (!narrative) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(narrative);
+
+  const brand = await prisma.brand.findUnique({ where: { id: narrative.brandId } });
+
+  return NextResponse.json({ ...narrative, brand });
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -34,8 +37,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const narrative = await prisma.editorialNarrative.update({
     where: { id },
     data,
-    include: { brand: true, trend: true },
+    include: { trend: true },
   });
+
+  const brand = await prisma.brand.findUnique({ where: { id: narrative.brandId } });
 
   // Log status changes
   if (body.status) {
@@ -46,10 +51,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         trendHeadline: narrative.trend.headline,
         narrativeAngle: narrative.angle,
         platform: narrative.platform,
-        brandName: narrative.brand.name ?? "Unknown Brand",
+        brandName: brand?.name ?? "Unknown Brand",
       },
     });
   }
 
-  return NextResponse.json(narrative);
+  return NextResponse.json({ ...narrative, brand });
 }

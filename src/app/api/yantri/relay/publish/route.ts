@@ -28,9 +28,18 @@ export async function GET() {
     // Legacy narratives ready for relay
     const narratives = await prisma.editorialNarrative.findMany({
       where: { status: "published" },
-      include: { brand: true, importedTrend: true },
       orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
     });
+
+    // Fetch related brands and trends for all narratives
+    const brandIds = [...new Set(narratives.map((n) => n.brandId))];
+    const trendIds = [...new Set(narratives.map((n) => n.trendId))];
+    const [brands, trends] = await Promise.all([
+      prisma.brand.findMany({ where: { id: { in: brandIds } } }),
+      prisma.importedTrend.findMany({ where: { id: { in: trendIds } } }),
+    ]);
+    const brandMap = new Map(brands.map((b) => [b.id, b]));
+    const trendMap = new Map(trends.map((t) => [t.id, t]));
 
     // Sort by urgency (not natively sortable in Prisma string field)
     const sortedNarratives = narratives.sort((a, b) => {
@@ -54,8 +63,8 @@ export async function GET() {
         platform: n.platform,
         urgency: n.urgency,
         priority: n.priority,
-        brandName: n.brand.name,
-        trendHeadline: n.importedTrend.headline,
+        brandName: brandMap.get(n.brandId)?.name ?? "Unknown",
+        trendHeadline: trendMap.get(n.trendId)?.headline ?? "",
         hasFinalContent: !!n.finalContent,
         createdAt: n.createdAt,
       })),
@@ -133,7 +142,6 @@ async function handleNarrativeRelay(
 ) {
   const narrative = await prisma.editorialNarrative.findUnique({
     where: { id: narrativeId },
-    include: { brand: true, importedTrend: true },
   });
 
   if (!narrative) {
@@ -159,6 +167,12 @@ async function handleNarrativeRelay(
     );
   }
 
+  // Fetch related brand and trend separately
+  const brand = await prisma.brand.findUnique({ where: { id: narrative.brandId } });
+  const trend = narrative.trendId
+    ? await prisma.importedTrend.findUnique({ where: { id: narrative.trendId } })
+    : null;
+
   // Parse stored JSON fields safely
   const finalContent = safeJsonParse(narrative.finalContent);
   const packageData = narrative.packageData
@@ -176,10 +190,10 @@ async function handleNarrativeRelay(
     data: {
       action: "relayed",
       reasoning: `EditorialNarrative relayed to ${targetPlatform || narrative.platform} for publishing`,
-      trendHeadline: narrative.importedTrend.headline,
+      trendHeadline: trend?.headline ?? "",
       narrativeAngle: narrative.angle,
       platform: targetPlatform || narrative.platform,
-      brandName: narrative.brand.name,
+      brandName: brand?.name ?? "Unknown",
     },
   });
 
@@ -190,14 +204,14 @@ async function handleNarrativeRelay(
       platform: targetPlatform || narrative.platform,
       postingPlan: packageData?.postingPlan ?? null,
       brand: {
-        id: narrative.brand.id,
-        name: narrative.brand.name,
-        tone: narrative.brand.tone ?? "",
-        language: narrative.brand.language ?? "en",
+        id: brand?.id ?? narrative.brandId,
+        name: brand?.name ?? "Unknown",
+        tone: brand?.tone ?? "",
+        language: brand?.language ?? "en",
       },
       metadata: {
         narrativeId: narrative.id,
-        trendHeadline: narrative.importedTrend.headline,
+        trendHeadline: trend?.headline ?? "",
         angle: narrative.angle,
         urgency: narrative.urgency,
         priority: narrative.priority,

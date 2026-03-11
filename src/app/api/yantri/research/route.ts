@@ -12,16 +12,21 @@ export async function POST(request: Request) {
 
   const narrative = await prisma.editorialNarrative.findUnique({
     where: { id: narrativeId },
-    include: { trend: true, brand: true },
   });
 
   if (!narrative) return NextResponse.json({ error: "Narrative not found" }, { status: 404 });
 
+  // Fetch related brand and trend separately
+  const brand = await prisma.brand.findUnique({ where: { id: narrative.brandId } });
+  const trend = narrative.trendId
+    ? await prisma.importedTrend.findUnique({ where: { id: narrative.trendId } })
+    : null;
+
   // Use the generated prompt if available, fallback to template if missing
   const systemPrompt = narrative.researchPrompt || buildResearchPrompt(
     narrative.angle,
-    narrative.trend.headline,
-    narrative.brand.name ?? "Unknown Brand",
+    trend?.headline ?? "",
+    brand?.name ?? "Unknown Brand",
     narrative.platform
   ).systemPrompt;
 

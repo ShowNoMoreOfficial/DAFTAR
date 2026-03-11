@@ -13,8 +13,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       trends: {
         orderBy: { rank: "asc" },
         include: {
-          editorialNarratives: {
-            include: { brand: true },
+          narratives: {
             orderBy: { priority: "asc" },
           },
         },

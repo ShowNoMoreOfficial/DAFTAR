@@ -259,3 +259,95 @@ export async function generateStrategiesForAllBrands(
 ): Promise<StrategyResult> {
   return generateStrategies(treeId);
 }
+
+// ─── StrategyDecision (flat format for Inngest / API) ────
+
+export interface StrategyDecision {
+  brandId: string;
+  brandName: string;
+  platform: string;
+  angle: string;
+  reasoning: string;
+  deep_research_prompt?: string;
+  priority: number;
+  urgency: string;
+}
+
+/**
+ * runStrategist — accepts pre-fetched brands and dossier context, returns
+ * a flat list of StrategyDecisions (one per brand-platform-angle combo).
+ */
+export async function runStrategist(input: {
+  treeId: string;
+  brands: Brand[];
+  dossier: {
+    structuredData: unknown;
+    sources: string[];
+    rawResearch: string | null;
+  };
+}): Promise<StrategyDecision[]> {
+  const { treeId, brands, dossier } = input;
+
+  // Fetch tree for title / summary
+  const tree = await prisma.narrativeTree.findUniqueOrThrow({
+    where: { id: treeId },
+  });
+
+  // Build brand contexts
+  const brandContexts = brands.map((b) => buildBrandContext(b));
+
+  // Enhance the summary with dossier research if available
+  const enrichedSummary = dossier.rawResearch
+    ? `${tree.summary ?? ""}\n\nResearch:\n${dossier.rawResearch.slice(0, 2000)}`
+    : tree.summary;
+
+  const { system, user } = buildStrategyPrompt(tree.title, enrichedSummary, brandContexts);
+
+  const result = await routeToModel("strategy", system, user, { temperature: 0.4 });
+
+  const parsed = result.parsed as {
+    strategies?: Array<{
+      brandIndex: number;
+      shouldCover: boolean;
+      reason: string;
+      angles: Array<{
+        angle: string;
+        whyThisAngle: string;
+        informationGap: string;
+        contentTypes: Array<{ type: string; platform: string; rationale: string }>;
+        priority: number;
+      }>;
+      priority: number;
+      urgency: string;
+    }>;
+  } | null;
+
+  if (!parsed?.strategies) return [];
+
+  // Flatten strategies into one decision per brand-platform-angle
+  const decisions: StrategyDecision[] = [];
+  for (const s of parsed.strategies) {
+    if (s.brandIndex < 0 || s.brandIndex >= brands.length || !s.shouldCover) continue;
+    const brand = brands[s.brandIndex];
+    for (const a of s.angles ?? []) {
+      for (const ct of a.contentTypes ?? []) {
+        decisions.push({
+          brandId: brand.id,
+          brandName: brand.name,
+          platform: ct.platform.toUpperCase(),
+          angle: a.angle,
+          reasoning: a.whyThisAngle,
+          deep_research_prompt: a.informationGap
+            ? `Research: ${a.informationGap}`
+            : undefined,
+          priority: a.priority,
+          urgency: (["breaking", "high", "normal", "low"].includes(s.urgency)
+            ? s.urgency
+            : "normal"),
+        });
+      }
+    }
+  }
+
+  return decisions;
+}

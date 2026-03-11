@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+// Note: Checkbox is used for platform selection below
 
 interface BrandData {
   id?: string;
@@ -22,7 +23,6 @@ interface BrandData {
   activePlatforms: { name: string; role: string }[];
   voiceRules: string[];
   editorialPriorities: string[];
-  isActive: boolean;
 }
 
 const PLATFORMS = ["twitter", "youtube", "blog", "meta", "linkedin"];
@@ -107,7 +107,6 @@ export default function BrandForm({ initial }: { initial?: BrandData }) {
       activePlatforms: [],
       voiceRules: [],
       editorialPriorities: [],
-      isActive: true,
     }
   );
 
@@ -192,14 +191,6 @@ export default function BrandForm({ initial }: { initial?: BrandData }) {
                 onChange={(e) => setForm({ ...form, language: e.target.value })}
                 required
               />
-            </div>
-            <div className="flex items-center gap-3 bg-zinc-900 px-6 rounded-2xl border border-border">
-              <Checkbox
-                id="isActive"
-                checked={form.isActive}
-                onCheckedChange={(checked) => setForm({ ...form, isActive: checked as boolean })}
-              />
-              <Label htmlFor="isActive" className="text-sm font-black text-zinc-400 uppercase tracking-widest cursor-pointer">Active in Pipeline</Label>
             </div>
           </div>
 

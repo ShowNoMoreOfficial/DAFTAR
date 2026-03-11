@@ -18,8 +18,21 @@ export async function GET(request: Request) {
 
   const narratives = await prisma.editorialNarrative.findMany({
     where,
-    include: { brand: true, trend: true },
+    include: { trend: true },
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json(narratives);
+
+  // Fetch brands for all narratives (no brand relation on EditorialNarrative)
+  const uniqueBrandIds = [...new Set(narratives.map((n) => n.brandId))];
+  const brands = await prisma.brand.findMany({
+    where: { id: { in: uniqueBrandIds } },
+  });
+  const brandMap = new Map(brands.map((b) => [b.id, b]));
+
+  const results = narratives.map((n) => ({
+    ...n,
+    brand: brandMap.get(n.brandId) ?? null,
+  }));
+
+  return NextResponse.json(results);
 }

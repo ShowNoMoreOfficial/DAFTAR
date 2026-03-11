@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Platform, ContentStatus } from "@prisma/client";
+import { ContentPlatform, ContentPipelineStatus } from "@prisma/client";
 
-const VALID_PLATFORMS = new Set<string>(Object.values(Platform));
-const VALID_STATUSES = new Set<string>(Object.values(ContentStatus));
+const VALID_PLATFORMS = new Set<string>(Object.values(ContentPlatform));
+const VALID_STATUSES = new Set<string>(Object.values(ContentPipelineStatus));
 
 // ---------------------------------------------------------------------------
 // GET /api/yantri/content-pieces
@@ -45,8 +45,8 @@ export async function GET(request: Request) {
   }
 
   const where: Record<string, unknown> = {};
-  if (status) where.status = status as ContentStatus;
-  if (platform) where.platform = platform as Platform;
+  if (status) where.status = status as ContentPipelineStatus;
+  if (platform) where.platform = platform as ContentPlatform;
   if (brandId) where.brandId = brandId;
   if (treeId) where.treeId = treeId;
 
@@ -110,8 +110,8 @@ export async function POST(request: Request) {
   const contentPiece = await prisma.contentPiece.create({
     data: {
       brandId,
-      platform: platform as Platform,
-      status: ContentStatus.PLANNED,
+      platform: platform as ContentPlatform,
+      status: "PLANNED" as ContentPipelineStatus,
       bodyText,
       treeId: treeId ?? null,
       postingPlan: postingPlan ?? undefined,
