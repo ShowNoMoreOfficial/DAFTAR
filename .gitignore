@@ -25,6 +25,7 @@ dist/
 .DS_Store
 Thumbs.db
 *.pem
+NUL
 
 # Debug
 npm-debug.log*
