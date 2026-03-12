@@ -122,7 +122,7 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-deep)] px-3 md:px-6">
+      <header className="flex h-14 shrink-0 items-center border-b border-[var(--border-subtle)] bg-[var(--bg-deep)] px-3 md:px-6">
         {/* Left: Hamburger (mobile) + Breadcrumb */}
         <div className="flex items-center gap-2">
           <button
@@ -149,20 +149,21 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
           </nav>
         </div>
 
-        {/* Center: Search */}
-        <button
-          onClick={() => setSearchOpen(true)}
-          className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-elevated)] hover:border-[var(--accent-primary)] md:px-3"
-        >
-          <Search className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Search...</span>
-          <kbd className="ml-4 hidden rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-muted)] sm:inline">
-            Ctrl+K
-          </kbd>
-        </button>
+        {/* Spacer pushes right section to the end */}
+        <div className="flex-1" />
 
-        {/* Right: Create + Notifications + Avatar */}
-        <div className="flex items-center gap-3">
+        {/* Right: Search + Create + Notifications + Avatar */}
+        <div className="flex items-center gap-2 md:gap-3">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-elevated)] hover:border-[var(--accent-primary)] md:px-3"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Search...</span>
+            <kbd className="ml-4 hidden rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-muted)] sm:inline">
+              Ctrl+K
+            </kbd>
+          </button>
           <button
             onClick={() => setCreateOpen(true)}
             title="Create new (Ctrl+N)"

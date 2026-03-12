@@ -58,12 +58,14 @@ function CommandDialog({
       />
       <div
         className={cn(
-          "fixed left-1/2 top-[30%] z-50 w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-2xl animate-in fade-in-0 zoom-in-95",
+          "fixed left-1/2 top-[20%] z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-2xl animate-in fade-in-0 zoom-in-95 sm:top-[30%]",
           className
         )}
       >
         <span className="sr-only">{description}</span>
-        {children}
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-1.5">
+          {children}
+        </Command>
       </div>
     </div>
   );
