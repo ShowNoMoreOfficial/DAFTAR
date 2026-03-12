@@ -43,6 +43,14 @@ const verificationTokenAdapter: Adapter = {
     return { id: "", email: data.email ?? "", name: data.name ?? "", emailVerified: null, image: null };
   },
   async updateUser(data) {
+    // NextAuth calls this after magic link verification with { id, emailVerified }.
+    // We must return the full user so the jwt callback can read user.email.
+    if (data.id) {
+      const user = await prisma.user.findUnique({ where: { id: data.id } });
+      if (user) {
+        return { id: user.id, email: user.email, name: user.name, emailVerified: null, image: user.avatar };
+      }
+    }
     return { id: data.id ?? "", email: data.email ?? "", name: data.name ?? "", emailVerified: null, image: null };
   },
   async getUserByAccount() { return null; },
