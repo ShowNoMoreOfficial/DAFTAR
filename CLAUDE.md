@@ -18,22 +18,32 @@ Repo: https://github.com/ShowNoMoreOfficial/DAFTAR.git
 ONE app, ONE database (91 tables), ONE auth system.
 All modules live inside Daftar. No microservices.
 
-## Modules & Status
-| Module | Status | Key Files |
-|--------|--------|-----------|
-| PMS | Working | /src/app/(shell)/pms/, /src/app/api/tasks/ |
-| Gamification | Working | XP, achievements, streaks, leaderboard |
-| Yantri | Pipeline wired, needs live testing | /src/lib/yantri/, /src/app/(shell)/yantri/ |
-| GI | Actions execute, needs polish | /src/lib/gi/, /src/app/api/gi/ |
-| Khabri | Local DB wired | /src/app/(shell)/khabri/ |
-| Finance | CRUD working | /src/app/(shell)/finance/ |
-| HOCCR | Capacity + bidirectional sentiment | /src/app/(shell)/hoccr/ |
-| Communication | Basic announcements + feedback | /src/app/(shell)/communication/ |
-| Vritti | Kanban pipeline | /src/app/(shell)/vritti/ |
-| Relay | SIMULATED — do not fix | /src/app/(shell)/relay/ |
+## Unified Navigation (Redesigned)
+The user sees a unified workflow, not internal module names:
 
-## Pipeline Flow (Yantri)
-Khabri signal → NarrativeTree → FactDossier (Gemini) → StrategyDecision → Content Engine → Deliverable (pending_review) → Approve/Revise/Reject → PMS Task
+| Sidebar Item | What It Is | Route | Key Files |
+|---|---|---|---|
+| Dashboard | Unified dashboard | /dashboard | /src/app/(shell)/dashboard/ |
+| Intelligence | Signals + Trends + Research | /intelligence | /src/app/(shell)/intelligence/ |
+| Content | Studio + Calendar + Library | /content-studio | /src/app/(shell)/content-studio/ |
+| Production | Tasks + Workload | /pms/ | /src/app/(shell)/pms/ |
+| Publishing | Schedule + Connections | /relay/ | /src/app/(shell)/relay/ |
+| Team | HOCCR (ops, culture, hiring) | /hoccr/ | /src/app/(shell)/hoccr/ |
+| Editorial | Vritti CMS | /m/vritti/ | /src/app/(shell)/m/vritti/ |
+| Finance | Invoices + Expenses | /finance | /src/app/(shell)/finance/ |
+| Communication | Announcements + Feedback | /communication | /src/app/(shell)/communication/ |
+| Settings | Account + Admin config | /settings | /src/app/(shell)/settings/ |
+
+### Internal module mapping (DO NOT expose these names in UI):
+- "Khabri" = Intelligence signals/trends (API: /api/khabri/)
+- "Yantri" = Content generation engine (API: /api/yantri/)
+- "Relay" = Publishing (SIMULATED — do not build real publishers)
+- "HOCCR" = Team/HR operations
+- "Vritti" = Editorial CMS
+- "GI" = AI Assistant copilot
+
+## Pipeline Flow
+Intelligence signal → NarrativeTree → FactDossier (Gemini) → StrategyDecision → Content Engine → Deliverable (pending_review) → Approve/Revise/Reject → PMS Task
 
 ## Content Engines
 - 4 engines: ViralMicro, Carousel, Cinematic, NanoBanana
@@ -56,10 +66,16 @@ Env vars: Stored in Vercel, pulled locally via `vercel env pull .env`
 3. ALWAYS run npm run build after changes
 4. Relay is deliberately simulated — do NOT build real publishers
 5. Test on live URL after pushing: https://daftar-one.vercel.app
+6. Use unified names in UI (Intelligence, Content Studio, Production) — NEVER show Khabri/Yantri/Relay to users
+7. Links from Intelligence → Content Studio use ?topic= query param
+8. Links from Content Studio → review use /m/yantri/review/[id]
 
 ## Key Files
 - /prisma/schema.prisma — 91 tables, unified schema
 - /prisma/seed.ts — 18 users, 2 brands, 7 depts, 89 tasks
+- /src/lib/sidebar-config.ts — unified sidebar navigation (12 items)
+- /src/components/shell/sidebar.tsx — sidebar component with icon mapping
+- /src/components/shell/shell-layout.tsx — shell container + GI context
 - /src/lib/yantri/strategist.ts — 354 lines, strategy decisions
 - /src/lib/skill-orchestrator.ts — 651 lines, loads 160 skill files
 - /src/lib/yantri/engines/ — 4 content engines
