@@ -8,6 +8,7 @@ import {
   getTeamWeeklyStats,
   getRecentSignals,
   getBrandContentPipeline,
+  getTeamMembers,
 } from "@/lib/gi/data-queries";
 import {
   formatOverdueTasks,
@@ -16,6 +17,7 @@ import {
   formatTeamWeeklyStats,
   formatRecentSignals,
   formatBrandPipeline,
+  formatTeamMembers,
 } from "@/lib/gi/response-formatter";
 import {
   reassignTask,
@@ -751,6 +753,12 @@ async function detectAndRunQuery(
   if (lower.match(/signals?\s+(?:from|came|recent)|khabri\s+signals|recent\s+signals|what\s+signals/)) {
     const data = await getRecentSignals();
     return formatRecentSignals(data);
+  }
+
+  // Team members query
+  if (lower.match(/who.+(?:on|in)\s+(?:the\s+)?team|(?:list|show)\s+(?:the\s+)?team|team\s+members|who.+(?:work|member)|our\s+team/)) {
+    const data = await getTeamMembers();
+    return formatTeamMembers(data);
   }
 
   // Brand pipeline

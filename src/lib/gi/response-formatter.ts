@@ -138,6 +138,38 @@ export function formatRecentSignals(data: {
   };
 }
 
+// ─── Team Members ──────────────────────────────────────
+
+export function formatTeamMembers(data: {
+  members: { name: string; role: string; department: string }[];
+  total: number;
+}): { message: string; suggestions: string[] } {
+  if (data.total === 0) {
+    return {
+      message: "No active team members found.",
+      suggestions: ["View users", "Add team member"],
+    };
+  }
+
+  const roleLabels: Record<string, string> = {
+    ADMIN: "Admin",
+    HEAD_HR: "HR Head",
+    DEPT_HEAD: "Dept Head",
+    MEMBER: "Member",
+    FINANCE: "Finance",
+    CONTRACTOR: "Contractor",
+  };
+
+  const lines = data.members.map(
+    (m) => `• **${m.name}** — ${roleLabels[m.role] || m.role} (${m.department})`
+  );
+
+  return {
+    message: `**Your team (${data.total} members):**\n\n${lines.join("\n")}`,
+    suggestions: ["Who's overloaded?", "Team weekly stats", "View leaderboard"],
+  };
+}
+
 // ─── Brand Content Pipeline ─────────────────────────────
 
 export function formatBrandPipeline(data: {

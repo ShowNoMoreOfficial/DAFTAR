@@ -225,6 +225,33 @@ export async function getBrandContentPipeline(brandName: string) {
   return { brand, trees, deliverables, stats };
 }
 
+// ─── Team Members ───────────────────────────────────────
+
+export async function getTeamMembers() {
+  const users = await prisma.user.findMany({
+    where: { role: { not: "CLIENT" }, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      departments: {
+        select: { department: { select: { name: true } } },
+        take: 1,
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return {
+    members: users.map((u) => ({
+      name: u.name,
+      role: u.role,
+      department: u.departments[0]?.department.name || "Unassigned",
+    })),
+    total: users.length,
+  };
+}
+
 // ─── Unprocessed Signals (not linked to NarrativeTree) ──
 
 export async function getUnprocessedSignals() {
