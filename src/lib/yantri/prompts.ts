@@ -150,7 +150,7 @@ RESEARCH DOSSIER: ${researchResults}
 
 OUTPUT FORMAT (respond in JSON only):
 {
-  "target_engine": "squirrels_x_engine | bhupen_script | blog_engine | direct_meta | direct_linkedin",
+  "target_engine": "${brandName}_${normalizePlatform(platform)}_engine",
   "prompt": "The complete prompt text",
   "is_direct_content": true/false
 }`;
@@ -218,7 +218,7 @@ ${params.researchResults}`;
 }
 
 function buildTwitterPrompt(ctx: string): { systemPrompt: string; userMessage: string } {
-  const systemPrompt = `You are the Squirrels X Engine — a Twitter/X content creator. Produce complete, publish-ready content.
+  const systemPrompt = `You are the Twitter/X Content Engine — a Twitter/X content creator. Produce complete, publish-ready content.
 
 ${ctx}
 
@@ -248,7 +248,7 @@ For thread:
 }
 
 function buildYouTubePrompt(ctx: string): { systemPrompt: string; userMessage: string } {
-  const systemPrompt = `You are the Bhupen Script Engine — a YouTube longform script writer. Produce complete, shoot-ready video scripts.
+  const systemPrompt = `You are the YouTube Script Engine — a YouTube longform script writer. Produce complete, shoot-ready video scripts.
 
 ${ctx}
 

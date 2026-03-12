@@ -81,7 +81,7 @@ export function formatPendingReviews(data: {
 
   return {
     message: `**${data.total} deliverable${data.total !== 1 ? "s" : ""} awaiting review:**\n\n${lines.join("\n")}${data.total > 5 ? `\n\n...and ${data.total - 5} more.` : ""}`,
-    suggestions: ["Review now", "Show Squirrels pipeline", "Show Breaking Tube pipeline"],
+    suggestions: ["Review now", "Show content pipeline", "What should we cover?"],
   };
 }
 
@@ -180,8 +180,8 @@ export function formatBrandPipeline(data: {
 }): { message: string; suggestions: string[] } {
   if (!data.brand) {
     return {
-      message: "I couldn't find that brand. Available brands are The Squirrels and Breaking Tube.",
-      suggestions: ["Show The Squirrels pipeline", "Show Breaking Tube pipeline"],
+      message: "I couldn't find that brand. Check the brand name and try again.",
+      suggestions: ["Show content pipeline", "What brands do we have?"],
     };
   }
 

@@ -127,9 +127,7 @@ export async function buildSystemPrompt(ctx: PromptContext): Promise<string> {
       : "Always ask before executing actions. For mutating operations, confirm first.",
     ``,
     `## BRANDS`,
-    `- The Squirrels: English, YouTube + X, political commentary, 43K subs`,
-    `- Breaking Tube: Hinglish, YouTube, political analysis, 100K+ subs`,
-    `- Client: Bhupendra Chaubey`,
+    ...(await getBrandContext()),
     ``,
     `## MODULES (for navigation references)`,
     `- Intelligence = /intelligence (signals & trends)`,
@@ -200,6 +198,21 @@ async function getTeamStats() {
     activeMembers,
     avgTasks: activeMembers > 0 ? Math.round(totalActiveTasks / activeMembers) : 0,
   };
+}
+
+async function getBrandContext(): Promise<string[]> {
+  try {
+    const brands = await prisma.brand.findMany({
+      include: { platforms: { where: { isActive: true } } },
+    });
+    if (brands.length === 0) return ["No brands configured."];
+    return brands.map((b) => {
+      const platformNames = b.platforms.map((p) => p.platform).join(" + ") || "No platforms";
+      return `- ${b.name}: ${b.language || "English"}, ${platformNames}, ${b.tone || "general"}`;
+    });
+  } catch {
+    return ["Brand data unavailable."];
+  }
 }
 
 async function getCurrentTier() {

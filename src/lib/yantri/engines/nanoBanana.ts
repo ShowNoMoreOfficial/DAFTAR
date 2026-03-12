@@ -112,10 +112,10 @@ function getPlatformSpecs(platform: string): {
 
 // ─── System Prompt ──────────────────────────────────────────────────────────
 
-function buildVisualSystemPrompt(
+async function buildVisualSystemPrompt(
   params: VisualPromptParams,
   specs: ReturnType<typeof getPlatformSpecs>
-): string {
+): Promise<string> {
   const contentBlock = params.generatedContent
     ? `\nDRAFTED CONTENT (the tweet/thread/post this visual will accompany):\n${params.generatedContent.slice(0, 3000)}\n`
     : "";
@@ -124,7 +124,7 @@ function buildVisualSystemPrompt(
     ? `\nRESEARCH DOSSIER (use these facts, stats, and timeline to inform visual choices and nano banana angles):\n${params.researchData.slice(0, 4000)}\n`
     : "";
 
-  const brandPalette = getBrandColorPalette(params.brandName);
+  const brandPalette = await getBrandColorPalette(params.brandName);
   const paletteBlock = brandPalette
     ? `\nBRAND COLOR PALETTE ENFORCEMENT:\nColors: ${brandPalette.colors.join(", ")}\nStyle: ${brandPalette.description}\nALL visual prompts MUST use these brand colors as the primary palette. Do not deviate.\n`
     : "";
@@ -210,7 +210,7 @@ export async function generateVisualPrompts(
   }
 
   const specs = getPlatformSpecs(platform);
-  const systemPrompt = buildVisualSystemPrompt(params, specs);
+  const systemPrompt = await buildVisualSystemPrompt(params, specs);
   const userMessage = `Generate visual prompts for this narrative now. Narrative: "${narrativeAngle}". Emotion: ${emotion}. Color mood: ${colorMood}.`;
 
   const result = await routeToModel("visual", systemPrompt, userMessage, {

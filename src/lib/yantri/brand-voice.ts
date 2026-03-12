@@ -1,24 +1,35 @@
 /**
  * Brand Voice Helper — Generates brand-specific voice enforcement blocks
  * for injection into content engine prompts.
+ *
+ * All brand-specific data (voice rules, colors, constraints) comes from
+ * the Brand model in the database. No hardcoded brand names.
  */
 
-// ─── Known Brand Color Palettes ─────────────────────────────────────────────
+import { prisma } from "@/lib/prisma";
 
-const BRAND_COLOR_PALETTES: Record<string, { colors: string[]; description: string }> = {
-  "the squirrels": {
-    colors: ["#1B3A5C", "#FFFFFF", "#2E86AB", "#F0F4F8"],
-    description: "Navy (#1B3A5C), White (#FFFFFF), Teal (#2E86AB), Light grey (#F0F4F8) — editorial, credibility-first",
-  },
-  "breaking tube": {
-    colors: ["#D32F2F", "#000000", "#FFFFFF", "#FFD600"],
-    description: "Red (#D32F2F), Black (#000000), White (#FFFFFF), Yellow (#FFD600) — bold, high-energy news",
-  },
-};
+// ─── Brand Color Palette (DB-driven) ───────────────────────────────────────
 
-export function getBrandColorPalette(brandName: string): { colors: string[]; description: string } | null {
-  const key = brandName.toLowerCase().trim();
-  return BRAND_COLOR_PALETTES[key] ?? null;
+export async function getBrandColorPalette(
+  brandName: string
+): Promise<{ colors: string[]; description: string } | null> {
+  try {
+    const brand = await prisma.brand.findFirst({
+      where: { name: { equals: brandName, mode: "insensitive" } },
+      select: { config: true },
+    });
+    if (!brand?.config) return null;
+    const cfg = typeof brand.config === "string"
+      ? JSON.parse(brand.config)
+      : brand.config;
+    const palette = cfg?.colorPalette;
+    if (palette && typeof palette === "object" && Array.isArray(palette.colors)) {
+      return { colors: palette.colors, description: palette.description || "" };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Brand Voice Block Generator ─────────────────────────────────────────────
@@ -38,69 +49,34 @@ export function getBrandVoiceBlock(
 
   const numberedRules = rulesArray.map((r, i) => `${i + 1}. ${r}`).join("\n");
 
-  const key = brandName.toLowerCase().trim();
-  const isSquirrels = key === "the squirrels";
-  const isBreakingTube = key === "breaking tube";
-
-  // Language constraint
-  const langConstraint = isBreakingTube
+  // Language constraint — derived from the brand's language setting
+  const langLower = (language || "english").toLowerCase();
+  const isHinglish = langLower.includes("hinglish") || langLower.includes("hindi");
+  const langConstraint = isHinglish
     ? `Language: Hinglish (Hindi-English mix) — this is the brand's native register`
     : `Language: ${language} ONLY — no code-switching`;
 
-  // Hard constraints vary by brand
-  let hardConstraints: string;
-  if (isSquirrels) {
-    hardConstraints = `HARD CONSTRAINTS:
+  // Hard constraints — generic unless voice rules specify otherwise
+  const hardConstraints = isHinglish
+    ? `HARD CONSTRAINTS:
+- NEVER use pure English academic tone — keep it conversational
+- NEVER lose analytical depth for the sake of entertainment
+- NEVER use clickbait without substance backing it up
+- Every claim must cite its source from the research dossier
+- Energy over stuffiness, but always backed by data`
+    : `HARD CONSTRAINTS:
 - NEVER use clickbait: "SHOCKING", "DESTROYED", "EXPOSED", ALL CAPS
-- NEVER sound like Indian TV news
-- NEVER use Hinglish or Hindi phrases (for The Squirrels)
 - NEVER use filler: "basically", "actually", "you know"
 - NEVER hedge excessively
 - Every claim must cite its source from the research dossier
 - Precision over sensationalism`;
-  } else if (isBreakingTube) {
-    hardConstraints = `HARD CONSTRAINTS:
-- NEVER use pure English academic tone — keep it conversational Hinglish
-- NEVER lose analytical depth for the sake of entertainment
-- NEVER use clickbait without substance backing it up
-- NEVER copy mainstream Hindi news anchors' style
-- Every claim must cite its source from the research dossier
-- Energy over stuffiness, but always backed by data`;
-  } else {
-    hardConstraints = `HARD CONSTRAINTS:
-- NEVER use clickbait: "SHOCKING", "DESTROYED", "EXPOSED", ALL CAPS
-- NEVER use filler: "basically", "actually", "you know"
-- Every claim must cite its source from the research dossier
-- Maintain brand voice consistency throughout`;
-  }
-
-  // Signature phrases vary by brand
-  let signaturePhrases: string;
-  if (isSquirrels) {
-    signaturePhrases = `SIGNATURE PHRASES (use naturally):
-- "The data suggests..." / "The evidence points to..."
-- "Here's what's actually happening..."
-- "The non-obvious implication is..."
-- "Three things to watch..."
-- "What nobody's talking about is..."`;
-  } else if (isBreakingTube) {
-    signaturePhrases = `SIGNATURE PHRASES (use naturally):
-- "Isko samjho..." / "Yeh important hai kyunki..."
-- "Data dekho toh..."
-- "Sabse interesting baat yeh hai..."
-- "Iska matlab kya hai India ke liye?"
-- "Toh actual picture kya hai..."`;
-  } else {
-    signaturePhrases = `SIGNATURE PHRASES (develop brand-specific phrases that feel natural and authoritative)`;
-  }
 
   // Structural requirements
   const structuralReqs = `STRUCTURAL REQUIREMENTS:
 - Open with a provocative rhetorical hook — a claim, contradiction, or question
 - Include 1-2 historical parallels to establish analytical credibility
-- Weave data into narrative — every statistic must include context (comparable figure, percentage, or scale translation)
-- Use pointed analytical questions that reframe the story
-- India-first framing: connect every analysis to "what does this mean for India?"`;
+- Weave data into narrative — every statistic must include context
+- Use pointed analytical questions that reframe the story`;
 
   return `
 BRAND VOICE ENFORCEMENT — ${brandName}:
@@ -112,22 +88,35 @@ ${numberedRules}
 
 ${structuralReqs}
 
-${signaturePhrases}
-
 ${hardConstraints}
 `.trim();
 }
 
-/**
- * Returns brand-aware colorMood string for NanoBanana visual generation.
- */
-export function getBrandColorMood(brandName: string, fallback: string = "bold, high contrast"): string {
-  const key = brandName.toLowerCase().trim();
-  if (key === "the squirrels") {
-    return "navy editorial, teal accent, high contrast";
+// ─── Brand Color Mood (DB-driven with fallback) ─────────────────────────────
+
+export async function getBrandColorMood(
+  brandName: string,
+  fallback: string = "bold, high contrast"
+): Promise<string> {
+  try {
+    const brand = await prisma.brand.findFirst({
+      where: { name: { equals: brandName, mode: "insensitive" } },
+      select: { config: true, tone: true },
+    });
+    if (brand?.config) {
+      const cfg = typeof brand.config === "string"
+        ? JSON.parse(brand.config)
+        : brand.config;
+      if (cfg?.colorPalette?.colorMood) return cfg.colorPalette.colorMood as string;
+    }
+    // Generate a generic color mood from tone
+    if (brand?.tone) {
+      const t = brand.tone.toLowerCase();
+      if (t.includes("analytical") || t.includes("editorial")) return "editorial, teal accent, high contrast";
+      if (t.includes("energetic") || t.includes("bold")) return "bold, high energy contrast";
+    }
+    return fallback;
+  } catch {
+    return fallback;
   }
-  if (key === "breaking tube") {
-    return "red and black bold, yellow accent, high energy contrast";
-  }
-  return fallback;
 }

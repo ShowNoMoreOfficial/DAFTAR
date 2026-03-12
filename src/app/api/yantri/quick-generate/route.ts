@@ -284,7 +284,7 @@ export async function POST(request: NextRequest) {
       brand.language ?? "English"
     );
 
-    const brandColorPalette = getBrandColorPalette(brand.name);
+    const brandColorPalette = await getBrandColorPalette(brand.name);
 
     // ─── STEP 3: Build skill context ───
 

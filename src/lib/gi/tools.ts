@@ -71,7 +71,7 @@ export const GI_TOOLS: Anthropic.Tool[] = [
       properties: {
         brandName: {
           type: "string",
-          description: "Filter by brand name (e.g. 'The Squirrels', 'Breaking Tube')",
+          description: "Filter by brand name",
         },
         status: {
           type: "string",
@@ -140,7 +140,7 @@ export const GI_TOOLS: Anthropic.Tool[] = [
       properties: {
         brandName: {
           type: "string",
-          description: "Brand name (e.g. 'The Squirrels', 'Breaking Tube')",
+          description: "Brand name",
         },
       },
       required: ["brandName"],

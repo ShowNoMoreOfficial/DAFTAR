@@ -150,7 +150,7 @@ export const viralMicroPipeline = yantriInngest.createFunction(
         platform: deliverable.platform.toLowerCase(),
         brandName: deliverable.brand.name,
         emotion: "curiosity",
-        colorMood: getBrandColorMood(deliverable.brand.name, "bold, high contrast"),
+        colorMood: await getBrandColorMood(deliverable.brand.name, "bold, high contrast"),
         generatedContent: viralResult.primaryPost,
         researchData: research,
       });
@@ -248,7 +248,7 @@ export const carouselPipeline = yantriInngest.createFunction(
         platform: "meta",
         brandName: deliverable.brand.name,
         emotion: "curiosity",
-        colorMood: getBrandColorMood(deliverable.brand.name, "bold, scroll-stopping, high contrast"),
+        colorMood: await getBrandColorMood(deliverable.brand.name, "bold, scroll-stopping, high contrast"),
         generatedContent: carouselResult.caption,
         researchData: research,
       });
@@ -375,7 +375,7 @@ export const cinematicPipeline = yantriInngest.createFunction(
         platform: "youtube",
         brandName: deliverable.brand.name,
         emotion: "curiosity",
-        colorMood: getBrandColorMood(deliverable.brand.name, "dark editorial, high contrast"),
+        colorMood: await getBrandColorMood(deliverable.brand.name, "dark editorial, high contrast"),
         generatedContent: cinematicResult.script.fullScript.slice(0, 3000),
         researchData: research,
       });
@@ -472,7 +472,7 @@ export const reelPipeline = yantriInngest.createFunction(
         platform: "meta",
         brandName: deliverable.brand.name,
         emotion: "curiosity",
-        colorMood: getBrandColorMood(deliverable.brand.name, "bold, scroll-stopping, high contrast"),
+        colorMood: await getBrandColorMood(deliverable.brand.name, "bold, scroll-stopping, high contrast"),
         generatedContent: JSON.stringify(reelResult.content ?? {}),
         researchData: research,
       });
