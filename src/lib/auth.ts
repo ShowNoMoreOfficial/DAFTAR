@@ -2,13 +2,59 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import Nodemailer from "next-auth/providers/nodemailer";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
+import type { Adapter } from "next-auth/adapters";
 import type { createTransport } from "nodemailer";
 
+// Minimal adapter — only handles verification tokens for magic link login.
+// We don't use the full PrismaAdapter because our User model lacks
+// fields it expects (emailVerified, image). User/session management
+// is handled by our custom JWT callbacks instead.
+const verificationTokenAdapter: Adapter = {
+  async createVerificationToken(data) {
+    const token = await prisma.verificationToken.create({ data });
+    return token;
+  },
+  async useVerificationToken({ identifier, token }) {
+    try {
+      const result = await prisma.verificationToken.delete({
+        where: { identifier_token: { identifier, token } },
+      });
+      return result;
+    } catch {
+      return null;
+    }
+  },
+  // Stub methods required by the Adapter interface — NextAuth calls these
+  // but we handle user/account/session logic in our JWT callbacks instead.
+  async getUserByEmail(email) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return null;
+    return { id: user.id, email: user.email, name: user.name, emailVerified: null, image: user.avatar };
+  },
+  async getUser(id) {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) return null;
+    return { id: user.id, email: user.email, name: user.name, emailVerified: null, image: user.avatar };
+  },
+  async createUser(data) {
+    // Should never be called — invitation-only system blocks unknown emails in signIn callback
+    return { id: "", email: data.email ?? "", name: data.name ?? "", emailVerified: null, image: null };
+  },
+  async updateUser(data) {
+    return { id: data.id ?? "", email: data.email ?? "", name: data.name ?? "", emailVerified: null, image: null };
+  },
+  async getUserByAccount() { return null; },
+  async linkAccount() { return undefined; },
+  async createSession() { return { sessionToken: "", userId: "", expires: new Date() }; },
+  async getSessionAndUser() { return null; },
+  async updateSession() { return null; },
+  async deleteSession() {},
+};
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: verificationTokenAdapter,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
