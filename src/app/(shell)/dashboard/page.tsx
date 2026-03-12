@@ -8,6 +8,7 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
 import { QuickNav } from "@/components/dashboard/quick-nav";
 import { EditorialBrief } from "@/components/dashboard/editorial-brief";
+import { ClientDashboard } from "@/components/dashboard/client-dashboard";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -16,6 +17,11 @@ export default async function DashboardPage() {
   if (!session?.user) redirect("/login");
 
   const { role, name } = session.user;
+
+  // CLIENT role gets a dedicated dashboard
+  if (role === "CLIENT") {
+    return <ClientDashboard userName={name || ""} />;
+  }
 
   return (
     <div className="space-y-6">

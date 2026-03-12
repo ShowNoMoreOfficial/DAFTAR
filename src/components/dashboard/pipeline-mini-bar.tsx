@@ -9,6 +9,7 @@ interface PipelineStats {
   PLANNED: number;
   RESEARCHING: number;
   DRAFTED: number;
+  REVIEW: number;
   APPROVED: number;
   RELAYED: number;
   PUBLISHED: number;
@@ -17,7 +18,8 @@ interface PipelineStats {
 const STAGES = [
   { key: "PLANNED", label: "Queued", color: "bg-blue-500" },
   { key: "RESEARCHING", label: "Research", color: "bg-amber-500" },
-  { key: "DRAFTED", label: "Review", color: "bg-purple-500" },
+  { key: "DRAFTED", label: "Drafted", color: "bg-purple-500" },
+  { key: "REVIEW", label: "Review", color: "bg-orange-500" },
   { key: "APPROVED", label: "Approved", color: "bg-emerald-500" },
   { key: "RELAYED", label: "Publishing", color: "bg-cyan-500" },
   { key: "PUBLISHED", label: "Done", color: "bg-[var(--accent-primary)]" },

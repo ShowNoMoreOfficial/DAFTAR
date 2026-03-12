@@ -114,9 +114,11 @@ export async function POST(request: Request) {
     // ──────────────────────────────────────────────────────
     // 1. RESEARCH the topic (Gemini with web grounding)
     // ──────────────────────────────────────────────────────
-    const researchSummary = await callGeminiResearch(
-      "You are a thorough research analyst. Provide factual, well-sourced research.",
-      `You are a senior political and economic research analyst.
+    let researchSummary = "";
+    try {
+      researchSummary = await callGeminiResearch(
+        "You are a thorough research analyst. Provide factual, well-sourced research.",
+        `You are a senior political and economic research analyst.
 Research this topic thoroughly: "${topic.trim()}"
 
 Provide a comprehensive research dossier including:
@@ -130,7 +132,11 @@ Provide a comprehensive research dossier including:
 
 Be thorough, factual, and cite sources where possible.
 Return your findings as a well-structured report.`
-    );
+      );
+    } catch (geminiErr) {
+      console.error("[recommend] Gemini research failed, continuing without:", geminiErr);
+      researchSummary = `Topic: ${topic.trim()} (research unavailable — proceeding with editorial judgment)`;
+    }
 
     // ──────────────────────────────────────────────────────
     // 2. LOAD EDITORIAL DECISION SKILLS
@@ -439,10 +445,19 @@ IMPORTANT:
     // ──────────────────────────────────────────────────────
     // 8. CALL CLAUDE for editorial reasoning
     // ──────────────────────────────────────────────────────
-    const result = await callClaude(systemPrompt, userPrompt, {
-      maxTokens: 8192,
-      temperature: 0.4,
-    });
+    let result: { parsed: unknown; raw: string };
+    try {
+      result = await callClaude(systemPrompt, userPrompt, {
+        maxTokens: 8192,
+        temperature: 0.4,
+      });
+    } catch (claudeErr) {
+      console.error("[recommend] Claude API call failed:", claudeErr);
+      return NextResponse.json(
+        { error: "Content recommendation engine is temporarily unavailable. Please try again." },
+        { status: 503 }
+      );
+    }
 
     const parsed = result.parsed as RecommendResponse | null;
 
@@ -452,10 +467,7 @@ IMPORTANT:
         result.raw.slice(0, 500)
       );
       return NextResponse.json(
-        {
-          error: "Failed to generate recommendations",
-          raw: result.raw.slice(0, 200),
-        },
+        { error: "Failed to parse recommendations from AI response. Please try again." },
         { status: 502 }
       );
     }

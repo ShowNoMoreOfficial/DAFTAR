@@ -165,11 +165,51 @@ export class SkillOrchestrator {
       return this.parseSkillFile(normalized, cached.content);
     }
 
-    const content = await fs.readFile(fullPath, "utf-8");
+    // Try filesystem first (works in development)
+    try {
+      const content = await fs.readFile(fullPath, "utf-8");
+      SKILL_CACHE.set(normalized, { content, loadedAt: Date.now() });
+      return this.parseSkillFile(normalized, content);
+    } catch {
+      // Filesystem failed (e.g. Vercel serverless) — fall back to database
+    }
 
-    SKILL_CACHE.set(normalized, { content, loadedAt: Date.now() });
+    // Fall back to database (skills synced via syncSkillsToDb)
+    const pathWithoutExt = normalized.replace(/\.md$/, "");
+    const dbSkill = await prisma.skill.findFirst({
+      where: {
+        OR: [
+          { path: normalized },
+          { path: pathWithoutExt },
+          { path: `/${normalized}` },
+          { path: `/${pathWithoutExt}` },
+        ],
+      },
+    });
 
-    return this.parseSkillFile(normalized, content);
+    if (dbSkill) {
+      // Reconstruct skill from DB fields (description stores truncated instructions)
+      const content = dbSkill.description ?? "";
+      SKILL_CACHE.set(normalized, { content, loadedAt: Date.now() });
+      return {
+        path: normalized,
+        domain: dbSkill.domain,
+        meta: {
+          name: dbSkill.name,
+          module: dbSkill.module,
+          trigger: (dbSkill.metadata as Record<string, unknown>)?.trigger as string ?? "",
+          inputs: ((dbSkill.metadata as Record<string, unknown>)?.inputs as string[]) ?? [],
+          outputs: ((dbSkill.metadata as Record<string, unknown>)?.outputs as string[]) ?? [],
+          dependencies: ((dbSkill.metadata as Record<string, unknown>)?.dependencies as string[]) ?? [],
+          scripts: ((dbSkill.metadata as Record<string, unknown>)?.scripts as string[]) ?? [],
+        },
+        instructions: content,
+        learningLog: "",
+        rawContent: content,
+      };
+    }
+
+    throw new Error(`Skill not found: ${normalized} (checked filesystem and database)`);
   }
 
   /**

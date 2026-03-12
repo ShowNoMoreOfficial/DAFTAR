@@ -135,6 +135,20 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/brands",
         roles: ["CLIENT"],
       },
+      {
+        id: "client-review",
+        label: "Review",
+        icon: "FileCheck",
+        href: "/brands?tab=review",
+        roles: ["CLIENT"],
+      },
+      {
+        id: "client-calendar",
+        label: "Calendar",
+        icon: "Calendar",
+        href: "/brands?tab=calendar",
+        roles: ["CLIENT"],
+      },
     ],
   },
 ];

@@ -68,7 +68,16 @@ interface ScriptData {
 }
 
 type CarouselData = ScriptData;
-type PostingPlan = { tags?: string[]; description?: string };
+type PostingPlan = { tags?: string[]; description?: string; revisionNotes?: string; revisionRequestedAt?: string };
+
+/** Safely parse JSON fields that might be double-serialized strings */
+function safeParseJson<T>(value: T | string | null | undefined): T | null {
+  if (value == null) return null;
+  if (typeof value === "string") {
+    try { return JSON.parse(value) as T; } catch { return null; }
+  }
+  return value as T;
+}
 
 const PLATFORM_LABELS: Record<string, string> = {
   YOUTUBE: "YouTube",
@@ -85,10 +94,11 @@ const STATUS_STYLES: Record<string, { label: string; color: string; bg: string }
   PLANNED: { label: "Queued", color: "text-blue-400", bg: "bg-blue-500/10" },
   RESEARCHING: { label: "Researching", color: "text-amber-400", bg: "bg-amber-500/10" },
   REVIEW: { label: "Ready for Review", color: "text-purple-400", bg: "bg-purple-500/10" },
-  DRAFTED: { label: "Draft", color: "text-purple-400", bg: "bg-purple-500/10" },
+  DRAFTED: { label: "Revision Requested", color: "text-orange-400", bg: "bg-orange-500/10" },
   APPROVED: { label: "Approved", color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  KILLED: { label: "Killed", color: "text-red-400", bg: "bg-red-500/10" },
-  REVISION_REQUESTED: { label: "Revision Requested", color: "text-amber-400", bg: "bg-amber-500/10" },
+  KILLED: { label: "Rejected", color: "text-red-400", bg: "bg-red-500/10" },
+  RELAYED: { label: "Publishing", color: "text-cyan-400", bg: "bg-cyan-500/10" },
+  PUBLISHED: { label: "Published", color: "text-[var(--accent-primary)]", bg: "bg-[rgba(0,212,170,0.1)]" },
 };
 
 const SECTION_ICONS: Record<string, string> = {
@@ -149,7 +159,7 @@ export default function DeliverableReviewPage() {
       if (!res.ok) throw new Error("Action failed");
       await fetchDeliverable();
       if (action === "approve") {
-        setTimeout(() => router.push("/m/yantri/workspace"), 1000);
+        setTimeout(() => router.push("/content-studio"), 1000);
       }
       if (action === "revision") {
         setShowRevisionBox(false);
@@ -180,27 +190,30 @@ export default function DeliverableReviewPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <p className="text-sm text-red-400">{error || "Deliverable not found"}</p>
-        <Button variant="outline" onClick={() => router.push("/m/yantri/workspace")}>
+        <Button variant="outline" onClick={() => router.push("/content-studio")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Workspace
+          Back to Content Studio
         </Button>
       </div>
     );
   }
 
-  // Extract structured data from scriptData or carouselData
-  const structured: ScriptData = deliverable.scriptData ?? deliverable.carouselData ?? {};
+  // Extract structured data — handle double-serialized JSON strings
+  const structured: ScriptData = safeParseJson(deliverable.scriptData) ?? safeParseJson(deliverable.carouselData) ?? {};
+  const posting = safeParseJson<PostingPlan>(deliverable.postingPlan);
   const titles = structured.titles ?? [];
-  const tags = structured.tags ?? (deliverable.postingPlan as PostingPlan)?.tags ?? [];
-  const description = structured.description ?? (deliverable.postingPlan as PostingPlan)?.description ?? "";
+  const tags = structured.tags ?? posting?.tags ?? [];
+  const description = structured.description ?? posting?.description ?? "";
   const sections = structured.script?.sections ?? [];
   const tweets = structured.tweets ?? [];
   const slides = structured.slides ?? [];
   const caption = structured.caption ?? "";
   const thumbnailBriefs = structured.thumbnailBriefs ?? [];
   const statusInfo = STATUS_STYLES[deliverable.status] ?? STATUS_STYLES.REVIEW;
+  const previousRevisionNotes = posting?.revisionNotes;
+  const imageAssets = deliverable.assets.filter((a) => a.type === "IMAGE" || a.type === "THUMBNAIL" || a.url);
 
-  const isReviewable = deliverable.status === "REVIEW" || deliverable.status === "DRAFTED" || deliverable.status === "REVISION_REQUESTED";
+  const isReviewable = deliverable.status === "REVIEW" || deliverable.status === "DRAFTED";
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
@@ -210,7 +223,7 @@ export default function DeliverableReviewPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/m/yantri/workspace")}
+            onClick={() => router.push("/content-studio")}
             className="text-[var(--text-muted)]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -307,6 +320,16 @@ export default function DeliverableReviewPage() {
                 Cancel
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Previous Revision Notes ─── */}
+      {previousRevisionNotes && (
+        <Card className="mb-4 border-orange-500/30 bg-orange-500/5">
+          <CardContent className="p-4">
+            <p className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-2">Revision Notes</p>
+            <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{previousRevisionNotes}</p>
           </CardContent>
         </Card>
       )}
@@ -551,6 +574,42 @@ export default function DeliverableReviewPage() {
                     <p><span className="font-semibold">Text:</span> &quot;{tb.textOverlay}&quot;</p>
                     <p><span className="font-semibold">Colors:</span> {tb.colorScheme}</p>
                     <p><span className="font-semibold">Composition:</span> {tb.composition}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Generated Assets (thumbnails, images) ─── */}
+      {imageAssets.length > 0 && (
+        <Card className="mb-4 border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <Image className="h-4 w-4 text-[var(--accent-primary)]" />
+              Generated Assets ({imageAssets.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {imageAssets.map((asset) => (
+                <div key={asset.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] overflow-hidden">
+                  {asset.url && (
+                    <img
+                      src={asset.url}
+                      alt={asset.promptUsed ?? asset.type}
+                      className="w-full h-40 object-cover"
+                      loading="lazy"
+                    />
+                  )}
+                  <div className="p-2 space-y-1">
+                    <Badge variant="secondary" className="text-[9px]">
+                      {asset.type}{asset.slideIndex != null ? ` — Slide ${asset.slideIndex + 1}` : ""}
+                    </Badge>
+                    {asset.promptUsed && (
+                      <p className="text-[10px] text-[var(--text-muted)] line-clamp-2">{asset.promptUsed}</p>
+                    )}
                   </div>
                 </div>
               ))}

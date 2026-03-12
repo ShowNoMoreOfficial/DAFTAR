@@ -366,7 +366,10 @@ function StudioTab() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Recommendation failed");
+        const errMsg = typeof data.error === "string"
+          ? data.error
+          : data.error?.message || "Recommendation failed";
+        throw new Error(errMsg);
       }
 
       const data = await res.json();
@@ -432,7 +435,12 @@ function StudioTab() {
         setGenItems((prev) => prev.map((g, i) => i === idx ? { ...g, status: "writing" as const } : g));
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Generation failed");
+        if (!res.ok) {
+          const errMsg = typeof data.error === "string"
+            ? data.error
+            : data.error?.message || "Generation failed";
+          throw new Error(errMsg);
+        }
 
         setGenItems((prev) => prev.map((g, i) => i === idx ? { ...g, status: "done" as const, deliverableId: data.deliverableId } : g));
       } catch (err) {

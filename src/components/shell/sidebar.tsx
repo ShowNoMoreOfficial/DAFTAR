@@ -53,6 +53,7 @@ import {
   Package,
   Tag,
   Image,
+  FileCheck,
   ChevronDown,
   ChevronRight,
   Radar,
@@ -105,6 +106,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeW
   Archive,
   Link: Link2,
   Search,
+  FileCheck,
 };
 
 const ROLE_LABELS: Record<Role, string> = {
