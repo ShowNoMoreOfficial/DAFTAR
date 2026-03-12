@@ -137,6 +137,9 @@ async function buildDashboardResponse(
     }
   }
 
+  // Build brand name lookup from the brands array
+  const brandNameMap = new Map(brands.map((b) => [b.id, b.name]));
+
   return NextResponse.json({
     brands: brands.map((b) => ({
       id: b.id,
@@ -150,8 +153,8 @@ async function buildDashboardResponse(
       title: d.title,
       type: d.type,
       status: d.status,
-      brandName: d.brand.name,
-      brandId: d.brand.id,
+      brandName: brandNameMap.get(d.brandId) ?? "Unknown",
+      brandId: d.brandId,
       createdAt: d.createdAt,
     })),
     recentContent: recentContent.map((p) => ({
