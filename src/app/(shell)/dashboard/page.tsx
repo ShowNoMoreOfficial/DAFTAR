@@ -7,6 +7,7 @@ import { KPICards } from "@/components/dashboard/kpi-cards";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { UpcomingDeadlines } from "@/components/dashboard/upcoming-deadlines";
 import { QuickNav } from "@/components/dashboard/quick-nav";
+import { EditorialBrief } from "@/components/dashboard/editorial-brief";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -33,6 +34,9 @@ export default async function DashboardPage() {
 
       {/* Content Pipeline mini-bar */}
       <PipelineMiniBar />
+
+      {/* Daily Editorial Brief */}
+      <EditorialBrief />
 
       {/* KPI Cards */}
       <KPICards role={role} />

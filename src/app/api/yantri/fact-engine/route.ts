@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getAuthSession } from "@/lib/api-utils";
 import { routeToModel } from "@/lib/yantri/model-router";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface FactEnginePostBody {
-  treeId: string;
+  treeId?: string;
+  signalId?: string;
   forceRefresh?: boolean;
 }
 
@@ -161,18 +163,80 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { treeId, forceRefresh } = body;
+    const { treeId, signalId, forceRefresh } = body;
 
-    if (!treeId || typeof treeId !== "string") {
+    if (!treeId && !signalId) {
       return NextResponse.json(
-        { error: "treeId is required and must be a string" },
+        { error: "Either treeId or signalId is required" },
         { status: 400 }
       );
     }
 
+    // Resolve treeId — if signalId provided, find or create a NarrativeTree
+    let resolvedTreeId = treeId;
+
+    if (signalId && !resolvedTreeId) {
+      const session = await getAuthSession();
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const signal = await prisma.signal.findUnique({
+        where: { id: signalId },
+        include: { trend: { select: { id: true, name: true, lifecycle: true } } },
+      });
+
+      if (!signal) {
+        return NextResponse.json(
+          { error: `Signal not found: ${signalId}` },
+          { status: 404 }
+        );
+      }
+
+      // Find existing tree for this signal or create one
+      let existingTree = await prisma.narrativeTree.findFirst({
+        where: { signalId },
+      });
+
+      if (!existingTree) {
+        existingTree = await prisma.narrativeTree.create({
+          data: {
+            title: signal.title,
+            summary: signal.content?.slice(0, 500) || null,
+            signalId: signal.id,
+            trendId: signal.trendId,
+            signalData: {
+              source: signal.source,
+              eventType: signal.eventType,
+              stakeholders: signal.stakeholders,
+              sentiment: signal.sentiment,
+            },
+            urgency: "normal",
+            status: "INCOMING",
+            createdById: session.user.id,
+            nodes: {
+              create: {
+                signalTitle: signal.title.slice(0, 150),
+                signalScore: 50,
+                signalData: {
+                  source: signal.source,
+                  content: signal.content,
+                  stakeholders: signal.stakeholders,
+                  eventMarkers: signal.eventMarkers,
+                  signalId: signal.id,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      resolvedTreeId = existingTree.id;
+    }
+
     // Fetch the NarrativeTree with nodes and existing dossier
     const tree = await prisma.narrativeTree.findUnique({
-      where: { id: treeId },
+      where: { id: resolvedTreeId! },
       include: {
         nodes: {
           orderBy: { signalScore: "desc" },
@@ -183,7 +247,7 @@ export async function POST(request: NextRequest) {
 
     if (!tree) {
       return NextResponse.json(
-        { error: `NarrativeTree not found: ${treeId}` },
+        { error: `NarrativeTree not found: ${resolvedTreeId}` },
         { status: 404 }
       );
     }
@@ -255,9 +319,9 @@ export async function POST(request: NextRequest) {
     // Step 3: Store dossier (upsert — create or update)
     const structuredJson = structured as unknown as Prisma.InputJsonValue;
     const dossier = await prisma.factDossier.upsert({
-      where: { treeId },
+      where: { treeId: resolvedTreeId! },
       create: {
-        treeId,
+        treeId: resolvedTreeId!,
         structuredData: structuredJson,
         sources: allSources,
         visualAssets: [],
@@ -273,7 +337,7 @@ export async function POST(request: NextRequest) {
     // Step 4: Send Inngest event for deeper async synthesis (non-blocking)
     yantriInngest.send({
       name: "yantri/dossier.build",
-      data: { treeId },
+      data: { treeId: resolvedTreeId! },
     }).catch((err) => {
       console.warn("[fact-engine] Inngest event send failed (non-critical):", err instanceof Error ? err.message : err);
     });

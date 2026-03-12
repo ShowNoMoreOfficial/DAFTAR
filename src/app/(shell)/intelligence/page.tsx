@@ -187,6 +187,27 @@ function SignalsTab() {
   const [sourceFilter, setSourceFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [researchingId, setResearchingId] = useState<string | null>(null);
+
+  const handleResearchSignal = async (signalId: string, signalTitle: string) => {
+    setResearchingId(signalId);
+    try {
+      const res = await fetch("/api/yantri/fact-engine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signalId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Research failed");
+      }
+      setToast({ message: `Research complete: "${signalTitle}"`, type: "success" });
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : "Research failed", type: "error" });
+    } finally {
+      setResearchingId(null);
+    }
+  };
 
   const fetchSignals = useCallback(async () => {
     setLoading(true);
@@ -325,9 +346,18 @@ function SignalsTab() {
                           variant="ghost"
                           size="sm"
                           className="h-7 gap-1 text-[10px] text-teal-600 hover:text-teal-700 hover:bg-teal-600/5"
-                          onClick={(e) => { e.stopPropagation(); router.push(`/content-studio?topic=${encodeURIComponent(signal.title)}&auto=true`); }}
+                          onClick={(e) => { e.stopPropagation(); router.push(`/content-studio?topic=${encodeURIComponent(signal.title)}&signalId=${signal.id}&auto=true`); }}
                         >
                           <Sparkles className="h-3 w-3" /> Create Content
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 text-[10px] text-blue-600 hover:text-blue-700 hover:bg-blue-600/5"
+                          disabled={researchingId === signal.id}
+                          onClick={(e) => { e.stopPropagation(); handleResearchSignal(signal.id, signal.title); }}
+                        >
+                          {researchingId === signal.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitBranch className="h-3 w-3" />} Research
                         </Button>
                         {(signal.sourceUrl || signal.url) && (
                           <a
@@ -399,6 +429,15 @@ function SignalsTab() {
 
 // ─── TRENDS TAB ───
 
+interface TrendSignalItem {
+  id: string;
+  title: string;
+  source: string;
+  sentiment: string | null;
+  eventType: string | null;
+  detectedAt: string;
+}
+
 function TrendsTab() {
   const router = useRouter();
   const [trends, setTrends] = useState<KhabriTrend[]>([]);
@@ -406,6 +445,28 @@ function TrendsTab() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedTrendId, setExpandedTrendId] = useState<string | null>(null);
+  const [trendSignals, setTrendSignals] = useState<Record<string, TrendSignalItem[]>>({});
+  const [loadingSignals, setLoadingSignals] = useState<string | null>(null);
+
+  const handleExpandTrend = async (trendId: string) => {
+    if (expandedTrendId === trendId) {
+      setExpandedTrendId(null);
+      return;
+    }
+    setExpandedTrendId(trendId);
+    if (trendSignals[trendId]) return; // already loaded
+
+    setLoadingSignals(trendId);
+    try {
+      const res = await fetch(`/api/khabri/trends/${trendId}/signals?limit=10`);
+      if (res.ok) {
+        const data = await res.json();
+        setTrendSignals((prev) => ({ ...prev, [trendId]: data.data || [] }));
+      }
+    } catch { /* silent */ }
+    setLoadingSignals(null);
+  };
 
   const fetchTrends = useCallback(async () => {
     setLoading(true);
@@ -486,7 +547,45 @@ function TrendsTab() {
                   >
                     <Sparkles className="h-3 w-3" /> Create Content
                   </Button>
+                  {signalCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-[10px] text-blue-600 hover:text-blue-700 hover:bg-blue-600/5"
+                      onClick={() => handleExpandTrend(trend.id)}
+                    >
+                      {expandedTrendId === trend.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      View Signals
+                    </Button>
+                  )}
                 </div>
+
+                {expandedTrendId === trend.id && (
+                  <div className="mt-3 border-t border-[var(--border-subtle)] pt-3 space-y-2">
+                    {loadingSignals === trend.id ? (
+                      <div className="flex justify-center py-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-[var(--accent-primary)]" />
+                      </div>
+                    ) : (trendSignals[trend.id] || []).length === 0 ? (
+                      <p className="text-xs text-[var(--text-muted)]">No signals found</p>
+                    ) : (
+                      (trendSignals[trend.id] || []).map((sig) => (
+                        <div
+                          key={sig.id}
+                          className="flex items-center gap-2 text-xs rounded-lg px-2 py-1.5 hover:bg-[var(--bg-elevated)] cursor-pointer"
+                          onClick={() => router.push(`/content-studio?topic=${encodeURIComponent(sig.title)}&signalId=${sig.id}&auto=true`)}
+                        >
+                          <Radio className="h-3 w-3 text-[var(--text-muted)] shrink-0" />
+                          <span className="text-[var(--text-primary)] flex-1 truncate">{sig.title}</span>
+                          <span className="text-[var(--text-muted)] shrink-0">{sig.source}</span>
+                          {sig.sentiment && (
+                            <Badge variant="outline" className="text-[9px]">{sig.sentiment}</Badge>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

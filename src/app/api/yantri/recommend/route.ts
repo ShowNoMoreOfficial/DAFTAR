@@ -93,6 +93,20 @@ export async function POST(request: Request) {
       return badRequest("topic is required (min 3 chars)");
     }
 
+    // Optional signal metadata for enriched recommendations
+    const signalMetadata = body?.signalMetadata as {
+      signalId?: string;
+      content?: string;
+      source?: string;
+      sourceCredibility?: number;
+      eventType?: string;
+      stakeholders?: unknown;
+      sentiment?: string;
+      trendName?: string;
+      trendLifecycle?: string;
+      trendVelocity?: number;
+    } | undefined;
+
     const userId = session.user.id;
     const userRole = session.user.role;
     const accessibleBrandIds: string[] = session.user.accessibleBrandIds ?? [];
@@ -345,9 +359,23 @@ ${
     : "No active trends."
 }`;
 
+    const signalContext = signalMetadata
+      ? `
+SIGNAL INTELLIGENCE (verified data from Intelligence system):
+- Source: ${signalMetadata.source || "unknown"} (credibility: ${signalMetadata.sourceCredibility ?? "N/A"})
+- Event type: ${signalMetadata.eventType || "N/A"}
+- Sentiment: ${signalMetadata.sentiment || "N/A"}
+- Trend: ${signalMetadata.trendName || "N/A"} (${signalMetadata.trendLifecycle || "unknown"}, velocity: ${signalMetadata.trendVelocity ?? "N/A"})
+- Stakeholders: ${signalMetadata.stakeholders ? JSON.stringify(signalMetadata.stakeholders) : "N/A"}
+- Additional context: ${signalMetadata.content?.slice(0, 1000) || "N/A"}
+
+USE this verified intelligence to make MORE PRECISE recommendations. The signal data gives you confirmed facts about the topic.
+`
+      : "";
+
     const userPrompt = `A new topic has arrived:
 "${topic.trim()}"
-
+${signalContext}
 Research findings:
 ${researchSummary.slice(0, 6000)}
 
