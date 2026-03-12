@@ -20,6 +20,10 @@ import {
   cinematicPipeline,
   reelPipeline,
 } from "@/lib/yantri/inngest/deliverable-pipelines";
+import {
+  performanceTrackingStart,
+  performanceMeasure,
+} from "@/lib/yantri/inngest/performance-loop";
 
 // Serve the Inngest API at /api/inngest
 // This endpoint handles:
@@ -43,5 +47,8 @@ export const { GET, POST, PUT } = serve({
     carouselPipeline,
     cinematicPipeline,
     reelPipeline,
+    // Performance feedback loop
+    performanceTrackingStart,
+    performanceMeasure,
   ],
 });

@@ -325,7 +325,7 @@ function SignalsTab() {
                           variant="ghost"
                           size="sm"
                           className="h-7 gap-1 text-[10px] text-teal-600 hover:text-teal-700 hover:bg-teal-600/5"
-                          onClick={(e) => { e.stopPropagation(); router.push(`/content-studio?topic=${encodeURIComponent(signal.title)}`); }}
+                          onClick={(e) => { e.stopPropagation(); router.push(`/content-studio?topic=${encodeURIComponent(signal.title)}&auto=true`); }}
                         >
                           <Sparkles className="h-3 w-3" /> Create Content
                         </Button>
@@ -482,7 +482,7 @@ function TrendsTab() {
                     variant="ghost"
                     size="sm"
                     className="h-7 gap-1 text-[10px] text-teal-600 hover:text-teal-700 hover:bg-teal-600/5"
-                    onClick={() => router.push(`/content-studio?topic=${encodeURIComponent(trend.topic || "")}`)}
+                    onClick={() => router.push(`/content-studio?topic=${encodeURIComponent(trend.topic || "")}&auto=true`)}
                   >
                     <Sparkles className="h-3 w-3" /> Create Content
                   </Button>

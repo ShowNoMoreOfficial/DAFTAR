@@ -106,6 +106,26 @@ export async function PATCH(
     return NextResponse.json(updated);
   }
 
+  if (action === "publish") {
+    const updated = await prisma.deliverable.update({
+      where: { id },
+      data: { status: "PUBLISHED" },
+      include: { brand: { select: { id: true, name: true } } },
+    });
+
+    // Trigger performance feedback loop
+    await yantriInngest.send({
+      name: "yantri/deliverable.published",
+      data: {
+        deliverableId: id,
+        brandId: updated.brandId,
+        platform: updated.platform,
+      },
+    });
+
+    return NextResponse.json(updated);
+  }
+
   if (action === "kill") {
     const updated = await prisma.deliverable.update({
       where: { id },
@@ -164,6 +184,20 @@ export async function PATCH(
     where: { id },
     data: updateData,
   });
+
+  // If status changed to PUBLISHED via generic update, also trigger tracking
+  if (status === "PUBLISHED") {
+    yantriInngest.send({
+      name: "yantri/deliverable.published",
+      data: {
+        deliverableId: id,
+        brandId: deliverable.brandId,
+        platform: deliverable.platform,
+      },
+    }).catch((err: unknown) =>
+      console.error("[deliverable] Failed to emit publish event:", err)
+    );
+  }
 
   return NextResponse.json(updated);
 }

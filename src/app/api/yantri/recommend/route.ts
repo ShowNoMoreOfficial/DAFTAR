@@ -132,6 +132,10 @@ Return your findings as a well-structured report.`
       evergreenVsTimelySkill,
       competitiveNarrativeSkill,
       contrarianAngleSkill,
+      // Performance feedback skills
+      contentBenchmarkingSkill,
+      performanceAttributionSkill,
+      sentimentFeedbackSkill,
     ] = await Promise.all([
       loadSkillSafe(orchestrator, "narrative/editorial/topic-selection.md"),
       loadSkillSafe(orchestrator, "narrative/editorial/angle-detection.md"),
@@ -141,6 +145,10 @@ Return your findings as a well-structured report.`
       loadSkillSafe(orchestrator, "distribution/evergreen-vs-timely.md"),
       loadSkillSafe(orchestrator, "narrative/editorial/competitive-narrative-analysis.md"),
       loadSkillSafe(orchestrator, "narrative/editorial/contrarian-angle-detection.md"),
+      // Performance feedback skills
+      loadSkillSafe(orchestrator, "analytics/performance/content-benchmarking.md"),
+      loadSkillSafe(orchestrator, "analytics/performance/performance-attribution.md"),
+      loadSkillSafe(orchestrator, "analytics/feedback/sentiment-feedback-loop.md"),
     ]);
 
     // ──────────────────────────────────────────────────────
@@ -184,7 +192,7 @@ Return your findings as a well-structured report.`
     // ──────────────────────────────────────────────────────
     // 4. GET PERFORMANCE HISTORY
     // ──────────────────────────────────────────────────────
-    const [pastDeliverables, performanceData] = await Promise.all([
+    const [pastDeliverables, performanceData, skillLearningLogs] = await Promise.all([
       prisma.deliverable.findMany({
         where: { brandId: { in: brandIds } },
         include: { tree: { select: { title: true } } },
@@ -195,6 +203,14 @@ Return your findings as a well-structured report.`
         where: { brandId: { in: brandIds } },
         orderBy: { lastUpdated: "desc" },
         take: 20,
+      }),
+      prisma.skillLearningLog.findMany({
+        where: {
+          source: "auto",
+          periodEnd: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+        },
+        orderBy: { periodEnd: "desc" },
+        take: 30,
       }),
     ]);
 
@@ -232,6 +248,11 @@ ${skillSection("EVERGREEN vs TIMELY CLASSIFICATION", evergreenVsTimelySkill)}
 ${skillSection("COMPETITIVE NARRATIVE ANALYSIS", competitiveNarrativeSkill)}
 ${skillSection("CONTRARIAN ANGLE DETECTION", contrarianAngleSkill)}
 
+## PERFORMANCE ANALYTICS FRAMEWORK
+${skillSection("CONTENT BENCHMARKING", contentBenchmarkingSkill)}
+${skillSection("PERFORMANCE ATTRIBUTION", performanceAttributionSkill)}
+${skillSection("SENTIMENT FEEDBACK LOOP", sentimentFeedbackSkill)}
+
 ## CONTENT TYPE KNOWLEDGE
 Available types: youtube_explainer, youtube_short, x_thread, x_single, instagram_carousel, instagram_reel, linkedin_post, linkedin_article, blog_post, newsletter, podcast_script, quick_take, community_post
 
@@ -265,10 +286,24 @@ ${
     ? `${performanceData
         .map(
           (p) =>
-            `- ${p.platform} | tier: ${p.performanceTier || "unknown"} | delta: ${p.benchmarkDelta != null ? `${p.benchmarkDelta > 0 ? "+" : ""}${p.benchmarkDelta}%` : "N/A"} | angle: ${p.narrativeAngle || "N/A"} | hook: ${p.hookType || "N/A"}`
+            `- ${p.platform} | tier: ${p.performanceTier || "unknown"} | delta: ${p.benchmarkDelta != null ? `${p.benchmarkDelta > 0 ? "+" : ""}${p.benchmarkDelta}%` : "N/A"} | angle: ${p.narrativeAngle || "N/A"} | hook: ${p.hookType || "N/A"} | skills: ${p.skillsUsed?.join(", ") || "N/A"}`
         )
         .join("\n")}`
     : "No performance data yet — recommend based on editorial judgment."
+}
+
+## SKILL LEARNING INSIGHTS (last 30 days)
+${
+  skillLearningLogs.length > 0
+    ? skillLearningLogs
+        .slice(0, 15)
+        .map((log) => {
+          const entry = log.entry as Record<string, unknown> | null;
+          const summary = entry?.summary || entry?.insight || entry?.observation || "N/A";
+          return `- [${log.skillId}] ${String(summary).slice(0, 200)}`;
+        })
+        .join("\n")
+    : "No skill learning data yet — system will learn from published content performance."
 }
 
 ## RECENT CONTENT (avoid duplication)
@@ -409,6 +444,10 @@ IMPORTANT:
       evergreenVsTimelySkill && "distribution/evergreen-vs-timely.md",
       competitiveNarrativeSkill && "narrative/editorial/competitive-narrative-analysis.md",
       contrarianAngleSkill && "narrative/editorial/contrarian-angle-detection.md",
+      // Performance skills
+      contentBenchmarkingSkill && "analytics/performance/content-benchmarking.md",
+      performanceAttributionSkill && "analytics/performance/performance-attribution.md",
+      sentimentFeedbackSkill && "analytics/feedback/sentiment-feedback-loop.md",
     ].filter(Boolean) as string[];
 
     // Fire-and-forget skill execution logging
