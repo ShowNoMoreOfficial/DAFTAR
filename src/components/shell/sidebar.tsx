@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
 import { useSidebarStore } from "@/store/sidebar-store";
 import { getSidebarSectionsForRole } from "@/lib/sidebar-config";
 import type { SidebarSection } from "@/lib/sidebar-config";
@@ -120,7 +121,7 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
   const pathname = usePathname();
   const { isCollapsed, isMobileOpen, toggleSidebar, setMobileOpen } =
     useSidebarStore();
-  const sections = getSidebarSectionsForRole(user.role);
+  const sections = useMemo(() => getSidebarSectionsForRole(user.role), [user.role]);
 
   // Track which sections are collapsed
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -129,6 +130,7 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
 
   // Auto-expand item whose child is active
   useEffect(() => {
+    const toExpand: string[] = [];
     for (const section of sections) {
       for (const item of section.items) {
         if (item.children) {
@@ -136,10 +138,19 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
             (c) => pathname === c.href || pathname.startsWith(c.href + "/")
           );
           if (childActive) {
-            setExpandedItems((prev) => new Set([...prev, item.id]));
+            toExpand.push(item.id);
           }
         }
       }
+    }
+    if (toExpand.length > 0) {
+      setExpandedItems((prev) => {
+        const allPresent = toExpand.every((id) => prev.has(id));
+        if (allPresent) return prev; // no change — skip re-render
+        const next = new Set(prev);
+        toExpand.forEach((id) => next.add(id));
+        return next;
+      });
     }
   }, [pathname, sections]);
 
