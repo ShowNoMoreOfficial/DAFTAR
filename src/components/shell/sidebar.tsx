@@ -55,6 +55,11 @@ import {
   Image,
   ChevronDown,
   ChevronRight,
+  Radar,
+  PenTool,
+  Archive,
+  Link2,
+  Search,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 
@@ -95,6 +100,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeW
   Package,
   Tag,
   Image,
+  Radar,
+  PenTool,
+  Archive,
+  Link: Link2,
+  Search,
 };
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -383,7 +393,6 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
           <ul className="space-y-0.5">
             {[
               { icon: Settings, label: "Settings", href: "/settings" },
-              { icon: HelpCircle, label: "Help", href: "/help" },
             ].map((item) => (
               <li key={item.label}>
                 <Link

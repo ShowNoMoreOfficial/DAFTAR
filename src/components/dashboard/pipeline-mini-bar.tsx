@@ -54,10 +54,10 @@ export function PipelineMiniBar() {
           Content Pipeline
         </h3>
         <Link
-          href="/m/yantri/workspace"
+          href="/content-studio"
           className="flex items-center gap-1 text-[10px] font-medium text-[var(--accent-primary)] hover:underline"
         >
-          Open Workspace
+          Open Studio
           <ArrowRight className="h-3 w-3" />
         </Link>
       </div>

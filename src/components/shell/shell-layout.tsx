@@ -16,6 +16,8 @@ import type { Role } from "@prisma/client";
 // Map top-level path segments to GI module names
 const PATH_TO_MODULE: Record<string, string> = {
   dashboard: "daftar",
+  intelligence: "intelligence",
+  "content-studio": "content",
   tasks: "pms",
   pms: "pms",
   relay: "relay",
@@ -24,6 +26,7 @@ const PATH_TO_MODULE: Record<string, string> = {
   communication: "communication",
   brands: "client-portal",
   admin: "admin",
+  settings: "admin",
   calendar: "calendar",
   leaderboard: "gamification",
   credibility: "gamification",

@@ -84,7 +84,7 @@ export function PriorityActions() {
                 title: `${insight.value} pending review${insight.value !== 1 ? "s" : ""}`,
                 subtitle: "Content waiting for your approval",
                 actionLabel: "Review Now",
-                actionUrl: "/m/yantri/workspace",
+                actionUrl: "/content-studio",
                 severity: "warning",
               });
             }
@@ -95,7 +95,7 @@ export function PriorityActions() {
                 title: `${insight.value} new signal${insight.value !== 1 ? "s" : ""} waiting`,
                 subtitle: "Topics ready for the content pipeline",
                 actionLabel: "Open Signals",
-                actionUrl: "/m/khabri/signals",
+                actionUrl: "/intelligence",
                 severity: "info",
               });
             }
