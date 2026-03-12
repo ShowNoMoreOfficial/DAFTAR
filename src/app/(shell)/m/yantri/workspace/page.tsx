@@ -43,6 +43,7 @@ interface Deliverable {
 const PIPELINE_COLUMNS = [
   { id: "PLANNED", label: "Queued", icon: Radio, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
   { id: "RESEARCHING", label: "Researching", icon: Search, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+  { id: "DRAFTED", label: "Revision", icon: Brain, color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/20" },
   { id: "REVIEW", label: "Review", icon: Eye, color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
   { id: "APPROVED", label: "Approved", icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
   { id: "RELAYED", label: "Publishing", icon: Send, color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20" },

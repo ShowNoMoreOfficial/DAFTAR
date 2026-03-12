@@ -32,7 +32,7 @@ export async function callGemini(
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const result = await genAI.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-2.0-flash",
         contents: userMessage,
         config: {
           systemInstruction: systemPrompt,
@@ -103,7 +103,7 @@ export async function callGeminiResearch(
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const result = await genAI.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-2.0-flash",
         contents: contents as string,
         config: {
           systemInstruction: systemPrompt,

@@ -114,6 +114,23 @@ export async function PATCH(
     return NextResponse.json(updated);
   }
 
+  if (action === "revision") {
+    const { revisionNotes } = body as { revisionNotes?: string };
+    const existingPlan = (deliverable.postingPlan as Record<string, unknown>) ?? {};
+    const updated = await prisma.deliverable.update({
+      where: { id },
+      data: {
+        status: "DRAFTED",
+        postingPlan: {
+          ...existingPlan,
+          revisionNotes: revisionNotes ?? "",
+          revisionRequestedAt: new Date().toISOString(),
+        },
+      },
+    });
+    return NextResponse.json(updated);
+  }
+
   if (action === "retrigger") {
     const eventMap: Record<string, string> = {
       viral_micro: "yantri/deliverable.viral-micro",

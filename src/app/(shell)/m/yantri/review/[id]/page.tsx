@@ -88,6 +88,7 @@ const STATUS_STYLES: Record<string, { label: string; color: string; bg: string }
   DRAFTED: { label: "Draft", color: "text-purple-400", bg: "bg-purple-500/10" },
   APPROVED: { label: "Approved", color: "text-emerald-400", bg: "bg-emerald-500/10" },
   KILLED: { label: "Killed", color: "text-red-400", bg: "bg-red-500/10" },
+  REVISION_REQUESTED: { label: "Revision Requested", color: "text-amber-400", bg: "bg-amber-500/10" },
 };
 
 const SECTION_ICONS: Record<string, string> = {
@@ -113,6 +114,8 @@ export default function DeliverableReviewPage() {
   const [error, setError] = useState("");
   const [selectedTitle, setSelectedTitle] = useState(0);
   const [copied, setCopied] = useState("");
+  const [showRevisionBox, setShowRevisionBox] = useState(false);
+  const [revisionNotes, setRevisionNotes] = useState("");
 
   const fetchDeliverable = useCallback(async () => {
     try {
@@ -131,19 +134,26 @@ export default function DeliverableReviewPage() {
     fetchDeliverable();
   }, [fetchDeliverable]);
 
-  const handleAction = async (action: "approve" | "kill") => {
+  const handleAction = async (action: "approve" | "kill" | "revision") => {
     setActing(true);
     try {
+      const body: Record<string, unknown> = { action };
+      if (action === "revision" && revisionNotes.trim()) {
+        body.revisionNotes = revisionNotes.trim();
+      }
       const res = await fetch(`/api/yantri/deliverables/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Action failed");
       await fetchDeliverable();
       if (action === "approve") {
-        // Brief delay then navigate back
         setTimeout(() => router.push("/m/yantri/workspace"), 1000);
+      }
+      if (action === "revision") {
+        setShowRevisionBox(false);
+        setRevisionNotes("");
       }
     } catch {
       setError("Action failed");
@@ -190,7 +200,7 @@ export default function DeliverableReviewPage() {
   const thumbnailBriefs = structured.thumbnailBriefs ?? [];
   const statusInfo = STATUS_STYLES[deliverable.status] ?? STATUS_STYLES.REVIEW;
 
-  const isReviewable = deliverable.status === "REVIEW" || deliverable.status === "DRAFTED";
+  const isReviewable = deliverable.status === "REVIEW" || deliverable.status === "DRAFTED" || deliverable.status === "REVISION_REQUESTED";
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
@@ -235,7 +245,15 @@ export default function DeliverableReviewPage() {
               onClick={() => handleAction("kill")}
             >
               <XCircle className="h-4 w-4 mr-2" />
-              Kill
+              Reject
+            </Button>
+            <Button
+              variant="outline"
+              className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+              disabled={acting}
+              onClick={() => setShowRevisionBox(!showRevisionBox)}
+            >
+              Request Revision
             </Button>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -258,6 +276,40 @@ export default function DeliverableReviewPage() {
           </Badge>
         )}
       </div>
+
+      {/* ─── Revision Notes Box ─── */}
+      {showRevisionBox && (
+        <Card className="mb-4 border-amber-500/30 bg-amber-500/5">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm font-medium text-amber-400">Revision Notes</p>
+            <textarea
+              value={revisionNotes}
+              onChange={(e) => setRevisionNotes(e.target.value)}
+              placeholder="Describe what needs to change..."
+              rows={3}
+              className="w-full rounded-lg border border-amber-500/20 bg-[var(--bg-deep)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-amber-400"
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+                disabled={acting || !revisionNotes.trim()}
+                onClick={() => handleAction("revision")}
+              >
+                Submit Revision Request
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowRevisionBox(false)}
+                className="text-[var(--text-muted)]"
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ─── Title Options ─── */}
       {titles.length > 0 && (
@@ -549,7 +601,15 @@ export default function DeliverableReviewPage() {
                 onClick={() => handleAction("kill")}
               >
                 <XCircle className="h-4 w-4 mr-2" />
-                Kill
+                Reject
+              </Button>
+              <Button
+                variant="outline"
+                className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                disabled={acting}
+                onClick={() => setShowRevisionBox(!showRevisionBox)}
+              >
+                Request Revision
               </Button>
               <Button
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-6"

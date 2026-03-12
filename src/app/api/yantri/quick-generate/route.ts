@@ -146,7 +146,7 @@ Return your findings as a well-structured report.`;
         pipelineType: config.pipelineType,
         status: "REVIEW",
         copyMarkdown: buildCopyMarkdown(parsed, contentType),
-        scriptData: contentType === "youtube_explainer" || contentType === "quick_take" ? parsed : undefined,
+        scriptData: contentType === "youtube_explainer" || contentType === "quick_take" || contentType === "x_thread" ? parsed : undefined,
         carouselData: contentType === "carousel" ? parsed : undefined,
         postingPlan: parsed.tags
           ? { tags: parsed.tags, description: parsed.description }
