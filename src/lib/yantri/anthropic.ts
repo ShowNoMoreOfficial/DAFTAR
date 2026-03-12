@@ -11,7 +11,7 @@ const anthropic =
 if (process.env.NODE_ENV !== "production")
   globalForAnthropic.anthropicClient = anthropic;
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1000;
 
 async function sleep(ms: number) {
@@ -21,6 +21,8 @@ async function sleep(ms: number) {
 export interface CallClaudeOptions {
   maxTokens?: number;
   temperature?: number;
+  /** Per-attempt timeout in ms (default: 30000) */
+  timeoutMs?: number;
 }
 
 export async function callClaude(
@@ -29,16 +31,25 @@ export async function callClaude(
   options?: CallClaudeOptions
 ): Promise<{ parsed: unknown; raw: string }> {
   let lastError: Error | null = null;
+  const timeoutMs = options?.timeoutMs ?? 30000;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const response = await anthropic.messages.create({
+      const apiCall = anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
         max_tokens: options?.maxTokens ?? 8192,
         temperature: options?.temperature ?? 0.3,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }],
       });
+
+      // Race against timeout
+      const response = await Promise.race([
+        apiCall,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Claude API timeout after ${timeoutMs}ms`)), timeoutMs)
+        ),
+      ]);
 
       const textBlock = response.content.find((b) => b.type === "text");
       const rawText = textBlock?.text ?? "";
@@ -65,6 +76,7 @@ export async function callClaude(
       }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`[callClaude] Attempt ${attempt + 1}/${MAX_RETRIES} failed:`, lastError.message);
 
       const message = lastError.message.toLowerCase();
       if (
