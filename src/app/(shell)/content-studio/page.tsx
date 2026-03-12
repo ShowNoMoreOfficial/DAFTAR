@@ -533,15 +533,19 @@ function StudioTab() {
               <Brain className="h-4 w-4 mr-2" /> Get Recommendations
             </Button>
           </div>
-          {signalId && signalData && (
-            <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
-              <Radio className="h-3 w-3 shrink-0" />
-              <span>Signal intelligence attached: <strong>{String(signalData.source || "unknown")}</strong> ({String(signalData.eventType || "general")})</span>
-              {(signalData.trend as { name?: string } | null)?.name && (
-                <span>&middot; Trend: {(signalData.trend as { name: string }).name}</span>
-              )}
-            </div>
-          )}
+          {signalId && signalData && (() => {
+            const src = typeof signalData.source === "string" ? signalData.source : "unknown";
+            const evt = typeof signalData.eventType === "string" ? signalData.eventType : "general";
+            const trend = signalData.trend && typeof signalData.trend === "object" ? signalData.trend as Record<string, unknown> : null;
+            const trendName = trend && typeof trend.name === "string" ? trend.name : null;
+            return (
+              <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
+                <Radio className="h-3 w-3 shrink-0" />
+                <span>Signal intelligence attached: <strong>{src}</strong> ({evt})</span>
+                {trendName && <span>&middot; Trend: {trendName}</span>}
+              </div>
+            );
+          })()}
           {recError && (
             <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">{recError}</div>
           )}
