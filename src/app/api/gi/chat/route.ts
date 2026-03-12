@@ -87,13 +87,13 @@ export async function POST(req: NextRequest) {
 
         // Tool use loop — Claude may call tools and we respond with results
         while (toolRounds < MAX_TOOL_ROUNDS) {
-          const response = await anthropic.messages.create({
+          const response = await anthropic.messages.stream({
             model: "claude-sonnet-4-20250514",
             max_tokens: 2000,
             system: systemPrompt,
             messages,
             tools: GI_TOOLS,
-          });
+          }).finalMessage();
 
           // Process response content blocks
           const toolUseBlocks: Anthropic.ContentBlockParam[] = [];

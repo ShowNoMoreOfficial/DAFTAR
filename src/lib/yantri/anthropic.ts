@@ -35,7 +35,7 @@ export async function callClaude(
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const apiCall = anthropic.messages.create({
+      const streamCall = anthropic.messages.stream({
         model: "claude-sonnet-4-20250514",
         max_tokens: options?.maxTokens ?? 8192,
         temperature: options?.temperature ?? 0.3,
@@ -45,7 +45,7 @@ export async function callClaude(
 
       // Race against timeout
       const response = await Promise.race([
-        apiCall,
+        streamCall.finalMessage(),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error(`Claude API timeout after ${timeoutMs}ms`)), timeoutMs)
         ),
