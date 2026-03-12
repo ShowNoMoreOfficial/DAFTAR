@@ -84,14 +84,24 @@ function parsePlatforms(
 
 export async function POST(request: Request) {
   try {
+    // ── Step 0: Auth ──
     const session = await getAuthSession();
     if (!session) return unauthorized();
+    console.log("[recommend] Step 0 PASS: auth, user =", session.user.id, "role =", session.user.role);
 
-    const body = await request.json();
+    // ── Step 1: Parse input ──
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch (e) {
+      console.error("[recommend] Step 1 FAIL: body parse", e);
+      return badRequest("Invalid request body");
+    }
     const topic = body?.topic;
-    if (!topic || typeof topic !== "string" || topic.trim().length < 3) {
+    if (!topic || typeof topic !== "string" || (topic as string).trim().length < 3) {
       return badRequest("topic is required (min 3 chars)");
     }
+    console.log("[recommend] Step 1 PASS: topic =", (topic as string).trim().slice(0, 80));
 
     // Optional signal metadata for enriched recommendations
     const signalMetadata = body?.signalMetadata as {
@@ -111,15 +121,13 @@ export async function POST(request: Request) {
     const userRole = session.user.role;
     const accessibleBrandIds: string[] = session.user.accessibleBrandIds ?? [];
 
-    // ──────────────────────────────────────────────────────
-    // 1. RESEARCH the topic (Gemini with web grounding)
-    // ──────────────────────────────────────────────────────
+    // ── Step 2: Research (Gemini) ──
     let researchSummary = "";
     try {
       researchSummary = await callGeminiResearch(
         "You are a thorough research analyst. Provide factual, well-sourced research.",
         `You are a senior political and economic research analyst.
-Research this topic thoroughly: "${topic.trim()}"
+Research this topic thoroughly: "${(topic as string).trim()}"
 
 Provide a comprehensive research dossier including:
 - Key facts and verified data points
@@ -133,58 +141,81 @@ Provide a comprehensive research dossier including:
 Be thorough, factual, and cite sources where possible.
 Return your findings as a well-structured report.`
       );
+      console.log("[recommend] Step 2 PASS: research length =", researchSummary?.length);
     } catch (geminiErr) {
-      console.error("[recommend] Gemini research failed, continuing without:", geminiErr);
-      researchSummary = `Topic: ${topic.trim()} (research unavailable — proceeding with editorial judgment)`;
+      console.error("[recommend] Step 2 FAIL: Gemini research", geminiErr);
+      researchSummary = `Topic: ${(topic as string).trim()} (research unavailable — proceeding with editorial judgment)`;
     }
 
-    // ──────────────────────────────────────────────────────
-    // 2. LOAD EDITORIAL DECISION SKILLS
-    // ──────────────────────────────────────────────────────
+    // ── Step 3: Load skills ──
     const orchestrator = new SkillOrchestrator();
+    let topicSelectionSkill: SkillFile | null = null;
+    let angleDetectionSkill: SkillFile | null = null;
+    let sensitivitySkill: SkillFile | null = null;
+    let timelinessSkill: SkillFile | null = null;
+    let platformFirstSkill: SkillFile | null = null;
+    let evergreenVsTimelySkill: SkillFile | null = null;
+    let competitiveNarrativeSkill: SkillFile | null = null;
+    let contrarianAngleSkill: SkillFile | null = null;
+    let contentBenchmarkingSkill: SkillFile | null = null;
+    let performanceAttributionSkill: SkillFile | null = null;
+    let sentimentFeedbackSkill: SkillFile | null = null;
 
-    const [
-      topicSelectionSkill,
-      angleDetectionSkill,
-      sensitivitySkill,
-      timelinessSkill,
-      platformFirstSkill,
-      evergreenVsTimelySkill,
-      competitiveNarrativeSkill,
-      contrarianAngleSkill,
-      // Performance feedback skills
-      contentBenchmarkingSkill,
-      performanceAttributionSkill,
-      sentimentFeedbackSkill,
-    ] = await Promise.all([
-      loadSkillSafe(orchestrator, "narrative/editorial/topic-selection.md"),
-      loadSkillSafe(orchestrator, "narrative/editorial/angle-detection.md"),
-      loadSkillSafe(orchestrator, "narrative/editorial/sensitivity-classification.md"),
-      loadSkillSafe(orchestrator, "narrative/editorial/timeliness-optimizer.md"),
-      loadSkillSafe(orchestrator, "distribution/platform-first-vs-repurpose.md"),
-      loadSkillSafe(orchestrator, "distribution/evergreen-vs-timely.md"),
-      loadSkillSafe(orchestrator, "narrative/editorial/competitive-narrative-analysis.md"),
-      loadSkillSafe(orchestrator, "narrative/editorial/contrarian-angle-detection.md"),
-      // Performance feedback skills
-      loadSkillSafe(orchestrator, "analytics/performance/content-benchmarking.md"),
-      loadSkillSafe(orchestrator, "analytics/performance/performance-attribution.md"),
-      loadSkillSafe(orchestrator, "analytics/feedback/sentiment-feedback-loop.md"),
-    ]);
+    try {
+      [
+        topicSelectionSkill,
+        angleDetectionSkill,
+        sensitivitySkill,
+        timelinessSkill,
+        platformFirstSkill,
+        evergreenVsTimelySkill,
+        competitiveNarrativeSkill,
+        contrarianAngleSkill,
+        contentBenchmarkingSkill,
+        performanceAttributionSkill,
+        sentimentFeedbackSkill,
+      ] = await Promise.all([
+        loadSkillSafe(orchestrator, "narrative/editorial/topic-selection.md"),
+        loadSkillSafe(orchestrator, "narrative/editorial/angle-detection.md"),
+        loadSkillSafe(orchestrator, "narrative/editorial/sensitivity-classification.md"),
+        loadSkillSafe(orchestrator, "narrative/editorial/timeliness-optimizer.md"),
+        loadSkillSafe(orchestrator, "distribution/platform-first-vs-repurpose.md"),
+        loadSkillSafe(orchestrator, "distribution/evergreen-vs-timely.md"),
+        loadSkillSafe(orchestrator, "narrative/editorial/competitive-narrative-analysis.md"),
+        loadSkillSafe(orchestrator, "narrative/editorial/contrarian-angle-detection.md"),
+        loadSkillSafe(orchestrator, "analytics/performance/content-benchmarking.md"),
+        loadSkillSafe(orchestrator, "analytics/performance/performance-attribution.md"),
+        loadSkillSafe(orchestrator, "analytics/feedback/sentiment-feedback-loop.md"),
+      ]);
+      const loaded = [topicSelectionSkill, angleDetectionSkill, sensitivitySkill, timelinessSkill,
+        platformFirstSkill, evergreenVsTimelySkill, competitiveNarrativeSkill, contrarianAngleSkill,
+        contentBenchmarkingSkill, performanceAttributionSkill, sentimentFeedbackSkill].filter(Boolean).length;
+      console.log("[recommend] Step 3 PASS: skills loaded =", loaded, "/ 11");
+    } catch (skillErr) {
+      console.error("[recommend] Step 3 FAIL: skill loading", skillErr);
+      // Continue without skills
+    }
 
-    // ──────────────────────────────────────────────────────
-    // 3. GET BRANDS the user has access to
-    // ──────────────────────────────────────────────────────
+    // ── Step 4: Load brands ──
     const brandWhere =
       userRole === "ADMIN"
         ? {}
         : { id: { in: accessibleBrandIds } };
 
-    const brands = await prisma.brand.findMany({
-      where: brandWhere,
-      include: { platforms: true },
-    });
+    let brands: Awaited<ReturnType<typeof prisma.brand.findMany>>;
+    try {
+      brands = await prisma.brand.findMany({
+        where: brandWhere,
+        include: { platforms: true },
+      });
+      console.log("[recommend] Step 4 PASS: brands =", brands.length);
+    } catch (brandErr) {
+      console.error("[recommend] Step 4 FAIL: brand query", brandErr);
+      return NextResponse.json({ error: "Failed to load brands" }, { status: 500 });
+    }
 
     if (brands.length === 0) {
+      console.log("[recommend] Step 4: No brands accessible for role", userRole, "brandIds", accessibleBrandIds);
       return NextResponse.json(
         { error: "No brands accessible" },
         { status: 403 }
@@ -209,44 +240,57 @@ Return your findings as a well-structured report.`
       brandIdentitySkills.map((b) => [b.brandId, b.skill])
     );
 
-    // ──────────────────────────────────────────────────────
-    // 4. GET PERFORMANCE HISTORY
-    // ──────────────────────────────────────────────────────
-    const [pastDeliverables, performanceData, skillLearningLogs] = await Promise.all([
-      prisma.deliverable.findMany({
-        where: { brandId: { in: brandIds } },
-        include: { tree: { select: { title: true } } },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-      }),
-      prisma.contentPerformance.findMany({
-        where: { brandId: { in: brandIds } },
-        orderBy: { lastUpdated: "desc" },
-        take: 20,
-      }),
-      prisma.skillLearningLog.findMany({
-        where: {
-          source: "auto",
-          periodEnd: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-        },
-        orderBy: { periodEnd: "desc" },
-        take: 30,
-      }),
-    ]);
+    // ── Step 5: Performance history ──
+    let pastDeliverables: Awaited<ReturnType<typeof prisma.deliverable.findMany>> = [];
+    let performanceData: Awaited<ReturnType<typeof prisma.contentPerformance.findMany>> = [];
+    let skillLearningLogs: Awaited<ReturnType<typeof prisma.skillLearningLog.findMany>> = [];
+    try {
+      [pastDeliverables, performanceData, skillLearningLogs] = await Promise.all([
+        prisma.deliverable.findMany({
+          where: { brandId: { in: brandIds } },
+          include: { tree: { select: { title: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        }),
+        prisma.contentPerformance.findMany({
+          where: { brandId: { in: brandIds } },
+          orderBy: { lastUpdated: "desc" },
+          take: 20,
+        }),
+        prisma.skillLearningLog.findMany({
+          where: {
+            source: "auto",
+            periodEnd: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          },
+          orderBy: { periodEnd: "desc" },
+          take: 30,
+        }),
+      ]);
+      console.log("[recommend] Step 5 PASS: deliverables =", pastDeliverables.length, "perf =", performanceData.length, "learning =", skillLearningLogs.length);
+    } catch (perfErr) {
+      console.error("[recommend] Step 5 FAIL: performance queries", perfErr);
+      // Continue with empty data
+    }
 
-    // ──────────────────────────────────────────────────────
-    // 5. GET CURRENT SIGNALS AND TRENDS
-    // ──────────────────────────────────────────────────────
-    const [recentSignals, activeTrends] = await Promise.all([
-      prisma.signal.findMany({
-        orderBy: { detectedAt: "desc" },
-        take: 10,
-      }),
-      prisma.trend.findMany({
-        where: { lifecycle: "emerging" },
-        take: 10,
-      }),
-    ]);
+    // ── Step 6: Signals & trends ──
+    let recentSignals: Awaited<ReturnType<typeof prisma.signal.findMany>> = [];
+    let activeTrends: Awaited<ReturnType<typeof prisma.trend.findMany>> = [];
+    try {
+      [recentSignals, activeTrends] = await Promise.all([
+        prisma.signal.findMany({
+          orderBy: { detectedAt: "desc" },
+          take: 10,
+        }),
+        prisma.trend.findMany({
+          where: { lifecycle: "emerging" },
+          take: 10,
+        }),
+      ]);
+      console.log("[recommend] Step 6 PASS: signals =", recentSignals.length, "trends =", activeTrends.length);
+    } catch (sigErr) {
+      console.error("[recommend] Step 6 FAIL: signal/trend queries", sigErr);
+      // Continue with empty data
+    }
 
     // ──────────────────────────────────────────────────────
     // 6 + 7. BUILD THE RICH RECOMMENDATION PROMPT
@@ -442,35 +486,39 @@ IMPORTANT:
 - Be specific in assetsRequired — not generic placeholders.
 - Return ONLY valid JSON, no markdown.`;
 
-    // ──────────────────────────────────────────────────────
-    // 8. CALL CLAUDE for editorial reasoning
-    // ──────────────────────────────────────────────────────
+    // ── Step 7: Build prompt ──
+    console.log("[recommend] Step 7 PASS: systemPrompt length =", systemPrompt.length, "userPrompt length =", userPrompt.length);
+
+    // ── Step 8: Call Claude ──
     let result: { parsed: unknown; raw: string };
     try {
       result = await callClaude(systemPrompt, userPrompt, {
         maxTokens: 8192,
         temperature: 0.4,
       });
+      console.log("[recommend] Step 8 PASS: Claude responded, raw length =", result.raw?.length);
     } catch (claudeErr) {
-      console.error("[recommend] Claude API call failed:", claudeErr);
+      console.error("[recommend] Step 8 FAIL: Claude API call", claudeErr);
       return NextResponse.json(
         { error: "Content recommendation engine is temporarily unavailable. Please try again." },
         { status: 503 }
       );
     }
 
+    // ── Step 9: Parse response ──
     const parsed = result.parsed as RecommendResponse | null;
 
     if (!parsed?.recommendations) {
       console.error(
-        "[recommend] Failed to parse Claude response:",
-        result.raw.slice(0, 500)
+        "[recommend] Step 9 FAIL: parse. Raw:",
+        result.raw?.slice(0, 500)
       );
       return NextResponse.json(
         { error: "Failed to parse recommendations from AI response. Please try again." },
         { status: 502 }
       );
     }
+    console.log("[recommend] Step 9 PASS: parsed", parsed.recommendations.length, "recommendations");
 
     // ──────────────────────────────────────────────────────
     // 9. LOG skill executions
@@ -505,14 +553,16 @@ IMPORTANT:
     ).catch(() => {});
 
     // ──────────────────────────────────────────────────────
-    // 10. RETURN
+    // 11. RETURN
     // ──────────────────────────────────────────────────────
+    console.log("[recommend] DONE: returning", parsed.recommendations.length, "recommendations");
     return NextResponse.json({
       recommendations: parsed.recommendations,
       topicAssessment: parsed.topicAssessment ?? null,
       researchSummary,
     });
   } catch (error) {
+    console.error("[recommend] UNHANDLED ERROR:", error);
     return handleApiError(error);
   }
 }
