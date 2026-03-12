@@ -1,45 +1,45 @@
 /**
- * Facebook Publisher — Facebook Graph API (via Meta Business Platform)
+ * Facebook Publisher — Meta Graph API v19.0
  *
- * Status: STUB — OAuth flow is shared with Instagram (see oauth-helpers.ts)
- * but publishing endpoints are not yet implemented.
+ * Supports:
+ *  - Text + link posts to Facebook Pages (/{page-id}/feed)
+ *  - Photo posts (/{page-id}/photos)
+ *  - Reels / video posts (3-phase upload: start → binary upload → finish)
  *
- * Once META_APP_ID, META_APP_SECRET, and META_REDIRECT_URI env vars
- * are configured:
- *  1. Authenticate via the Meta OAuth flow
- *  2. Use Page token to post to Facebook Pages
+ * Auth: Uses page access tokens stored in PlatformConnection.config.pageAccessToken.
+ * Page tokens derived from long-lived user tokens are never-expiring.
  *
+ * Ported from standalone Relay repo, adapted for Daftar's PlatformConnection model.
+ *
+ * Required env: META_APP_ID, META_APP_SECRET
  * Required scopes: pages_manage_posts, pages_read_engagement
  *
- * API Reference:
- *   https://developers.facebook.com/docs/pages-api/posts
+ * API Reference: https://developers.facebook.com/docs/pages-api/posts
  */
 
 import { prisma } from "@/lib/prisma";
+import { getMetaPageToken, handleMetaApiError } from "@/lib/relay/meta";
+
+const META_GRAPH_URL = "https://graph.facebook.com/v19.0";
 
 // ─── Types ──────────────────────────────────────────────
 
 export interface FacebookPublishResult {
-  success: false;
-  error: string;
+  success: boolean;
+  platformPostId?: string;
+  publishedUrl?: string;
+  error?: string;
   platform: "facebook";
-  status: "not_configured";
 }
 
-// ─── Publish ────────────────────────────────────────────
+// ─── Text / Link Post ───────────────────────────────────
 
 /**
- * Publish a post to a Facebook Page.
- *
- * Currently returns a "not configured" error.
- * To implement, use the Page Posts API:
- *   POST /{page-id}/feed  (text + link posts)
- *   POST /{page-id}/photos  (photo posts)
- *   POST /{page-id}/videos  (video posts)
+ * Publish a text or link post to a Facebook Page.
  */
 export async function publishToFacebook(
   connectionId: string,
-  _content: {
+  content: {
     message?: string;
     link?: string;
     imageUrl?: string;
@@ -51,40 +51,197 @@ export async function publishToFacebook(
     where: { id: connectionId },
   });
 
-  if (!conn || !conn.accessToken) {
+  if (!conn) {
     return {
       success: false,
-      error: "Facebook connection not found or missing access token. Please re-authenticate.",
+      error: "Facebook connection not found. Please re-authenticate.",
       platform: "facebook",
-      status: "not_configured",
     };
   }
 
-  // TODO: Implement Facebook Graph API publishing
-  // 1. Get page access token from user token
-  // 2. POST /{page-id}/feed for text/link posts
-  // 3. POST /{page-id}/photos for image posts
-  // 4. POST /{page-id}/videos for video posts
-  return {
-    success: false,
-    error: "Facebook publishing is not yet configured. Set META_APP_ID, META_APP_SECRET, and META_REDIRECT_URI environment variables.",
-    platform: "facebook",
-    status: "not_configured",
-  };
+  const pageToken = getMetaPageToken(conn);
+  const pageId = conn.accountId;
+
+  if (!pageId) {
+    return {
+      success: false,
+      error: "No Facebook Page ID configured. Re-authenticate via OAuth.",
+      platform: "facebook",
+    };
+  }
+
+  try {
+    // Photo post
+    if (content.postType === "photo" && content.imageUrl) {
+      const res = await fetch(`${META_GRAPH_URL}/${pageId}/photos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: content.imageUrl,
+          caption: content.message || "",
+          access_token: pageToken,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await handleMetaApiError(res, connectionId);
+        return { success: false, error: `Facebook photo post failed: ${body}`, platform: "facebook" };
+      }
+
+      const data = await res.json();
+      return {
+        success: true,
+        platformPostId: data.post_id || data.id,
+        publishedUrl: `https://facebook.com/${data.post_id || data.id}`,
+        platform: "facebook",
+      };
+    }
+
+    // Video / Reel post — delegate to Reels API
+    if ((content.postType === "video" && content.videoUrl) || content.videoUrl) {
+      return publishFacebookReel(connectionId, {
+        videoUrl: content.videoUrl!,
+        description: content.message,
+      });
+    }
+
+    // Text / link post
+    const postData: Record<string, string> = {
+      access_token: pageToken,
+    };
+    if (content.message) postData.message = content.message;
+    if (content.link) postData.link = content.link;
+
+    const res = await fetch(`${META_GRAPH_URL}/${pageId}/feed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(postData),
+    });
+
+    if (!res.ok) {
+      const body = await handleMetaApiError(res, connectionId);
+      return { success: false, error: `Facebook post failed: ${body}`, platform: "facebook" };
+    }
+
+    const data = await res.json();
+    return {
+      success: true,
+      platformPostId: data.id,
+      publishedUrl: `https://facebook.com/${data.id}`,
+      platform: "facebook",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      platform: "facebook",
+    };
+  }
 }
 
+// ─── Reels (Video) ──────────────────────────────────────
+
 /**
- * Publish a Reel to Facebook.
+ * Publish a Reel/video to Facebook using the 3-phase Reels upload API.
+ *
+ * Flow:
+ *  1. POST /{page-id}/video_reels (upload_phase: start) → get video_id
+ *  2. POST to rupload.facebook.com with binary video data
+ *  3. POST /{page-id}/video_reels (upload_phase: finish) → publish
  */
 export async function publishFacebookReel(
   connectionId: string,
-  _content: { videoUrl: string; description?: string }
+  content: { videoUrl: string; description?: string }
 ): Promise<FacebookPublishResult> {
-  void connectionId;
-  return {
-    success: false,
-    error: "Facebook Reel publishing is not yet configured.",
-    platform: "facebook",
-    status: "not_configured",
-  };
+  const conn = await prisma.platformConnection.findUnique({
+    where: { id: connectionId },
+  });
+
+  if (!conn) {
+    return { success: false, error: "Facebook connection not found.", platform: "facebook" };
+  }
+
+  const pageToken = getMetaPageToken(conn);
+  const pageId = conn.accountId;
+
+  if (!pageId) {
+    return { success: false, error: "No Facebook Page ID configured.", platform: "facebook" };
+  }
+
+  try {
+    // Download video from URL
+    const videoRes = await fetch(content.videoUrl);
+    if (!videoRes.ok) {
+      return { success: false, error: `Failed to download video: ${videoRes.status}`, platform: "facebook" };
+    }
+    const videoBuffer = Buffer.from(await videoRes.arrayBuffer());
+
+    // Phase 1: Start upload
+    const startRes = await fetch(`${META_GRAPH_URL}/${pageId}/video_reels`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        upload_phase: "start",
+        access_token: pageToken,
+      }),
+    });
+
+    if (!startRes.ok) {
+      const body = await handleMetaApiError(startRes, connectionId);
+      return { success: false, error: `FB Reels start failed: ${body}`, platform: "facebook" };
+    }
+
+    const { video_id: videoId } = await startRes.json();
+
+    // Phase 2: Upload binary
+    const uploadRes = await fetch(
+      `https://rupload.facebook.com/video-upload/v19.0/${videoId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `OAuth ${pageToken}`,
+          "Content-Type": "application/octet-stream",
+          offset: "0",
+          file_size: String(videoBuffer.length),
+        },
+        body: videoBuffer,
+      }
+    );
+
+    if (!uploadRes.ok) {
+      const body = await uploadRes.text();
+      return { success: false, error: `FB Reels binary upload failed: ${body}`, platform: "facebook" };
+    }
+
+    // Phase 3: Finish and publish
+    const finishRes = await fetch(`${META_GRAPH_URL}/${pageId}/video_reels`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        upload_phase: "finish",
+        video_id: videoId,
+        video_state: "PUBLISHED",
+        description: content.description || "",
+        access_token: pageToken,
+      }),
+    });
+
+    if (!finishRes.ok) {
+      const body = await handleMetaApiError(finishRes, connectionId);
+      return { success: false, error: `FB Reels finish failed: ${body}`, platform: "facebook" };
+    }
+
+    return {
+      success: true,
+      platformPostId: videoId,
+      publishedUrl: `https://facebook.com/reel/${videoId}`,
+      platform: "facebook",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      platform: "facebook",
+    };
+  }
 }

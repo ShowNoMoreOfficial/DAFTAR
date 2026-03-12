@@ -4,6 +4,8 @@ import { daftarEvents } from "@/lib/event-bus";
 import { TwitterPublisher } from "@/lib/relay/publishers/twitter";
 import { LinkedInPublisher } from "@/lib/relay/publishers/linkedin";
 import { uploadAllMedia, uploadToYouTube } from "@/lib/relay/publishers/media-handler";
+import { publishToInstagram } from "@/lib/relay/publishers/instagram";
+import { publishToFacebook } from "@/lib/relay/publishers/facebook";
 
 /**
  * GET /api/cron/relay-executor
@@ -173,15 +175,60 @@ export async function GET(req: NextRequest) {
           }
 
           case "instagram": {
-            // Instagram publishing requires the Graph API
-            // (create container → publish container)
-            // Stubbed for now — Instagram requires business account + page token
-            throw new Error("Instagram publishing not yet implemented. Use Meta Business Suite API.");
+            const igContent: Parameters<typeof publishToInstagram>[1] = {
+              caption: post.content || post.title,
+            };
+
+            if (mediaUrls.length > 1) {
+              igContent.postType = "carousel";
+              igContent.carouselUrls = mediaUrls;
+            } else if (mediaUrls.length === 1) {
+              const isVideo = /\.(mp4|mov|avi|webm)(\?|$)/i.test(mediaUrls[0]);
+              if (isVideo) {
+                igContent.postType = "reel";
+                igContent.videoUrl = mediaUrls[0];
+              } else {
+                igContent.postType = "image";
+                igContent.imageUrl = mediaUrls[0];
+              }
+            }
+
+            const igResult = await publishToInstagram(connection.id, igContent);
+            if (!igResult.success) {
+              throw new Error(igResult.error || "Instagram publish failed");
+            }
+            platformPostId = igResult.platformPostId!;
+            publishedUrl = igResult.publishedUrl;
+            break;
           }
 
           case "facebook": {
-            // Facebook page publishing via Graph API
-            throw new Error("Facebook publishing not yet implemented. Use Meta Graph API.");
+            const fbContent: Parameters<typeof publishToFacebook>[1] = {
+              message: post.content || post.title,
+            };
+
+            if (mediaUrls.length > 0) {
+              const isVideo = /\.(mp4|mov|avi|webm)(\?|$)/i.test(mediaUrls[0]);
+              if (isVideo) {
+                fbContent.postType = "video";
+                fbContent.videoUrl = mediaUrls[0];
+              } else {
+                fbContent.postType = "photo";
+                fbContent.imageUrl = mediaUrls[0];
+              }
+            }
+
+            if (metadata.link) {
+              fbContent.link = metadata.link as string;
+            }
+
+            const fbResult = await publishToFacebook(connection.id, fbContent);
+            if (!fbResult.success) {
+              throw new Error(fbResult.error || "Facebook publish failed");
+            }
+            platformPostId = fbResult.platformPostId!;
+            publishedUrl = fbResult.publishedUrl;
+            break;
           }
 
           default:
