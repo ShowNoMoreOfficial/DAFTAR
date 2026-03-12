@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     // Total revenue: sum of PAID invoices
     prisma.invoice.findMany({
       where: { status: "PAID" },
-      select: { totalAmount: true, paidAt: true, clientId: true },
+      select: { totalAmount: true, paidAt: true, createdAt: true, clientId: true },
     }),
     // Outstanding: SENT + OVERDUE invoices
     prisma.invoice.findMany({
@@ -72,7 +72,10 @@ export async function GET(req: NextRequest) {
     const monthLabel = monthStart.toLocaleDateString("en-US", { month: "short" });
 
     const monthRev = allPaidInvoices
-      .filter((inv) => inv.paidAt && inv.paidAt >= monthStart && inv.paidAt <= monthEnd)
+      .filter((inv) => {
+        const refDate = inv.paidAt ?? inv.createdAt;
+        return refDate >= monthStart && refDate <= monthEnd;
+      })
       .reduce((sum, inv) => sum + inv.totalAmount, 0);
 
     const monthExp = allExpenses

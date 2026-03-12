@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       name: true,
       avatar: true,
       primaryDeptId: true,
+      primaryDepartment: { select: { id: true, name: true } },
       assignedTasks: {
         where: { status: { notIn: ["DONE", "CANCELLED"] } },
         select: { id: true, priority: true },
@@ -52,6 +53,7 @@ export async function GET(req: NextRequest) {
       name: user.name,
       avatar: user.avatar,
       departmentId: user.primaryDeptId,
+      departmentName: user.primaryDepartment?.name ?? null,
       activeTaskCount: result.activeTaskCount,
       utilizationPct: result.capacityLoad,
       breakdown: result.breakdown,

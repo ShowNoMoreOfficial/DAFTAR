@@ -189,13 +189,16 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
 
   // Close mobile sidebar when window resizes above md breakpoint
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
+    const mql = window.matchMedia("(min-width: 768px)");
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) {
         setMobileOpen(false);
       }
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    // Check immediately on mount
+    handleChange(mql);
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
   }, [setMobileOpen]);
 
   const toggleSection = useCallback((sectionId: string) => {

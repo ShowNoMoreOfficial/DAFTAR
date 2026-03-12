@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
         const articles = await prisma.article.findMany({
           where: statusWhere,
           include: {
-            category: { select: { id: true, name: true, slug: true } },
+            category: { select: { id: true, name: true, slug: true, color: true } },
             author: { select: { id: true, name: true } },
           },
           orderBy: { updatedAt: "desc" },

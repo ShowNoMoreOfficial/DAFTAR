@@ -52,6 +52,7 @@ interface CapacityItem {
   id: string;
   name: string;
   departmentId: string | null;
+  departmentName: string | null;
   activeTaskCount: number;
   utilizationPct: number;
 }
@@ -98,7 +99,7 @@ export default function OperationsPage() {
           (c: CapacityItem) => ({
             id: c.id,
             name: c.name,
-            department: c.departmentId ?? "Unassigned",
+            department: c.departmentName ?? "Unassigned",
             capacityPct: c.utilizationPct,
             openTasks: c.activeTaskCount,
           })

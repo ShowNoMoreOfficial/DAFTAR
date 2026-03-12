@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   const q = searchParams.get("q");
 
   if (!q || q.length < 2) {
-    return NextResponse.json({ users: [], brands: [], tasks: [] });
+    return NextResponse.json({ users: [], brands: [], tasks: [], modules: [] });
   }
 
   const role = session.user.role;
@@ -67,5 +67,5 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  return NextResponse.json({ users, brands, tasks });
+  return NextResponse.json({ users, brands, tasks, modules: [] });
 }

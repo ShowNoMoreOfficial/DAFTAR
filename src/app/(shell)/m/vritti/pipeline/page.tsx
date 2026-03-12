@@ -107,7 +107,7 @@ export default function PipelinePage() {
       const res = await fetch("/api/vritti/categories");
       if (res.ok) {
         const data = await res.json();
-        setCategories(data.categories || data || []);
+        setCategories(data.data || data.categories || (Array.isArray(data) ? data : []));
       }
     } catch {
       // silent

@@ -27,8 +27,13 @@ export async function GET(request: Request) {
     where,
     orderBy: { updatedAt: "desc" },
     include: {
-      _count: { select: { nodes: true } },
+      _count: { select: { nodes: true, narratives: true } },
+      createdBy: { select: { id: true, name: true } },
       dossier: { select: { id: true } },
+      narratives: {
+        select: { brandId: true, platform: true, status: true },
+        take: 10,
+      },
       nodes: {
         orderBy: { identifiedAt: "desc" },
         take: 3,
@@ -37,5 +42,5 @@ export async function GET(request: Request) {
     },
   });
 
-  return NextResponse.json(trees);
+  return NextResponse.json({ trees });
 }

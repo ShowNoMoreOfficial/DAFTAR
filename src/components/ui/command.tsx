@@ -4,13 +4,6 @@ import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 
 import { cn } from "@/lib/utils"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { SearchIcon, CheckIcon } from "lucide-react"
 
 function Command({
@@ -34,32 +27,46 @@ function CommandDialog({
   description = "Search for a command to run...",
   children,
   className,
-  showCloseButton = false,
-  ...props
-}: Omit<React.ComponentProps<typeof Dialog>, "children"> & {
+  open,
+  onOpenChange,
+}: {
   title?: string
   description?: string
   className?: string
-  showCloseButton?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   children: React.ReactNode
 }) {
+  React.useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onOpenChange?.(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onOpenChange]);
+
+  if (!open) return null;
+
   return (
-    <Dialog {...props}>
-      <DialogContent
+    <div className="fixed inset-0 z-50" role="dialog" aria-label={title}>
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in-0"
+        onClick={() => onOpenChange?.(false)}
+      />
+      <div
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
+          "fixed left-1/2 top-[30%] z-50 w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-2xl animate-in fade-in-0 zoom-in-95",
           className
         )}
-        showCloseButton={showCloseButton}
       >
-        <DialogHeader className="sr-only">
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+        <span className="sr-only">{description}</span>
         {children}
-      </DialogContent>
-    </Dialog>
-  )
+      </div>
+    </div>
+  );
 }
 
 function CommandInput({

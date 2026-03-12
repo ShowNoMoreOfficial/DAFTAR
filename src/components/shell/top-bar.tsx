@@ -34,16 +34,16 @@ function buildBreadcrumb(pathname: string): { label: string; href: string }[] {
     dashboard: "Dashboard",
     tasks: "My Tasks",
     brands: "Brands",
-    yantri: "Yantri",
-    khabri: "Khabri",
-    relay: "Relay",
-    pms: "PMS",
+    yantri: "Content Studio",
+    khabri: "Intelligence",
+    relay: "Publishing",
+    pms: "Production",
     board: "Board",
     list: "List",
     workload: "Workload",
-    hoccr: "HOCCR",
+    hoccr: "Team & HR",
     hiring: "Hiring",
-    vritti: "Vritti",
+    vritti: "Editorial",
     finance: "Finance",
     admin: "Admin",
     users: "Users & Roles",
@@ -182,7 +182,7 @@ export function TopBar({ user, onSignOut }: TopBarProps) {
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-[var(--bg-overlay)] border-[var(--border-default)]">
+            <DropdownMenuContent align="end" className="z-50 w-48 bg-[var(--bg-overlay)] border-[var(--border-default)]">
               <div className="px-2 py-1.5">
                 <p className="text-sm font-medium text-[var(--text-primary)]">{user.name}</p>
                 <p className="text-xs text-[var(--text-secondary)]">{user.email}</p>
