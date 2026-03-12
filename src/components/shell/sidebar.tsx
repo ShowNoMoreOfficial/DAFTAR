@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
@@ -129,6 +129,7 @@ interface SidebarProps {
 
 export function Sidebar({ user, onSignOut }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isCollapsed, isMobileOpen, toggleSidebar, setMobileOpen } =
     useSidebarStore();
   const sections = useMemo(() => getSidebarSectionsForRole(user.role), [user.role]);
@@ -138,15 +139,32 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
   // Track which items have children expanded
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
+  // Helper: check if an href (possibly with ?query) matches current location
+  const isHrefActive = useCallback(
+    (href: string) => {
+      const [hrefPath, hrefQuery] = href.split("?");
+      if (hrefQuery) {
+        // href has query params — match path exactly and check params
+        if (pathname !== hrefPath) return false;
+        const hrefParams = new URLSearchParams(hrefQuery);
+        for (const [key, value] of hrefParams) {
+          if (searchParams.get(key) !== value) return false;
+        }
+        return true;
+      }
+      // No query params — match path exactly or as prefix
+      return pathname === href || pathname.startsWith(href + "/");
+    },
+    [pathname, searchParams]
+  );
+
   // Auto-expand item whose child is active
   useEffect(() => {
     const toExpand: string[] = [];
     for (const section of sections) {
       for (const item of section.items) {
         if (item.children) {
-          const childActive = item.children.some(
-            (c) => pathname === c.href || pathname.startsWith(c.href + "/")
-          );
+          const childActive = item.children.some((c) => isHrefActive(c.href));
           if (childActive) {
             toExpand.push(item.id);
           }
@@ -162,7 +180,7 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
         return next;
       });
     }
-  }, [pathname, sections]);
+  }, [pathname, searchParams, sections, isHrefActive]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -206,9 +224,7 @@ export function Sidebar({ user, onSignOut }: SidebarProps) {
 
   const renderItem = (item: SidebarItem, depth = 0) => {
     const Icon = ICON_MAP[item.icon];
-    const isActive =
-      pathname === item.href ||
-      pathname.startsWith(item.href + "/");
+    const isActive = isHrefActive(item.href);
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems.has(item.id);
 

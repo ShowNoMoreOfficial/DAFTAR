@@ -85,7 +85,15 @@ export default function PipelinePage() {
       const res = await fetch(`/api/vritti/articles?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setArticles(data.articles || data || []);
+        // Pipeline view returns { data: [{ status, articles, count }] }
+        if (Array.isArray(data.data)) {
+          const allArticles = data.data.flatMap(
+            (group: { articles: Article[] }) => group.articles || []
+          );
+          setArticles(allArticles);
+        } else {
+          setArticles(Array.isArray(data.articles) ? data.articles : Array.isArray(data) ? data : []);
+        }
       }
     } catch {
       // network error — keep empty state

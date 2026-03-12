@@ -118,6 +118,14 @@ export default function IntelligencePage() {
   const initialTab = (searchParams.get("tab") as TabId) || "signals";
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
+  // Sync tab when URL params change (e.g. sidebar navigation)
+  useEffect(() => {
+    const urlTab = searchParams.get("tab") as TabId;
+    if (urlTab && TABS.some((t) => t.id === urlTab) && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [searchParams]);
+
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -528,7 +536,7 @@ function ResearchTab() {
     try {
       const params = new URLSearchParams();
       if (filter !== "ALL") params.set("status", filter);
-      const res = await fetch(`/api/narrative-trees?${params}`);
+      const res = await fetch(`/api/yantri/narrative-trees?${params}`);
       if (!res.ok) throw new Error(`Failed to fetch (${res.status})`);
       const data = await res.json();
       setTrees(data.trees || []);

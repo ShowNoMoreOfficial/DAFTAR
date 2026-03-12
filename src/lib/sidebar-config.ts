@@ -42,8 +42,8 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         roles: ["ADMIN", "DEPT_HEAD", "MEMBER"],
         children: [
           { id: "intel-signals", label: "Signals", icon: "Radio", href: "/intelligence", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-          { id: "intel-trends", label: "Trends", icon: "TrendingUp", href: "/intelligence/trends", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-          { id: "intel-research", label: "Research", icon: "Search", href: "/intelligence/research", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+          { id: "intel-trends", label: "Trends", icon: "TrendingUp", href: "/intelligence?tab=trends", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+          { id: "intel-research", label: "Research", icon: "Search", href: "/intelligence?tab=research", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
         ],
       },
       {
@@ -54,8 +54,8 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         roles: ["ADMIN", "DEPT_HEAD", "MEMBER"],
         children: [
           { id: "content-pipeline", label: "Studio", icon: "Layers", href: "/content-studio", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-          { id: "content-calendar", label: "Calendar", icon: "Calendar", href: "/content-studio/calendar", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
-          { id: "content-library", label: "Library", icon: "Archive", href: "/content-studio/library", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+          { id: "content-calendar", label: "Calendar", icon: "Calendar", href: "/content-studio?tab=calendar", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+          { id: "content-library", label: "Library", icon: "Archive", href: "/content-studio?tab=library", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
         ],
       },
       {

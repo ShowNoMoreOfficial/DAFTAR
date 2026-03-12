@@ -115,6 +115,14 @@ function ContentStudioInner() {
   const initialTab = (searchParams.get("tab") as TabId) || "studio";
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
+  // Sync tab when URL params change (e.g. sidebar navigation)
+  useEffect(() => {
+    const urlTab = searchParams.get("tab") as TabId;
+    if (urlTab && TABS.some((t) => t.id === urlTab) && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [searchParams]);
+
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
