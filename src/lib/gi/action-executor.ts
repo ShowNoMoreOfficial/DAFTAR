@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
 import { checkTier, createPendingAction } from "./tier-guard";
 
 interface ActionResult {
@@ -61,7 +60,7 @@ export async function reassignTask(
         newAssigneeId: person.id,
         originalAssigneeId: task.assignee?.id ?? null,
         action: "reassign",
-      } as Prisma.InputJsonValue,
+      } as object,
       reasoning: `User requested reassignment via GI chat`,
     });
 
@@ -150,7 +149,7 @@ export async function extendDeadline(
         currentDueDate: task.dueDate.toISOString(),
         newDueDate: newDate.toISOString(),
         extensionDays: days,
-      } as Prisma.InputJsonValue,
+      } as object,
       reasoning: `User requested deadline extension via GI chat`,
     });
 

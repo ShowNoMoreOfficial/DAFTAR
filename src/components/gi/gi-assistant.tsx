@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Send, X, ChevronUp, ChevronDown, Minus } from "lucide-react";
+import { Sparkles, Send, X, ChevronUp, ChevronDown, Minus, Database, Loader2 } from "lucide-react";
 import { useGIContext } from "./gi-context";
 import { useSidebarStore } from "@/store/sidebar-store";
 import { cn } from "@/lib/utils";
@@ -11,9 +11,26 @@ import { cn } from "@/lib/utils";
 interface ChatMessage {
   role: "user" | "gi";
   content: string;
-  suggestions?: string[];
   timestamp: Date;
 }
+
+// Tool name → friendly label
+const TOOL_LABELS: Record<string, string> = {
+  get_tasks: "Looking up tasks",
+  get_deliverables: "Checking deliverables",
+  get_signals: "Fetching signals",
+  get_team_workload: "Checking team workload",
+  get_team_weekly_stats: "Getting weekly stats",
+  get_brand_pipeline: "Loading brand pipeline",
+  get_team_members: "Getting team members",
+  get_upcoming_content: "Checking upcoming content",
+  search_knowledge_base: "Searching knowledge base",
+  reassign_task: "Reassigning task",
+  extend_deadline: "Extending deadline",
+  create_task: "Creating task",
+  start_content_pipeline: "Starting content pipeline",
+  suggest_topics: "Finding topic suggestions",
+};
 
 // Contextual suggestion chips per module
 const MODULE_SUGGESTIONS: Record<string, string[]> = {
@@ -28,25 +45,26 @@ const MODULE_SUGGESTIONS: Record<string, string[]> = {
 
 export function GIAssistant() {
   const [expanded, setExpanded] = useState(false);
-  const [collapsed, setCollapsed] = useState(false); // fully hidden
+  const [collapsed, setCollapsed] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "gi",
-      content: "Hi! I'm GI, your organizational copilot. Ask me about tasks, content, team health, or anything else.",
-      suggestions: ["What needs my attention?", "How are my tasks?", "What can you do?"],
+      content: "Hey! I'm GI, your operations copilot. Ask me about tasks, content, team health, or anything else.",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [toolStatus, setToolStatus] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const { context } = useGIContext();
   const { isCollapsed: sidebarCollapsed } = useSidebarStore();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, toolStatus]);
 
   // Keyboard shortcut: Ctrl+/ to focus GI input
   useEffect(() => {
@@ -62,54 +80,119 @@ export function GIAssistant() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim()) return;
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || loading) return;
 
-    const userMsg: ChatMessage = { role: "user", content: text.trim(), timestamp: new Date() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setLoading(true);
+      const userMsg: ChatMessage = { role: "user", content: text.trim(), timestamp: new Date() };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+      setLoading(true);
+      setToolStatus(null);
 
-    try {
-      const res = await fetch("/api/gi/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text.trim(), context }),
-      });
+      // Abort any pending request
+      abortRef.current?.abort();
+      const abortController = new AbortController();
+      abortRef.current = abortController;
 
-      if (res.ok) {
-        const data = await res.json();
-        const newMessages: ChatMessage[] = [
-          {
-            role: "gi",
-            content: data.message,
-            suggestions: data.suggestions,
-            timestamp: new Date(),
-          },
-        ];
-        if (data.proactiveInsight) {
-          newMessages.push({
-            role: "gi",
-            content: data.proactiveInsight,
-            timestamp: new Date(),
-          });
-        }
-        setMessages((prev) => [...prev, ...newMessages]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "gi", content: "Sorry, I encountered an error. Please try again.", timestamp: new Date() },
-        ]);
-      }
-    } catch {
+      // Add placeholder for streaming response
       setMessages((prev) => [
         ...prev,
-        { role: "gi", content: "Connection error. Please check your connection.", timestamp: new Date() },
+        { role: "gi", content: "", timestamp: new Date() },
       ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      try {
+        const res = await fetch("/api/gi/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text.trim(), context }),
+          signal: abortController.signal,
+        });
+
+        if (!res.ok || !res.body) {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last.role === "gi") {
+              last.content = "Sorry, I encountered an error. Please try again.";
+            }
+            return [...updated];
+          });
+          setLoading(false);
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.type === "text") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const last = updated[updated.length - 1];
+                  if (last.role === "gi") {
+                    last.content += data.text;
+                  }
+                  return [...updated];
+                });
+                setToolStatus(null);
+              } else if (data.type === "tool_call") {
+                setToolStatus(TOOL_LABELS[data.tool] || `Using ${data.tool}`);
+              } else if (data.type === "error") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const last = updated[updated.length - 1];
+                  if (last.role === "gi") {
+                    last.content = data.message;
+                  }
+                  return [...updated];
+                });
+              } else if (data.type === "done") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const last = updated[updated.length - 1];
+                  if (last.role === "gi" && !last.content.trim()) {
+                    last.content = "Done! Anything else?";
+                  }
+                  return [...updated];
+                });
+              }
+            } catch {
+              // Skip malformed SSE lines
+            }
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last.role === "gi") {
+              last.content = "Connection error. Please check your connection.";
+            }
+            return [...updated];
+          });
+        }
+      } finally {
+        setLoading(false);
+        setToolStatus(null);
+      }
+    },
+    [context, loading]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -149,7 +232,7 @@ export function GIAssistant() {
         </div>
       )}
 
-      {/* Header bar — always visible */}
+      {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)]">
@@ -198,25 +281,25 @@ export function GIAssistant() {
                     : "bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-bl-sm border-l-2 border-l-[var(--accent-primary)]"
                 )}
               >
-                <p className="whitespace-pre-line">{msg.content}</p>
-
-                {msg.suggestions && msg.suggestions.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {msg.suggestions.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => sendMessage(s)}
-                        className="rounded-full border border-[var(--accent-primary)]/30 bg-[var(--bg-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--accent-primary)] transition-colors hover:bg-[rgba(0,212,170,0.1)]"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="whitespace-pre-line [&_strong]:font-semibold [&_em]:italic">
+                  {msg.content}
+                </div>
               </div>
             </div>
           ))}
-          {loading && (
+
+          {/* Tool call indicator */}
+          {toolStatus && (
+            <div className="flex justify-start">
+              <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-[var(--bg-elevated)] px-3.5 py-2.5 text-xs text-[var(--text-muted)]">
+                <Database className="h-3.5 w-3.5 animate-pulse text-[var(--accent-primary)]" />
+                {toolStatus}...
+              </div>
+            </div>
+          )}
+
+          {/* Typing indicator */}
+          {loading && !toolStatus && messages[messages.length - 1]?.role === "gi" && !messages[messages.length - 1]?.content && (
             <div className="flex justify-start">
               <div className="rounded-2xl rounded-bl-sm bg-[var(--bg-elevated)] px-4 py-3">
                 <div className="flex gap-1">
@@ -268,7 +351,7 @@ export function GIAssistant() {
             disabled={loading || !input.trim()}
             className="h-9 w-9 shrink-0 rounded-full bg-[var(--accent-primary)] p-0 text-[var(--text-inverse)] hover:bg-[var(--accent-primary)]/90"
           >
-            <Send className="h-3.5 w-3.5" />
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           </Button>
         </div>
       </div>

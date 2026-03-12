@@ -1,228 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-import { callGemini, callGeminiResearch } from "@/lib/yantri/gemini";
+import { routeToModel } from "@/lib/yantri/model-router";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { getBrandVoiceBlock, getBrandColorPalette } from "@/lib/yantri/brand-voice";
+import { engineRouter, type ContentType } from "@/lib/yantri/engine-router";
+import { SkillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
 
 /**
  * POST /api/yantri/quick-generate
  *
- * Synchronous content generation — bypasses Inngest.
- * Takes a topic, researches it, generates content, saves deliverable + assets.
+ * Skill-powered synchronous content generation.
+ * Loads editorial skills, brand voice, and recommendation context
+ * to produce intelligent content via the full intelligence stack.
  *
  * Body: {
  *   topic: string,
  *   brandId: string,
- *   contentType: "youtube_explainer" | "x_thread" | "carousel" | "quick_take"
+ *   contentType: "youtube_explainer" | "x_thread" | "carousel" | "quick_take",
+ *   recommendationContext?: RecommendationContext
  * }
  */
 
-// ─── Content-type definitions ───
+// ─── Types ───
 
-interface ContentTypeConfig {
-  platform: "YOUTUBE" | "X_THREAD" | "META_CAROUSEL" | "YOUTUBE";
+interface RecommendationContext {
+  angle: string;
+  reasoning: string;
+  priority: string;
+  urgency: string;
+  assetsRequired: {
+    images: string[];
+    video: string[];
+    graphics: string[];
+    other: string[];
+  };
+  keyDataPoints: string[];
+  stakeholders: string[];
+  sensitivityLevel: string;
+  suggestedTitle: string;
+}
+
+interface AssetInput {
+  deliverableId: string;
+  type: string;
+  url: string;
+  promptUsed?: string;
+  slideIndex?: number;
+  metadata?: Record<string, unknown>;
+}
+
+interface ContentTypeMapping {
+  engineType: ContentType;
+  platform: "YOUTUBE" | "X_THREAD" | "META_CAROUSEL";
   pipelineType: string;
-  generatePrompt: (brand: BrandContext, research: string, topic: string) => string;
+  jsonStructure: string;
 }
 
-interface BrandContext {
-  name: string;
-  tone: string;
-  language: string;
-  voiceRules: string[];
-  editorialCovers: string[];
-}
+// ─── JSON Structure Templates (must be declared before CONTENT_TYPE_MAP) ───
 
-const CONTENT_TYPES: Record<string, ContentTypeConfig> = {
-  youtube_explainer: {
-    platform: "YOUTUBE",
-    pipelineType: "cinematic",
-    generatePrompt: buildYouTubeExplainerPrompt,
-  },
-  x_thread: {
-    platform: "X_THREAD",
-    pipelineType: "viral_micro",
-    generatePrompt: buildXThreadPrompt,
-  },
-  carousel: {
-    platform: "META_CAROUSEL",
-    pipelineType: "carousel",
-    generatePrompt: buildCarouselPrompt,
-  },
-  quick_take: {
-    platform: "YOUTUBE",
-    pipelineType: "cinematic",
-    generatePrompt: buildQuickTakePrompt,
-  },
-};
-
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getAuthSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { topic, brandId, contentType } = await request.json();
-
-    if (!topic || !brandId || !contentType) {
-      return NextResponse.json(
-        { error: "topic, brandId, and contentType are required" },
-        { status: 400 }
-      );
-    }
-
-    const config = CONTENT_TYPES[contentType];
-    if (!config) {
-      return NextResponse.json(
-        { error: `Invalid contentType. Must be one of: ${Object.keys(CONTENT_TYPES).join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    // Load brand
-    const brand = await prisma.brand.findUnique({ where: { id: brandId } });
-    if (!brand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
-    }
-
-    const brandCtx: BrandContext = {
-      name: brand.name,
-      tone: brand.tone ?? "neutral",
-      language: brand.language ?? "English",
-      voiceRules: parseSafe(brand.voiceRules, []),
-      editorialCovers: parseSafe(brand.editorialCovers, []),
-    };
-
-    // ─── Step 1: Research via Gemini (with web grounding) ───
-    const researchPrompt = `You are a senior political and economic research analyst.
-Research this topic thoroughly: "${topic}"
-
-Provide a comprehensive research dossier including:
-- Key facts and verified data points
-- Timeline of events (with dates)
-- Key stakeholders and their positions
-- Statistics and numbers (with sources)
-- Different perspectives and viewpoints
-- Geopolitical implications (especially for India)
-- Context and background needed to understand the story
-
-Be thorough, factual, and cite sources where possible.
-Return your findings as a well-structured report.`;
-
-    const research = await callGeminiResearch(
-      "You are a thorough research analyst. Provide factual, well-sourced research.",
-      researchPrompt
-    );
-
-    if (!research || research.trim().length < 100) {
-      return NextResponse.json(
-        { error: "Research phase failed — Gemini returned insufficient data" },
-        { status: 500 }
-      );
-    }
-
-    // ─── Step 2: Generate content via Gemini (JSON mode) ───
-    const contentPrompt = config.generatePrompt(brandCtx, research, topic);
-
-    const { parsed, raw } = await callGemini(
-      `You are a world-class content strategist and writer for ${brandCtx.name}. Return ONLY valid JSON.`,
-      contentPrompt,
-      { temperature: 0.7, maxOutputTokens: 65536 }
-    );
-
-    if (!parsed) {
-      return NextResponse.json(
-        { error: "Content generation failed — could not parse AI response", raw: raw?.slice(0, 500) },
-        { status: 500 }
-      );
-    }
-
-    // ─── Step 3: Save deliverable + assets ───
-    const deliverable = await prisma.deliverable.create({
-      data: {
-        brandId,
-        platform: config.platform,
-        pipelineType: config.pipelineType,
-        status: "REVIEW",
-        copyMarkdown: buildCopyMarkdown(parsed, contentType),
-        scriptData: contentType === "youtube_explainer" || contentType === "quick_take" || contentType === "x_thread" ? parsed : undefined,
-        carouselData: contentType === "carousel" ? parsed : undefined,
-        postingPlan: parsed.tags
-          ? { tags: parsed.tags, description: parsed.description }
-          : undefined,
-        researchPrompt: topic,
-        factDossierId: null,
-      },
-    });
-
-    // Create assets from generated content
-    const assets = buildAssets(parsed, contentType, deliverable.id);
-    if (assets.length > 0) {
-      await prisma.asset.createMany({ data: assets });
-    }
-
-    // Also save the research as a NarrativeTree + FactDossier for reuse
-    const tree = await prisma.narrativeTree.create({
-      data: {
-        title: topic,
-        summary: research.slice(0, 500),
-        status: "IN_PRODUCTION",
-        urgency: "normal",
-        createdById: session.user.id,
-        signalData: { topic, generatedAt: new Date().toISOString() },
-      },
-    });
-
-    await prisma.factDossier.create({
-      data: {
-        treeId: tree.id,
-        structuredData: parsed,
-        sources: extractSources(research),
-        visualAssets: [],
-        rawResearch: research,
-      },
-    });
-
-    // Link deliverable to tree
-    await prisma.deliverable.update({
-      where: { id: deliverable.id },
-      data: { treeId: tree.id },
-    });
-
-    return NextResponse.json({
-      deliverableId: deliverable.id,
-      treeId: tree.id,
-      contentType,
-      platform: config.platform,
-      status: "REVIEW",
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Quick-generate error:", message);
-    return NextResponse.json(
-      { error: `Generation failed: ${message}` },
-      { status: 500 }
-    );
-  }
-}
-
-// ─── Prompt Builders ───
-
-function buildYouTubeExplainerPrompt(brand: BrandContext, research: string, topic: string): string {
-  return `Based on the following research, create a 10-15 minute YouTube Explainer video script for ${brand.name}.
-
-BRAND VOICE:
-- Tone: ${brand.tone}
-- Language: ${brand.language}
-- Voice rules: ${brand.voiceRules.join("; ")}
-
-TOPIC: ${topic}
-
-RESEARCH:
-${research}
-
-Create a complete content package with this EXACT JSON structure:
+const YOUTUBE_EXPLAINER_STRUCTURE = `Create a complete content package with this EXACT JSON structure:
 {
   "script": {
     "sections": [
@@ -249,30 +87,14 @@ Create a complete content package with this EXACT JSON structure:
   ]
 }
 
-IMPORTANT:
-- Each script section "text" field should contain the ACTUAL script text the host reads aloud
-- The hook must be a provocative opening — NOT "today we're going to discuss..."
-- Use The Squirrels signature phrases naturally
-- Every claim must be backed by data from the research
-- Visual notes should be specific B-roll/graphic suggestions
-- Titles must be optimized for YouTube CTR
-- Return ONLY the JSON, no other text`;
-}
+REQUIREMENTS:
+- Each script section "text" field must contain the ACTUAL script text the host reads aloud
+- Apply hook engineering: the hook must be a provocative opening — NOT "today we're going to discuss..."
+- Apply title engineering: use formulas from the title engineering skill — CTR optimized
+- Every claim must be backed by data from the research dossier
+- Visual notes should be specific B-roll/graphic suggestions`;
 
-function buildXThreadPrompt(brand: BrandContext, research: string, topic: string): string {
-  return `Based on the following research, create an X (Twitter) thread for ${brand.name}.
-
-BRAND VOICE:
-- Tone: ${brand.tone}
-- Language: ${brand.language}
-- Voice rules: ${brand.voiceRules.join("; ")}
-
-TOPIC: ${topic}
-
-RESEARCH:
-${research}
-
-Create a complete thread with this EXACT JSON structure:
+const X_THREAD_STRUCTURE = `Create a complete thread with this EXACT JSON structure:
 {
   "tweets": [
     { "position": 1, "text": "Hook tweet (max 280 chars)", "type": "hook" },
@@ -296,29 +118,13 @@ Create a complete thread with this EXACT JSON structure:
   ]
 }
 
-IMPORTANT:
-- 8-12 tweets total
-- Each tweet MUST be under 280 characters
-- Hook tweet must stop the scroll — provocative claim or surprising fact
+REQUIREMENTS:
+- 8-12 tweets total, each MUST be under 280 characters
+- Apply hook engineering: hook tweet must stop the scroll — provocative claim or surprising fact
 - Include data in at least 3 tweets
-- Last tweet is engagement CTA (question + follow prompt)
-- Return ONLY the JSON`;
-}
+- Last tweet is engagement CTA (question + follow prompt)`;
 
-function buildCarouselPrompt(brand: BrandContext, research: string, topic: string): string {
-  return `Based on the following research, create an Instagram/Meta carousel post for ${brand.name}.
-
-BRAND VOICE:
-- Tone: ${brand.tone}
-- Language: ${brand.language}
-- Voice rules: ${brand.voiceRules.join("; ")}
-
-TOPIC: ${topic}
-
-RESEARCH:
-${research}
-
-Create a carousel with this EXACT JSON structure:
+const CAROUSEL_STRUCTURE = `Create a carousel with this EXACT JSON structure:
 {
   "slides": [
     { "position": 1, "role": "hook", "headline": "...", "bodyText": "...", "visualPrompt": "Image generation prompt", "textOverlay": "...", "colorHex": "#..." },
@@ -342,29 +148,13 @@ Create a carousel with this EXACT JSON structure:
   ]
 }
 
-IMPORTANT:
-- 8-10 slides
-- Each slide must have strong visual design direction
-- Hook slide must stop the scroll
+REQUIREMENTS:
+- 8-10 slides with strong visual design direction
+- Apply hook engineering: hook slide must stop the scroll
 - Data slides should present ONE clear stat per slide
-- CTA slide drives saves, shares, follows
-- Return ONLY the JSON`;
-}
+- CTA slide drives saves, shares, follows`;
 
-function buildQuickTakePrompt(brand: BrandContext, research: string, topic: string): string {
-  return `Based on the following research, create a 2-5 minute Quick Take video script for ${brand.name}.
-
-BRAND VOICE:
-- Tone: ${brand.tone}
-- Language: ${brand.language}
-- Voice rules: ${brand.voiceRules.join("; ")}
-
-TOPIC: ${topic}
-
-RESEARCH:
-${research}
-
-Create a quick take with this EXACT JSON structure:
+const QUICK_TAKE_STRUCTURE = `Create a quick take with this EXACT JSON structure:
 {
   "script": {
     "sections": [
@@ -386,12 +176,510 @@ Create a quick take with this EXACT JSON structure:
   ]
 }
 
-IMPORTANT:
+REQUIREMENTS:
 - This is a SHORT opinion piece — more editorial, less research depth
 - The host should have a clear, strong take
 - Max 5 minutes runtime
 - More conversational than a full explainer
-- Return ONLY the JSON`;
+- Apply hook engineering for the opening`;
+
+// ─── Content Type Mapping ───
+
+const CONTENT_TYPE_MAP: Record<string, ContentTypeMapping> = {
+  youtube_explainer: {
+    engineType: "VIDEO_SCRIPT",
+    platform: "YOUTUBE",
+    pipelineType: "cinematic",
+    jsonStructure: YOUTUBE_EXPLAINER_STRUCTURE,
+  },
+  x_thread: {
+    engineType: "TWEET_THREAD",
+    platform: "X_THREAD",
+    pipelineType: "viral_micro",
+    jsonStructure: X_THREAD_STRUCTURE,
+  },
+  carousel: {
+    engineType: "INSTAGRAM_CAROUSEL",
+    platform: "META_CAROUSEL",
+    pipelineType: "carousel",
+    jsonStructure: CAROUSEL_STRUCTURE,
+  },
+  quick_take: {
+    engineType: "VIDEO_SHORT",
+    platform: "YOUTUBE",
+    pipelineType: "cinematic",
+    jsonStructure: QUICK_TAKE_STRUCTURE,
+  },
+};
+
+// ─── Main Handler ───
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getAuthSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { topic, brandId, contentType, recommendationContext } = body as {
+      topic: string;
+      brandId: string;
+      contentType: string;
+      recommendationContext?: RecommendationContext;
+    };
+
+    if (!topic || !brandId || !contentType) {
+      return NextResponse.json(
+        { error: "topic, brandId, and contentType are required" },
+        { status: 400 }
+      );
+    }
+
+    const mapping = CONTENT_TYPE_MAP[contentType];
+    if (!mapping) {
+      return NextResponse.json(
+        { error: `Invalid contentType. Must be one of: ${Object.keys(CONTENT_TYPE_MAP).join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // Load brand
+    const brand = await prisma.brand.findUnique({ where: { id: brandId } });
+    if (!brand) {
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+    }
+
+    const voiceRules = parseSafe<string[]>(brand.voiceRules, []);
+    const rec = recommendationContext;
+
+    // ─── STEP 1: Load skills for this content type ───
+
+    const orchestrator = new SkillOrchestrator();
+    const skillPaths = engineRouter.getSkillPaths(mapping.engineType);
+
+    const loadedSkills = await Promise.all(
+      skillPaths.map((p) => orchestrator.loadSkill(p).catch(() => null))
+    );
+    const skills = loadedSkills.filter((s): s is SkillFile => s !== null);
+
+    // Load brand identity skill
+    const brandSlug = brand.slug;
+    const brandIdentity = await orchestrator
+      .loadSkill(`brand/identity/${brandSlug}/identity.md`)
+      .catch(() => null);
+    const brandVoiceExamples = await orchestrator
+      .loadSkill(`brand/identity/${brandSlug}/voice-examples.md`)
+      .catch(() => null);
+    const brandPlatformSkill = await orchestrator
+      .loadSkill(`brand/identity/${brandSlug}/platforms.md`)
+      .catch(() => null);
+
+    // ─── STEP 2: Build brand voice block ───
+
+    const brandVoice = getBrandVoiceBlock(
+      brand.name,
+      voiceRules,
+      brand.tone ?? "neutral",
+      brand.language ?? "English"
+    );
+
+    const brandColorPalette = getBrandColorPalette(brand.name);
+
+    // ─── STEP 3: Build skill context ───
+
+    // Separate research skills from editorial/platform skills
+    const researchSkill = skills.find((s) => s.path.includes("fact-dossier-building"));
+    const factCheckSkill = skills.find((s) => s.path.includes("fact-check-shield"));
+    const editorialSkills = skills.filter(
+      (s) =>
+        !s.path.includes("fact-dossier-building") &&
+        !s.path.includes("fact-check-shield")
+    );
+
+    const editorialSkillContext = editorialSkills
+      .map((s) => `## ${s.meta.name}\n${s.instructions}`)
+      .join("\n\n");
+
+    // ─── STEP 4: Guided research via Gemini ───
+
+    const researchSystemPrompt = `You are a senior research analyst preparing a comprehensive fact dossier for content creation.
+${researchSkill?.instructions ? `\n## RESEARCH METHODOLOGY\n${researchSkill.instructions}` : ""}
+${factCheckSkill?.instructions ? `\n## FACT-CHECK PROTOCOL\n${factCheckSkill.instructions}` : ""}
+
+Be thorough, factual, and cite sources where possible. For each claim, note the source. For each stakeholder, note their position and recent statements. For data points, find the most recent authoritative numbers.`;
+
+    const researchUserPrompt = `Research this topic thoroughly for a ${contentType.replace(/_/g, " ")} piece by ${brand.name}.
+
+TOPIC: ${topic}
+${rec?.angle ? `EDITORIAL ANGLE: ${rec.angle}` : ""}
+${rec?.keyDataPoints?.length ? `KEY DATA POINTS TO VERIFY: ${rec.keyDataPoints.join(", ")}` : ""}
+${rec?.stakeholders?.length ? `KEY STAKEHOLDERS: ${rec.stakeholders.join(", ")}` : ""}
+${rec?.sensitivityLevel ? `SENSITIVITY LEVEL: ${rec.sensitivityLevel}` : ""}
+${rec?.reasoning ? `EDITORIAL REASONING: ${rec.reasoning}` : ""}
+
+Provide a comprehensive research dossier including:
+- Key facts and verified data points (with sources)
+- Timeline of events (with dates)
+- Key stakeholders and their positions
+- Statistics and numbers (with attribution)
+- Different perspectives and viewpoints
+- Geopolitical implications (especially for India)
+- Context and background needed for the audience
+- Potential counterarguments and their evidence
+
+Return a well-structured report.`;
+
+    const researchResult = await routeToModel(
+      "research",
+      researchSystemPrompt,
+      researchUserPrompt
+    );
+    const research = researchResult.raw;
+
+    if (!research || research.trim().length < 100) {
+      return NextResponse.json(
+        { error: "Research phase failed — insufficient data returned" },
+        { status: 500 }
+      );
+    }
+
+    // ─── STEP 5: Generate content via Claude (creative writing) ───
+
+    const contentSystemPrompt = `You are a world-class content creator for ${brand.name}. Return ONLY valid JSON.
+
+## YOUR BRAND VOICE
+${brandVoice}
+${brandIdentity?.instructions ? `\n## BRAND IDENTITY\n${brandIdentity.instructions}` : ""}
+${brandVoiceExamples?.instructions ? `\n## VOICE EXAMPLES\n${brandVoiceExamples.instructions}` : ""}
+${brandPlatformSkill?.instructions ? `\n## PLATFORM STRATEGY\n${brandPlatformSkill.instructions}` : ""}
+
+## YOUR EDITORIAL SKILLS
+${editorialSkillContext}
+
+## CONTENT TYPE: ${contentType.replace(/_/g, " ")}
+## PLATFORM: ${engineRouter.getPlatform(mapping.engineType)}
+${brandColorPalette ? `## COLOR PALETTE: ${brandColorPalette.description}` : ""}
+
+Apply every skill instruction above to produce exceptional content. Don't just write — think editorially.
+Use the hook engineering principles. Use the title engineering formulas. Use the narrative arc structure.
+Every choice should be deliberate and backed by the skill frameworks above.`;
+
+    const contentUserPrompt = `Create a ${contentType.replace(/_/g, " ")} for ${brand.name} on ${engineRouter.getPlatform(mapping.engineType)}.
+
+TOPIC: ${topic}
+${rec?.angle ? `ANGLE: ${rec.angle}` : "ANGLE: Use your best editorial judgment"}
+${rec?.suggestedTitle ? `SUGGESTED TITLE: ${rec.suggestedTitle}` : ""}
+${rec?.priority ? `PRIORITY: ${rec.priority}` : ""}
+${rec?.urgency ? `URGENCY: ${rec.urgency}` : ""}
+
+RESEARCH DOSSIER:
+${research}
+
+${mapping.jsonStructure}
+
+Return ONLY the JSON, no other text.`;
+
+    const contentResult = await routeToModel(
+      "drafting",
+      contentSystemPrompt,
+      contentUserPrompt,
+      { temperature: 0.7, maxTokens: 65536 }
+    );
+
+    const parsed = contentResult.parsed as Record<string, unknown> | null;
+
+    if (!parsed) {
+      return NextResponse.json(
+        {
+          error: "Content generation failed — could not parse AI response",
+          raw: contentResult.raw?.slice(0, 500),
+        },
+        { status: 500 }
+      );
+    }
+
+    // ─── STEP 6: Save deliverable + assets ───
+
+    const deliverable = await prisma.deliverable.create({
+      data: {
+        brandId,
+        platform: mapping.platform,
+        pipelineType: mapping.pipelineType,
+        status: "REVIEW",
+        copyMarkdown: buildCopyMarkdown(parsed, contentType),
+        scriptData:
+          contentType === "youtube_explainer" ||
+          contentType === "quick_take" ||
+          contentType === "x_thread"
+            ? (parsed as Record<string, unknown> as any)
+            : undefined,
+        carouselData: contentType === "carousel" ? (parsed as Record<string, unknown> as any) : undefined,
+        postingPlan: parsed.tags
+          ? ({ tags: parsed.tags, description: parsed.description } as any)
+          : undefined,
+        researchPrompt: topic,
+        factDossierId: null,
+      },
+    });
+
+    // Create assets from generated content
+    const assets = buildAssets(parsed, contentType, deliverable.id);
+    if (assets.length > 0) {
+      await prisma.asset.createMany({ data: assets as any });
+    }
+
+    // Save research as NarrativeTree + FactDossier
+    const tree = await prisma.narrativeTree.create({
+      data: {
+        title: topic,
+        summary: research.slice(0, 500),
+        status: "IN_PRODUCTION",
+        urgency: rec?.urgency === "breaking" ? "high" : "normal",
+        createdById: session.user.id,
+        signalData: {
+          topic,
+          generatedAt: new Date().toISOString(),
+          angle: rec?.angle ?? null,
+          skillsUsed: skills.map((s) => s.meta.name),
+          modelUsed: contentResult.model,
+        } as any,
+      },
+    });
+
+    await prisma.factDossier.create({
+      data: {
+        treeId: tree.id,
+        structuredData: parsed as any,
+        sources: extractSources(research),
+        visualAssets: [],
+        rawResearch: research,
+      },
+    });
+
+    // Link deliverable to tree
+    await prisma.deliverable.update({
+      where: { id: deliverable.id },
+      data: { treeId: tree.id },
+    });
+
+    // ─── STEP 7: Fire image generation in background ───
+
+    fireImageGeneration(parsed, contentType, deliverable.id, brand.name, brandColorPalette).catch(
+      (err) => console.error("[quick-generate] Image generation error:", err)
+    );
+
+    // ─── STEP 8: Log skill executions ───
+
+    logSkillExecutions(
+      skills,
+      brandIdentity,
+      brandVoiceExamples,
+      brandPlatformSkill,
+      { topic, contentType, brandId },
+      deliverable.id,
+      session.user.id,
+      contentResult.model
+    ).catch((err) =>
+      console.error("[quick-generate] Skill logging error:", err)
+    );
+
+    return NextResponse.json({
+      deliverableId: deliverable.id,
+      treeId: tree.id,
+      contentType,
+      platform: mapping.platform,
+      status: "REVIEW",
+      skillsLoaded: skills.map((s) => s.meta.name),
+      modelUsed: contentResult.model,
+      brandVoiceApplied: brand.name,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("Quick-generate error:", message);
+    return NextResponse.json(
+      { error: `Generation failed: ${message}` },
+      { status: 500 }
+    );
+  }
+}
+
+// ─── Image Generation ───
+
+async function fireImageGeneration(
+  parsed: Record<string, unknown>,
+  contentType: string,
+  deliverableId: string,
+  brandName: string,
+  colorPalette: { colors: string[]; description: string } | null
+) {
+  const colorHint = colorPalette
+    ? ` Use brand colors: ${colorPalette.description}.`
+    : "";
+
+  const imagePromises: Promise<void>[] = [];
+
+  // Thumbnail generation for all content types
+  const thumbs = (parsed.thumbnailBriefs as Array<{
+    concept: string;
+    textOverlay: string;
+    colorScheme: string;
+    composition: string;
+  }>) ?? [];
+
+  if (thumbs.length > 0) {
+    const thumb = thumbs[0];
+    imagePromises.push(
+      generateAndSaveImage(
+        `Professional ${contentType.replace(/_/g, " ")} thumbnail for ${brandName}: ${thumb.concept}. Text overlay: "${thumb.textOverlay}". ${thumb.composition}.${colorHint}`,
+        deliverableId,
+        "THUMBNAIL",
+        0
+      )
+    );
+  }
+
+  // Carousel slide images
+  if (contentType === "carousel") {
+    const slides = (parsed.slides as Array<{
+      position: number;
+      visualPrompt: string;
+      headline: string;
+    }>) ?? [];
+
+    for (const slide of slides.slice(0, 4)) {
+      imagePromises.push(
+        generateAndSaveImage(
+          `Instagram carousel slide ${slide.position}: ${slide.visualPrompt}.${colorHint}`,
+          deliverableId,
+          "CAROUSEL_SLIDE",
+          slide.position
+        )
+      );
+    }
+  }
+
+  if (imagePromises.length > 0) {
+    const results = await Promise.allSettled(imagePromises);
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+    console.log(
+      `[quick-generate] Image gen: ${succeeded} succeeded, ${failed} failed`
+    );
+  }
+}
+
+async function generateAndSaveImage(
+  prompt: string,
+  deliverableId: string,
+  assetType: "THUMBNAIL" | "CAROUSEL_SLIDE",
+  index: number
+) {
+  try {
+    const { GoogleGenAI } = await import("@google/genai");
+    const genAI = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY || "",
+    });
+
+    const response = await genAI.models.generateContent({
+      model: "gemini-2.0-flash-preview-image-generation",
+      contents: prompt,
+      config: {
+        responseModalities: ["IMAGE", "TEXT"],
+      },
+    });
+
+    const parts = response.candidates?.[0]?.content?.parts;
+    const imagePart = parts?.find(
+      (p: { inlineData?: { mimeType?: string } }) =>
+        p.inlineData?.mimeType?.startsWith("image/")
+    );
+
+    if (imagePart?.inlineData?.data) {
+      // Update the placeholder asset with real image data
+      const asset = await prisma.asset.findFirst({
+        where: {
+          deliverableId,
+          type: assetType,
+          ...(assetType === "CAROUSEL_SLIDE"
+            ? { slideIndex: index }
+            : {}),
+        },
+      });
+
+      if (asset) {
+        await prisma.asset.update({
+          where: { id: asset.id },
+          data: {
+            url: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
+            metadata: {
+              ...(typeof asset.metadata === "object" && asset.metadata !== null
+                ? asset.metadata
+                : {}),
+              generated: true,
+              generatedAt: new Date().toISOString(),
+            },
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.error(
+      `[quick-generate] Image gen failed for ${assetType}-${index}:`,
+      err instanceof Error ? err.message : err
+    );
+  }
+}
+
+// ─── Skill Execution Logging ───
+
+async function logSkillExecutions(
+  skills: SkillFile[],
+  brandIdentity: SkillFile | null,
+  brandVoiceExamples: SkillFile | null,
+  brandPlatformSkill: SkillFile | null,
+  context: { topic: string; contentType: string; brandId: string },
+  deliverableId: string,
+  userId: string,
+  modelUsed: string
+) {
+  const allSkills = [
+    ...skills,
+    brandIdentity,
+    brandVoiceExamples,
+    brandPlatformSkill,
+  ].filter((s): s is SkillFile => s !== null);
+
+  for (const skill of allSkills) {
+    try {
+      const dbSkill = await prisma.skill.upsert({
+        where: { path: skill.path },
+        create: {
+          path: skill.path,
+          domain: skill.domain,
+          module: skill.meta.module,
+          name: skill.meta.name,
+        },
+        update: {},
+      });
+
+      await prisma.skillExecution.create({
+        data: {
+          skillId: dbSkill.id,
+          deliverableId,
+          brandId: context.brandId,
+          platform: CONTENT_TYPE_MAP[context.contentType]?.platform,
+          inputContext: context as object,
+          outputSummary: { usage: "prompt_context", contentType: context.contentType },
+          modelUsed,
+          status: "completed",
+          executedById: userId,
+        },
+      });
+    } catch {
+      // Don't let logging failure break the response
+    }
+  }
 }
 
 // ─── Helpers ───
@@ -400,32 +688,54 @@ function parseSafe<T>(value: unknown, fallback: T): T {
   if (!value) return fallback;
   if (Array.isArray(value)) return value as T;
   if (typeof value === "string") {
-    try { return JSON.parse(value) as T; } catch { return fallback; }
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
   }
   return fallback;
 }
 
-function buildCopyMarkdown(parsed: Record<string, unknown>, contentType: string): string {
+function buildCopyMarkdown(
+  parsed: Record<string, unknown>,
+  contentType: string
+): string {
   const titles = (parsed.titles as Array<{ text: string }>) ?? [];
   const title = titles[0]?.text ?? "Untitled";
   const description = (parsed.description as string) ?? "";
 
   if (contentType === "youtube_explainer" || contentType === "quick_take") {
-    const script = parsed.script as { sections?: Array<{ type: string; text: string }> };
+    const script = parsed.script as {
+      sections?: Array<{ type: string; text: string }>;
+    };
     const sections = script?.sections ?? [];
-    const fullText = sections.map((s) => `**[${s.type.toUpperCase()}]**\n${s.text}`).join("\n\n");
+    const fullText = sections
+      .map((s) => `**[${s.type.toUpperCase()}]**\n${s.text}`)
+      .join("\n\n");
     return `# ${title}\n\n${fullText}\n\n---\n\n${description}`;
   }
 
   if (contentType === "x_thread") {
-    const tweets = (parsed.tweets as Array<{ position: number; text: string }>) ?? [];
-    const threadText = tweets.map((t) => `**Tweet ${t.position}:**\n${t.text}`).join("\n\n");
+    const tweets = (parsed.tweets as Array<{
+      position: number;
+      text: string;
+    }>) ?? [];
+    const threadText = tweets
+      .map((t) => `**Tweet ${t.position}:**\n${t.text}`)
+      .join("\n\n");
     return `# ${title}\n\n${threadText}`;
   }
 
   if (contentType === "carousel") {
-    const slides = (parsed.slides as Array<{ position: number; headline: string; bodyText: string }>) ?? [];
-    const slideText = slides.map((s) => `**Slide ${s.position}: ${s.headline}**\n${s.bodyText}`).join("\n\n");
+    const slides = (parsed.slides as Array<{
+      position: number;
+      headline: string;
+      bodyText: string;
+    }>) ?? [];
+    const slideText = slides
+      .map((s) => `**Slide ${s.position}: ${s.headline}**\n${s.bodyText}`)
+      .join("\n\n");
     const caption = (parsed.caption as string) ?? "";
     return `# ${title}\n\n${slideText}\n\n---\n\n**Caption:** ${caption}`;
   }
@@ -437,24 +747,40 @@ function buildAssets(
   parsed: Record<string, unknown>,
   contentType: string,
   deliverableId: string
-): Prisma.AssetCreateManyInput[] {
-  const assets: Prisma.AssetCreateManyInput[] = [];
+): AssetInput[] {
+  const assets: AssetInput[] = [];
 
   // Thumbnail briefs → THUMBNAIL assets
-  const thumbs = (parsed.thumbnailBriefs as Array<{ concept: string; textOverlay: string; colorScheme: string; composition: string }>) ?? [];
+  const thumbs = (parsed.thumbnailBriefs as Array<{
+    concept: string;
+    textOverlay: string;
+    colorScheme: string;
+    composition: string;
+  }>) ?? [];
   thumbs.forEach((t, i) => {
     assets.push({
       deliverableId,
       type: "THUMBNAIL",
       url: `placeholder://thumbnail-${i + 1}`,
       promptUsed: `${t.concept}. Text: "${t.textOverlay}". Colors: ${t.colorScheme}. Composition: ${t.composition}.`,
-      metadata: { concept: t.concept, textOverlay: t.textOverlay, colorScheme: t.colorScheme, composition: t.composition },
+      metadata: {
+        concept: t.concept,
+        textOverlay: t.textOverlay,
+        colorScheme: t.colorScheme,
+        composition: t.composition,
+      },
     });
   });
 
   // Carousel slides → CAROUSEL_SLIDE assets
   if (contentType === "carousel") {
-    const slides = (parsed.slides as Array<{ position: number; headline: string; visualPrompt: string; textOverlay: string; colorHex: string }>) ?? [];
+    const slides = (parsed.slides as Array<{
+      position: number;
+      headline: string;
+      visualPrompt: string;
+      textOverlay: string;
+      colorHex: string;
+    }>) ?? [];
     slides.forEach((s) => {
       assets.push({
         deliverableId,
@@ -462,7 +788,11 @@ function buildAssets(
         url: `placeholder://slide-${s.position}`,
         promptUsed: s.visualPrompt,
         slideIndex: s.position,
-        metadata: { headline: s.headline, textOverlay: s.textOverlay, colorHex: s.colorHex },
+        metadata: {
+          headline: s.headline,
+          textOverlay: s.textOverlay,
+          colorHex: s.colorHex,
+        },
       });
     });
   }

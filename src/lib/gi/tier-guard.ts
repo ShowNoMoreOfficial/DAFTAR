@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
 
 export type TierLevel = 1 | 2 | 3 | 4;
 
@@ -66,7 +65,7 @@ export async function createPendingAction(params: {
   description: string;
   targetUserId?: string;
   targetEntity?: string;
-  actionData: Prisma.InputJsonValue;
+  actionData: object;
   reasoning?: string;
 }) {
   return prisma.gIAutonomousAction.create({
