@@ -30,8 +30,12 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetch("/api/hoccr/reports")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to fetch");
+        return r.json();
+      })
       .then((d) => setReports(Array.isArray(d) ? d : []))
+      .catch(() => setReports([]))
       .finally(() => setLoading(false));
   }, []);
 

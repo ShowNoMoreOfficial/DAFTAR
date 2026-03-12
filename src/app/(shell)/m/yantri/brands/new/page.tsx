@@ -1,10 +1,5 @@
-import BrandForm from "@/components/yantri/BrandForm";
+import { redirect } from "next/navigation";
 
 export default function NewBrandPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6 text-foreground">New Brand</h1>
-      <BrandForm />
-    </div>
-  );
+  redirect("/admin/clients");
 }

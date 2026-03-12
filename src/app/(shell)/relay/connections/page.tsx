@@ -77,6 +77,8 @@ export default function ConnectionsPage() {
         const data = await res.json();
         setConnections(Array.isArray(data) ? data : data.data || []);
       }
+    } catch {
+      // Relay is simulated — fail gracefully
     } finally {
       setLoading(false);
     }

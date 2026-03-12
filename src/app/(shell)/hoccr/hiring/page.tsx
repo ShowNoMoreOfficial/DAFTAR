@@ -70,7 +70,7 @@ export default function HiringPage() {
 
   useEffect(() => {
     fetchPositions();
-    fetch("/api/departments").then((r) => r.json()).then((d) => setDepartments(Array.isArray(d) ? d : []));
+    fetch("/api/departments").then((r) => r.json()).then((d) => setDepartments(Array.isArray(d) ? d : [])).catch(() => {});
   }, [fetchPositions]);
 
   const handleExpandPosition = async (id: string) => {

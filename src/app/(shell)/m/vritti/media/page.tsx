@@ -119,16 +119,7 @@ export default function MediaPage() {
             {media.length} file{media.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button
-          size="sm"
-          className="bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
-          onClick={() => {
-            // Mock upload — UI only
-          }}
-        >
-          <Upload className="h-3.5 w-3.5" />
-          Upload
-        </Button>
+        {/* Upload not yet implemented */}
       </div>
 
       {/* Search & Filters */}
@@ -173,14 +164,7 @@ export default function MediaPage() {
                   ? "Try adjusting your filters"
                   : "Upload your first media file to get started"}
               </p>
-              <Button
-                size="sm"
-                className="mt-4 bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)]/90"
-                onClick={() => {}}
-              >
-                <Upload className="h-3.5 w-3.5" />
-                Upload
-              </Button>
+              {/* Upload not yet implemented */}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">

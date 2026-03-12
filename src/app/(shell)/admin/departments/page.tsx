@@ -84,7 +84,8 @@ export default function DepartmentsPage() {
     fetchDepartments();
     fetch("/api/users")
       .then((r) => r.json())
-      .then((d) => setUsers(Array.isArray(d) ? d : []));
+      .then((d) => setUsers(Array.isArray(d) ? d : []))
+      .catch(() => {});
   }, [fetchDepartments]);
 
   const resetForm = () => {

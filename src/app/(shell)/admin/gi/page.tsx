@@ -82,15 +82,16 @@ export default function GIOverviewPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/gi/actions?limit=5").then((r) => r.json()),
-      fetch("/api/gi/predictions").then((r) => r.json()),
-      fetch("/api/gi/learning").then((r) => r.json()),
+      fetch("/api/gi/actions?limit=5").then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch("/api/gi/predictions").then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch("/api/gi/learning").then((r) => r.ok ? r.json() : null).catch(() => null),
     ])
       .then(([actions, predictions, learning]) => {
-        setActionsData(actions);
-        setPredictionsData(predictions);
-        setLearningData(learning);
+        if (actions) setActionsData(actions);
+        if (predictions) setPredictionsData(predictions);
+        if (learning) setLearningData(learning);
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

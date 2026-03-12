@@ -80,12 +80,18 @@ export default function CredibilityPage() {
 
   useEffect(() => {
     fetch("/api/credibility")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to fetch");
+        return r.json();
+      })
       .then((d) => {
         setScore(d.score);
         setStats(d.stats);
         setStreak(d.streak);
         setDeliveries(d.recentDeliveries || []);
+      })
+      .catch(() => {
+        // Data will remain null — fallback UI handles it
       })
       .finally(() => setLoading(false));
   }, []);

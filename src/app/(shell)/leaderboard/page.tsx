@@ -102,30 +102,38 @@ export default function LeaderboardPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [lbRes, achRes, chRes, rwRes, prRes] = await Promise.all([
-      fetch("/api/gamification/leaderboard").catch(() => null),
-      fetch("/api/gamification/achievements").catch(() => null),
-      fetch("/api/gamification/challenges").catch(() => null),
-      fetch("/api/gamification/rewards").catch(() => null),
-      fetch("/api/gamification/me").catch(() => null),
-    ]);
-    if (lbRes?.ok) setEntries(await lbRes.json());
-    if (achRes?.ok) setAchievements(await achRes.json());
-    if (chRes?.ok) setChallenges(await chRes.json());
-    if (rwRes?.ok) setRewards(await rwRes.json());
-    if (prRes?.ok) setProfile(await prRes.json());
+    try {
+      const [lbRes, achRes, chRes, rwRes, prRes] = await Promise.all([
+        fetch("/api/gamification/leaderboard").catch(() => null),
+        fetch("/api/gamification/achievements").catch(() => null),
+        fetch("/api/gamification/challenges").catch(() => null),
+        fetch("/api/gamification/rewards").catch(() => null),
+        fetch("/api/gamification/me").catch(() => null),
+      ]);
+      if (lbRes?.ok) setEntries(await lbRes.json().catch(() => []));
+      if (achRes?.ok) setAchievements(await achRes.json().catch(() => []));
+      if (chRes?.ok) setChallenges(await chRes.json().catch(() => []));
+      if (rwRes?.ok) setRewards(await rwRes.json().catch(() => []));
+      if (prRes?.ok) setProfile(await prRes.json().catch(() => null));
+    } catch {
+      // Fail gracefully — data stays at defaults
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const claimReward = async (rewardId: string) => {
-    const res = await fetch("/api/gamification/rewards", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rewardId }),
-    });
-    if (res.ok) fetchAll();
+    try {
+      const res = await fetch("/api/gamification/rewards", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rewardId }),
+      });
+      if (res.ok) fetchAll();
+    } catch {
+      // Fail silently — user can retry
+    }
   };
 
   const filteredAchievements = achFilter === "all"

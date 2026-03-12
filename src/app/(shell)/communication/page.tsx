@@ -141,6 +141,8 @@ function AnnouncementsTab() {
         const data = await res.json();
         setAnnouncements(data.data || data || []);
       }
+    } catch {
+      // Fail gracefully
     } finally {
       setLoading(false);
     }
@@ -372,16 +374,22 @@ function FeedbackTab() {
         const data = await res.json();
         setChannels(data.data || data || []);
       }
+    } catch {
+      // Fail gracefully
     } finally {
       setLoading(false);
     }
   }, []);
 
   const fetchEntries = useCallback(async (channelId: string) => {
-    const res = await fetch(`/api/communication/feedback/entries?channelId=${channelId}`);
-    if (res.ok) {
-      const data = await res.json();
-      setEntries(data.data || data || []);
+    try {
+      const res = await fetch(`/api/communication/feedback/entries?channelId=${channelId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEntries(data.data || data || []);
+      }
+    } catch {
+      setEntries([]);
     }
   }, []);
 

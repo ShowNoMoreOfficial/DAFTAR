@@ -42,12 +42,16 @@ export default function SaaSDashboardPage() {
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const [orgsRes, productsRes] = await Promise.all([
-        fetch("/api/saas/organizations"),
-        fetch("/api/saas/products"),
-      ]);
-      if (orgsRes.ok) setOrgs(await orgsRes.json());
-      if (productsRes.ok) setProducts(await productsRes.json());
+      try {
+        const [orgsRes, productsRes] = await Promise.all([
+          fetch("/api/saas/organizations").catch(() => null),
+          fetch("/api/saas/products").catch(() => null),
+        ]);
+        if (orgsRes?.ok) setOrgs(await orgsRes.json().catch(() => []));
+        if (productsRes?.ok) setProducts(await productsRes.json().catch(() => []));
+      } catch {
+        // Fail gracefully
+      }
       setLoading(false);
     }
     fetchData();

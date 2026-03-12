@@ -40,9 +40,14 @@ export default function YantriBrandsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-[var(--text-primary)]">Brands</h1>
-        <p className="text-sm text-[var(--text-secondary)] mt-1">Brand configurations for narrative intelligence</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">Brands</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Brand configurations for narrative intelligence</p>
+        </div>
+        <a href="/admin/clients" className="text-xs text-[var(--accent-primary)] hover:underline">
+          Manage brands &rarr;
+        </a>
       </div>
 
       {brands.length === 0 ? (

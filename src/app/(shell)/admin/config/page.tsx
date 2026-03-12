@@ -136,8 +136,12 @@ function WorkflowsTab() {
   });
 
   const fetchWorkflows = useCallback(async () => {
-    const res = await fetch("/api/config/workflows");
-    if (res.ok) setWorkflows(await res.json());
+    try {
+      const res = await fetch("/api/config/workflows");
+      if (res.ok) setWorkflows(await res.json());
+    } catch {
+      // Fail gracefully
+    }
     setLoading(false);
   }, []);
 
@@ -356,8 +360,12 @@ function PlatformsTab() {
   });
 
   const fetchPlatforms = useCallback(async () => {
-    const res = await fetch("/api/config/platforms");
-    if (res.ok) setPlatforms(await res.json());
+    try {
+      const res = await fetch("/api/config/platforms");
+      if (res.ok) setPlatforms(await res.json());
+    } catch {
+      // Fail gracefully
+    }
     setLoading(false);
   }, []);
 
