@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
@@ -9,10 +10,44 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const error = searchParams.get("error");
+  const verify = searchParams.get("verify");
+
+  const [email, setEmail] = useState("");
+  const [emailSent, setEmailSent] = useState(!!verify);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailLoading(true);
+    setEmailError("");
+
+    try {
+      const result = await signIn("nodemailer", {
+        email,
+        redirect: false,
+        callbackUrl,
+      });
+
+      if (result?.ok) {
+        setEmailSent(true);
+      } else {
+        setEmailError(
+          result?.error === "AccessDenied"
+            ? "This email is not registered. Contact your admin."
+            : result?.error || "Failed to send login email"
+        );
+      }
+    } catch {
+      setEmailError("Something went wrong. Please try again.");
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg-abyss)]">
-      <div className="w-full max-w-sm space-y-8 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 shadow-[var(--shadow-lg)]">
+      <div className="w-full max-w-sm space-y-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 shadow-[var(--shadow-lg)]">
         {/* Logo / Title */}
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
@@ -30,6 +65,65 @@ function LoginForm() {
               : "An error occurred. Please try again."}
           </div>
         )}
+
+        {/* Email Magic Link */}
+        {!emailSent ? (
+          <form onSubmit={handleEmailLogin} className="space-y-3">
+            <div>
+              <label className="mb-1 block text-sm text-[var(--text-secondary)]">
+                Email address
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@shownomore.com"
+                required
+                className="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-deep)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:outline-none"
+              />
+            </div>
+            {emailError && (
+              <p className="text-sm text-red-400">{emailError}</p>
+            )}
+            <Button
+              type="submit"
+              disabled={emailLoading || !email}
+              className="w-full py-5 text-sm font-medium"
+            >
+              {emailLoading ? "Sending..." : "Sign in with Email"}
+            </Button>
+          </form>
+        ) : (
+          <div className="rounded-lg bg-[var(--bg-deep)] p-6 text-center">
+            <div className="mb-3 text-3xl">&#9993;</div>
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">
+              Check your email
+            </h3>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              We sent a sign-in link to{" "}
+              {email ? <strong>{email}</strong> : "your email"}
+            </p>
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
+              Click the link in the email to log in. It expires in 24 hours.
+            </p>
+            <button
+              onClick={() => {
+                setEmailSent(false);
+                setEmail("");
+              }}
+              className="mt-4 text-sm text-[var(--accent-primary)] hover:underline"
+            >
+              Use a different email
+            </button>
+          </div>
+        )}
+
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-[var(--border-default)]" />
+          <span className="text-xs uppercase text-[var(--text-muted)]">or</span>
+          <div className="h-px flex-1 bg-[var(--border-default)]" />
+        </div>
 
         {/* OAuth Buttons */}
         <div className="space-y-3">
