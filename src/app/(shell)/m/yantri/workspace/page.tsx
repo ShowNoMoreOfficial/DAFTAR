@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,15 +72,24 @@ const PIPELINE_LABELS: Record<string, string> = {
 // ─── Component ───
 
 export default function YantriWorkspacePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-[var(--text-secondary)]" /></div>}>
+      <YantriWorkspaceInner />
+    </Suspense>
+  );
+}
+
+function YantriWorkspaceInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterBrand, setFilterBrand] = useState<string>("all");
   const [filterPlatform, setFilterPlatform] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [brands, setBrands] = useState<{ id: string; name: string }[]>([]);
-  const [showGenerate, setShowGenerate] = useState(false);
-  const [genTopic, setGenTopic] = useState("");
+  const [showGenerate, setShowGenerate] = useState(!!searchParams.get("topic"));
+  const [genTopic, setGenTopic] = useState(searchParams.get("topic") || "");
   const [genBrand, setGenBrand] = useState("");
   const [genType, setGenType] = useState("youtube_explainer");
   const [generating, setGenerating] = useState(false);
@@ -100,7 +109,10 @@ export default function YantriWorkspacePage() {
 
       if (brandsRes.ok) {
         const data = await brandsRes.json();
-        setBrands(Array.isArray(data) ? data : data.brands || []);
+        const brandList = Array.isArray(data) ? data : data.brands || [];
+        setBrands(brandList);
+        // Auto-select first brand if opened from URL with topic pre-filled
+        if (brandList.length > 0 && !genBrand) setGenBrand(brandList[0].id);
       }
     } catch { /* silent */ }
     setLoading(false);

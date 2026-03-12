@@ -10,6 +10,40 @@ import {
 } from "@/lib/yantri/engine-router";
 import { factCheck, type FactDeviation } from "@/lib/yantri/fact-checker";
 
+// ─── Bridge helper: map ContentPiece platform → deliverable pipeline type & event ───
+
+function mapPlatformToPipelineType(platform: string): string {
+  switch (platform) {
+    case "X_THREAD":
+    case "X_SINGLE":
+    case "LINKEDIN":
+      return "viral_micro";
+    case "META_CAROUSEL":
+      return "carousel";
+    case "YOUTUBE":
+      return "cinematic";
+    case "META_REEL":
+      return "reel";
+    default:
+      return "standard";
+  }
+}
+
+function getPipelineEventName(pipelineType: string): string {
+  switch (pipelineType) {
+    case "viral_micro":
+      return "yantri/deliverable.viral-micro";
+    case "carousel":
+      return "yantri/deliverable.carousel";
+    case "cinematic":
+      return "yantri/deliverable.cinematic";
+    case "reel":
+      return "yantri/deliverable.reel";
+    default:
+      return "yantri/deliverable.viral-micro";
+  }
+}
+
 type DossierEvent = {
   data: { treeId: string };
 };
@@ -481,6 +515,28 @@ ${draftContent}`;
       }
     });
 
+    // ── Step 6: Bridge — create Deliverable and trigger pipeline ──
+    const bridgeResult = await step.run("bridge-to-deliverable", async () => {
+      const pipelineType = mapPlatformToPipelineType(piece.platform);
+      const deliverable = await prisma.deliverable.create({
+        data: {
+          brandId: piece.brandId,
+          treeId: piece.treeId,
+          platform: piece.platform,
+          pipelineType,
+          status: "PLANNED",
+          copyMarkdown: draftContent,
+          researchPrompt: piece.researchPrompt,
+        },
+      });
+      return { deliverableId: deliverable.id, pipelineType };
+    });
+
+    await step.sendEvent("trigger-deliverable-pipeline", {
+      name: getPipelineEventName(bridgeResult.pipelineType),
+      data: { deliverableId: bridgeResult.deliverableId },
+    });
+
     return {
       contentPieceId,
       status: "drafted",
@@ -490,6 +546,7 @@ ${draftContent}`;
       factCheckConfidence,
       deviationsCount: deviations.length,
       contentLength: draftContent.length,
+      deliverableId: bridgeResult.deliverableId,
     };
   }
 );

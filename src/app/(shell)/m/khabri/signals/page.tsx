@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import {
   Zap,
   Send,
   Filter,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { KhabriSignal, KhabriMeta } from "@/types/khabri";
@@ -75,6 +77,7 @@ function SentimentBar({ score: rawScore }: { score: number }) {
 // ─── Component ──────────────────────────────────────────
 
 export default function KhabriSignalsPage() {
+  const router = useRouter();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [meta, setMeta] = useState<KhabriMeta | null>(null);
   const [page, setPage] = useState(1);
@@ -353,6 +356,14 @@ export default function KhabriSignalsPage() {
 
                       {/* Row Actions */}
                       <div className="flex shrink-0 items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1 text-[10px] text-teal-600 hover:text-teal-700 hover:bg-teal-600/5"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/m/yantri/workspace?topic=${encodeURIComponent(signal.title)}`); }}
+                        >
+                          <Sparkles className="h-3 w-3" /> Generate
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

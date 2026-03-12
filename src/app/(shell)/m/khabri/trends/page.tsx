@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
   AlertTriangle,
   BarChart3,
   Activity,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { KhabriTrend, KhabriMeta } from "@/types/khabri";
@@ -78,6 +80,7 @@ const SEVERITY_CONFIG = {
 // ─── Component ──────────────────────────────────────────
 
 export default function KhabriTrendsPage() {
+  const router = useRouter();
   // Live trends data (from Khabri API)
   const [trends, setTrends] = useState<KhabriTrend[]>([]);
   const [meta, setMeta] = useState<KhabriMeta | null>(null);
@@ -195,6 +198,14 @@ export default function KhabriTrendsPage() {
                         anomaly.severity === "CRITICAL" ? "text-red-400" : "text-amber-400"
                       )} />
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 w-full h-7 text-[10px] border-teal-500/30 text-teal-600 hover:bg-teal-500/10"
+                      onClick={() => router.push(`/m/yantri/workspace?topic=${encodeURIComponent(anomaly.keyword)}`)}
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" /> Generate Content
+                    </Button>
                   </CardContent>
                 </Card>
               );
@@ -392,6 +403,7 @@ export default function KhabriTrendsPage() {
                   <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Category</th>
                   <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Region</th>
                   <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider text-right">Score</th>
+                  <th className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider w-24"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F0F2F5]">
@@ -438,6 +450,16 @@ export default function KhabriTrendsPage() {
                           {trend.score}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-[10px] text-teal-600 hover:text-teal-700 hover:bg-teal-600/5"
+                        onClick={(e) => { e.stopPropagation(); router.push(`/m/yantri/workspace?topic=${encodeURIComponent(trend.topic)}`); }}
+                      >
+                        <Sparkles className="h-3 w-3 mr-1" /> Generate
+                      </Button>
                     </td>
                   </tr>
                 ))}
