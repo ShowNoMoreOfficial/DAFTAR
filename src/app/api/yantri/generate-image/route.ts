@@ -73,12 +73,31 @@ export async function POST(request: Request) {
       }
     }
 
-    // Strategy 3: Pollinations.ai (free, no key)
+    // Strategy 3: Pollinations.ai (free, no key) — fetch server-side to avoid client rate limits
     const cleanPrompt = prompt.replace(/[^\w\s,.-]/g, " ").trim().substring(0, 500);
     const encoded = encodeURIComponent(cleanPrompt);
     const seed = Math.floor(Math.random() * 1000000);
     const pollinationsUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&seed=${seed}&nologo=true&model=flux`;
 
+    try {
+      const imgRes = await fetch(pollinationsUrl, {
+        signal: AbortSignal.timeout(60000),
+      });
+      if (imgRes.ok) {
+        const buffer = await imgRes.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString("base64");
+        const mime = imgRes.headers.get("content-type") || "image/jpeg";
+        return NextResponse.json({
+          success: true,
+          imageUrl: `data:${mime};base64,${base64}`,
+          source: "pollinations",
+        });
+      }
+    } catch (pollErr) {
+      console.warn("[generate-image] Pollinations fetch failed:", pollErr);
+    }
+
+    // Final fallback: return the URL directly (client fetches)
     return NextResponse.json({
       success: true,
       imageUrl: pollinationsUrl,
