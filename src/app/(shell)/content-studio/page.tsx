@@ -31,6 +31,8 @@ import {
   CheckSquare,
   ExternalLink,
   RotateCcw,
+  Film,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -169,18 +171,20 @@ const SENSITIVITY_CONFIG: Record<string, { icon: typeof Shield; color: string; l
 function mapContentType(ct: string): string {
   const map: Record<string, string> = {
     youtube_explainer: "youtube_explainer",
-    youtube_short: "quick_take",
+    youtube_short: "youtube_short",
     x_thread: "x_thread",
-    x_single: "x_thread",
-    instagram_carousel: "carousel",
-    instagram_reel: "quick_take",
-    linkedin_post: "x_thread",
-    linkedin_article: "x_thread",
-    blog_post: "x_thread",
+    x_single: "x_single",
+    instagram_carousel: "instagram_carousel",
+    instagram_reel: "instagram_reel",
+    linkedin_post: "linkedin_post",
+    linkedin_article: "linkedin_article",
+    blog_post: "blog_post",
+    newsletter: "newsletter",
+    podcast_script: "podcast_script",
     quick_take: "quick_take",
-    community_post: "x_thread",
+    community_post: "community_post",
   };
-  return map[ct] || "youtube_explainer";
+  return map[ct] || ct;
 }
 
 // ─── Helpers ───
@@ -283,6 +287,17 @@ function StudioTab() {
   const [genItems, setGenItems] = useState<GenerationItem[]>([]);
   const [recError, setRecError] = useState("");
   const autoTriggered = useRef(false);
+
+  // Short-form pack state
+  const [packGenerating, setPackGenerating] = useState(false);
+  const [packBrandId, setPackBrandId] = useState("");
+  const [packResults, setPackResults] = useState<Array<{
+    contentType: string;
+    label: string;
+    status: string;
+    deliverableId?: string;
+    error?: string;
+  }> | null>(null);
 
   // Signal context from Intelligence
   const signalId = searchParams.get("signalId") || null;
@@ -466,7 +481,38 @@ function StudioTab() {
     setSelectedIndices(new Set());
     setGenItems([]);
     setRecError("");
+    setPackResults(null);
+    setPackGenerating(false);
     autoTriggered.current = false;
+  };
+
+  // ─── Short-Form Pack ───
+
+  const handleGenerateShortFormPack = async () => {
+    if (!topic.trim() || !packBrandId) return;
+    setPackGenerating(true);
+    setPackResults(null);
+
+    try {
+      const res = await fetch("/api/yantri/short-form-pack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: topic.trim(), brandId: packBrandId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Pack generation failed");
+      setPackResults(data.pack);
+      fetchData(); // Refresh pipeline
+    } catch (err) {
+      setPackResults([{
+        contentType: "error",
+        label: "Pack Generation",
+        status: "error",
+        error: err instanceof Error ? err.message : "Failed",
+      }]);
+    } finally {
+      setPackGenerating(false);
+    }
   };
 
   // ─── Toggle selection ───
@@ -556,6 +602,75 @@ function StudioTab() {
           })()}
           {recError && (
             <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">{recError}</div>
+          )}
+
+          {/* Short-Form Pack */}
+          {topic.trim() && (
+            <div className="mt-3 rounded-lg border border-purple-500/20 bg-purple-500/5 p-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Film className="h-4 w-4 text-purple-400 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-purple-300">Short-Form Pack</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">YouTube Short + Reel + X Post + Story in parallel</p>
+                  </div>
+                </div>
+                <select
+                  value={packBrandId}
+                  onChange={(e) => setPackBrandId(e.target.value)}
+                  className="h-8 rounded-md border border-[var(--border-default)] bg-[var(--bg-deep)] px-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-purple-500"
+                >
+                  <option value="">Brand...</option>
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-500 text-white h-8 px-3 text-xs shrink-0"
+                  disabled={!packBrandId || packGenerating}
+                  onClick={handleGenerateShortFormPack}
+                >
+                  {packGenerating ? (
+                    <><Loader2 className="h-3 w-3 animate-spin mr-1.5" /> Generating...</>
+                  ) : (
+                    <><Zap className="h-3 w-3 mr-1.5" /> Generate Pack</>
+                  )}
+                </Button>
+              </div>
+
+              {/* Pack Results */}
+              {packResults && (
+                <div className="mt-3 space-y-1.5">
+                  {packResults.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs">
+                      {item.status === "done" ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      ) : (
+                        <X className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                      )}
+                      <span className={cn(
+                        "font-medium",
+                        item.status === "done" ? "text-emerald-400" : "text-red-400"
+                      )}>
+                        {item.label}
+                      </span>
+                      {item.deliverableId && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-5 text-[10px] text-purple-400 px-1.5"
+                          onClick={() => router.push(`/m/yantri/review/${item.deliverableId}`)}
+                        >
+                          Review <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
+                        </Button>
+                      )}
+                      {item.error && <span className="text-[10px] text-red-400/70">{item.error}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
