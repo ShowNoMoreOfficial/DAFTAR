@@ -37,7 +37,7 @@ The user sees a unified workflow, not internal module names:
 ### Internal module mapping (DO NOT expose these names in UI):
 - "Khabri" = Intelligence signals/trends (API: /api/khabri/)
 - "Yantri" = Content generation engine (API: /api/yantri/)
-- "Relay" = Publishing (SIMULATED — do not build real publishers)
+- "Relay" = Publishing (real OAuth + platform APIs wired)
 - "HOCCR" = Team/HR operations
 - "Vritti" = Editorial CMS
 - "GI" = AI Assistant copilot
@@ -64,7 +64,7 @@ Env vars: Stored in Vercel, pulled locally via `vercel env pull .env`
 1. NEVER add ignoreBuildErrors to next.config.ts
 2. NEVER modify prisma/schema.prisma without explicit approval
 3. ALWAYS run npm run build after changes
-4. Relay is deliberately simulated — do NOT build real publishers
+4. Relay publishes to real platforms via OAuth — ensure platform credentials are configured before testing
 5. Test on live URL after pushing: https://daftar-one.vercel.app
 6. Use unified names in UI (Intelligence, Content Studio, Production) — NEVER show Khabri/Yantri/Relay to users
 7. Links from Intelligence → Content Studio use ?topic= query param

@@ -320,51 +320,24 @@ export const publishPost = inngest.createFunction(
       }
     );
 
-    // Step 3: Call the platform API to publish
-    // In production, this dispatches to platform-specific adapters.
+    // Step 3: Publish via the real platform API
+    // executePublish() handles media upload, platform-specific publishing,
+    // DB status update (PUBLISHED/FAILED), PostAnalytics creation, and event emission.
     const publishResult = await step.run(
       "call-platform-api",
       async () => {
-        // Simulate platform API call
-        // In production: switch on platform, call Twitter/YouTube/Meta APIs
-        const platformId = `${platform.toLowerCase()}_${Date.now()}`;
-
-        return {
-          success: true,
-          platformPostId: platformId,
-          publishedAt: new Date().toISOString(),
-          url: `https://${platform.toLowerCase()}.com/post/${platformId}`,
-        };
+        const { executePublish } = await import("@/lib/relay/publish-executor");
+        return await executePublish(postId);
       }
     );
-
-    // Step 4: Update the post record in our database
-    await step.run("update-post-record", async () => {
-      await prisma.contentPost.update({
-        where: { id: postId },
-        data: {
-          status: "PUBLISHED",
-          publishedAt: new Date(publishResult.publishedAt),
-          platformPostId: publishResult.platformPostId,
-        },
-      });
-    });
-
-    // Step 5: Emit event for analytics tracking
-    // The learning loop will pick this up for performance attribution.
-    daftarEvents.emitEvent("content.published", {
-      postId,
-      platform,
-      brandId,
-      platformPostId: publishResult.platformPostId,
-    });
 
     return {
       postId,
       platform,
-      published: true,
+      published: publishResult.status === "PUBLISHED",
       platformPostId: publishResult.platformPostId,
-      url: publishResult.url,
+      url: publishResult.publishedUrl,
+      error: publishResult.error,
     };
   }
 );

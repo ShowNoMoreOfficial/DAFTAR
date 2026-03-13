@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
-import { daftarEvents } from "@/lib/event-bus";
+import { executePublish } from "@/lib/relay/publish-executor";
+
+export const maxDuration = 60; // Allow time for media uploads
 
 // POST /api/relay/posts/[id]/publish — Publish or schedule a post
 export async function POST(
@@ -58,35 +60,31 @@ export async function POST(
     return NextResponse.json(post);
   }
 
-  // Otherwise, publish now (simulated)
-  const post = await prisma.contentPost.update({
-    where: { id },
-    data: {
-      status: "PUBLISHED",
-      publishedAt: now,
-      platformPostId: `sim_${id}_${Date.now()}`, // simulated platform post ID
-    },
-    include: {
-      brand: { select: { id: true, name: true } },
-      analytics: true,
-    },
-  });
+  // Publish now via real platform publishers
+  try {
+    const result = await executePublish(id);
 
-  // Create initial analytics record
-  await prisma.postAnalytics.upsert({
-    where: { postId: id },
-    create: { postId: id },
-    update: { lastSyncedAt: now },
-  });
+    if (result.status === "FAILED") {
+      return NextResponse.json(
+        { error: result.error, status: "FAILED" },
+        { status: 502 }
+      );
+    }
 
-  daftarEvents.emitEvent("post.published", {
-    postId: post.id,
-    title: post.title,
-    platform: post.platform,
-    brandId: post.brandId,
-    publishedById: session.user.id,
-    publishedAt: now.toISOString(),
-  });
+    const post = await prisma.contentPost.findUnique({
+      where: { id },
+      include: {
+        brand: { select: { id: true, name: true } },
+        analytics: true,
+      },
+    });
 
-  return NextResponse.json(post);
+    return NextResponse.json(post);
+  } catch (err) {
+    await prisma.contentPost.update({
+      where: { id },
+      data: { status: "FAILED", errorMessage: String(err) },
+    });
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }

@@ -37,7 +37,7 @@ export async function callClaude(
     try {
       const streamCall = anthropic.messages.stream({
         model: "claude-sonnet-4-20250514",
-        max_tokens: options?.maxTokens ?? 8192,
+        max_tokens: Math.min(options?.maxTokens ?? 8192, 64000),
         temperature: options?.temperature ?? 0.3,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }],

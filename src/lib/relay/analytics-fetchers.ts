@@ -14,7 +14,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { refreshTwitterToken } from "@/lib/relay/oauth-helpers";
+import { refreshTwitterToken, refreshYouTubeToken } from "@/lib/relay/oauth-helpers";
 
 // ─── Standardized metrics shape ──────────────────────────
 
@@ -67,7 +67,24 @@ async function getAccessToken(
         return null;
       }
     }
-    // Other platforms: token might still work or need similar refresh
+    // YouTube: refresh via Google OAuth
+    if (platform === "youtube" && conn.refreshToken) {
+      try {
+        const refreshed = await refreshYouTubeToken(conn.refreshToken);
+        const newExpiry = new Date(Date.now() + refreshed.expires_in * 1000);
+        await prisma.platformConnection.update({
+          where: { id: connectionId },
+          data: {
+            accessToken: refreshed.access_token,
+            tokenExpiresAt: newExpiry,
+          },
+        });
+        return refreshed.access_token;
+      } catch {
+        return null;
+      }
+    }
+    // LinkedIn / Meta: long-lived tokens, no refresh needed
   }
 
   return conn.accessToken;

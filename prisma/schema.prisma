@@ -147,6 +147,8 @@ model User {
   narrativeTrees      NarrativeTree[]    @relation("NarrativeCreator")
   // GI Conversations
   giConversations     GIConversation[]
+  // Team Feedback
+  teamFeedbacks       TeamFeedback[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
@@ -1126,6 +1128,24 @@ model FeedbackEntry {
 
   @@index([channelId, status])
   @@map("feedback_entries")
+}
+
+model TeamFeedback {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // bug, suggestion, content_quality, ux_issue
+  message   String   @db.Text
+  page      String   // URL path where feedback was submitted
+  rating    Int?     // 1-5 for content quality
+  status    String   @default("NEW") // NEW, ACKNOWLEDGED, IN_PROGRESS, FIXED, WONTFIX
+  metadata  Json?    // viewport, userAgent, deliverableId, etc.
+  adminNote String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, type])
+  @@map("team_feedbacks")
 }
 
 // ─── Vritti: CMS ───────────────────────────────────────

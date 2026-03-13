@@ -185,14 +185,14 @@ export function getInstagramAuthUrl(state: string): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.META_APP_ID ?? "",
-    redirect_uri: process.env.META_REDIRECT_URI ?? "",
+    redirect_uri: process.env.META_IG_REDIRECT_URI ?? process.env.META_REDIRECT_URI ?? "",
     scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
     state,
   });
   return `${META_AUTH_URL}?${params.toString()}`;
 }
 
-/** Exchange a Meta authorization code for an access token. */
+/** Exchange a Meta authorization code for an access token (Instagram flow). */
 export async function exchangeInstagramCode(
   code: string
 ): Promise<{ access_token: string; token_type: string; expires_in: number }> {
@@ -202,7 +202,37 @@ export async function exchangeInstagramCode(
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.META_REDIRECT_URI ?? "",
+      redirect_uri: process.env.META_IG_REDIRECT_URI ?? process.env.META_REDIRECT_URI ?? "",
+      client_id: process.env.META_APP_ID ?? "",
+      client_secret: process.env.META_APP_SECRET ?? "",
+    }),
+  });
+  return res.json();
+}
+
+/** Build the Meta OAuth URL for Facebook Page management. */
+export function getFacebookAuthUrl(state: string): string {
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: process.env.META_APP_ID ?? "",
+    redirect_uri: process.env.META_FB_REDIRECT_URI ?? process.env.META_REDIRECT_URI ?? "",
+    scope: "pages_manage_posts,pages_read_engagement,pages_show_list",
+    state,
+  });
+  return `${META_AUTH_URL}?${params.toString()}`;
+}
+
+/** Exchange a Meta authorization code for an access token (Facebook flow). */
+export async function exchangeFacebookCode(
+  code: string
+): Promise<{ access_token: string; token_type: string; expires_in: number }> {
+  const res = await fetch(META_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: process.env.META_FB_REDIRECT_URI ?? process.env.META_REDIRECT_URI ?? "",
       client_id: process.env.META_APP_ID ?? "",
       client_secret: process.env.META_APP_SECRET ?? "",
     }),

@@ -8,6 +8,7 @@ import { TopBar } from "./top-bar";
 import { RightPanel } from "./right-panel";
 import { ContentPipelineBreadcrumb } from "./content-pipeline-breadcrumb";
 import { GIAssistant } from "@/components/gi/gi-assistant";
+import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { NotificationProvider } from "@/components/providers/notification-provider";
 import { useSidebarStore } from "@/store/sidebar-store";
 import { useGIContext } from "@/components/gi/gi-context";
@@ -108,6 +109,7 @@ export function ShellLayout({ user, children }: ShellLayoutProps) {
         </div>
 
         <RightPanel />
+        <FeedbackWidget />
         <GIAssistant />
       </div>
     </NotificationProvider>

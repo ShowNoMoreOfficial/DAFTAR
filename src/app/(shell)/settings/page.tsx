@@ -24,9 +24,10 @@ import {
   BookOpen,
   GitBranch,
   ArrowRight,
+  MessageSquarePlus,
 } from "lucide-react";
 
-type Tab = "profile" | "notifications" | "appearance" | "team" | "brands" | "platforms" | "ai" | "prompts" | "skills";
+type Tab = "profile" | "notifications" | "appearance" | "team" | "brands" | "platforms" | "ai" | "prompts" | "skills" | "feedback";
 
 const ADMIN_TABS: { id: Tab; label: string; icon: React.ReactNode; href: string; desc: string }[] = [
   { id: "team", label: "Team", icon: <Users className="h-4 w-4" />, href: "/admin/users", desc: "Users, roles, departments, invitations" },
@@ -35,6 +36,7 @@ const ADMIN_TABS: { id: Tab; label: string; icon: React.ReactNode; href: string;
   { id: "ai", label: "AI Config", icon: <Sparkles className="h-4 w-4" />, href: "/admin/gi", desc: "GI configuration, tier assignments, autonomy" },
   { id: "prompts", label: "Prompts", icon: <FileText className="h-4 w-4" />, href: "/m/yantri/prompt-library", desc: "Prompt templates for content generation" },
   { id: "skills", label: "Skills", icon: <BookOpen className="h-4 w-4" />, href: "/admin/skills", desc: "Skill file management and performance" },
+  { id: "feedback", label: "Feedback", icon: <MessageSquarePlus className="h-4 w-4" />, href: "/settings/feedback", desc: "Team bug reports, suggestions, content ratings" },
 ];
 
 export default function SettingsPage() {
