@@ -107,14 +107,16 @@ function ImagePromptBlock({
         <div className="rounded-lg overflow-hidden border border-indigo-500/20">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`data:image/png;base64,${imageData}`}
+            src={imageData}
             alt="Generated image"
             className="w-full max-h-80 object-contain bg-black/50"
           />
           <div className="flex justify-end p-2 bg-zinc-900/50">
             <a
-              href={`data:image/png;base64,${imageData}`}
+              href={imageData}
               download="generated-image.png"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
             >
               Download
@@ -338,7 +340,7 @@ export default function TwitterPreview({ data }: { data: TwitterDeliverable }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate image");
-      setGeneratedImages((prev) => ({ ...prev, [key]: data.image }));
+      setGeneratedImages((prev) => ({ ...prev, [key]: data.imageUrl }));
     } catch (err) {
       console.error("Image generation failed:", err);
       alert(err instanceof Error ? err.message : "Image generation failed");

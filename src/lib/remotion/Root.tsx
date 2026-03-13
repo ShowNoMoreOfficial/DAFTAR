@@ -1,3 +1,4 @@
+import React from "react";
 import { Composition } from "remotion";
 import { DataCard } from "./compositions/DataCard";
 import { StakeholderCard } from "./compositions/StakeholderCard";

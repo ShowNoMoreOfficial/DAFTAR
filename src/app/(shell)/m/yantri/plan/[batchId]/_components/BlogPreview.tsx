@@ -83,7 +83,7 @@ async function generateImage(prompt: string): Promise<string> {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to generate image");
-  return `data:image/png;base64,${data.image}`;
+  return data.imageUrl;
 }
 
 function InlineImageCard({

@@ -33,9 +33,10 @@ export async function POST(request: Request) {
       );
 
       if (imagePart?.inlineData?.data) {
+        const mime = imagePart.inlineData.mimeType || "image/png";
         return NextResponse.json({
           success: true,
-          image: imagePart.inlineData.data,
+          imageUrl: `data:${mime};base64,${imagePart.inlineData.data}`,
           source: "gemini",
         });
       }
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
         });
         const data = await res.json();
         if (data.data?.[0]?.b64_json) {
-          return NextResponse.json({ success: true, image: data.data[0].b64_json, source: "together" });
+          return NextResponse.json({ success: true, imageUrl: `data:image/png;base64,${data.data[0].b64_json}`, source: "together" });
         }
         if (data.data?.[0]?.url) {
           return NextResponse.json({ success: true, imageUrl: data.data[0].url, source: "together" });
@@ -73,8 +74,10 @@ export async function POST(request: Request) {
     }
 
     // Strategy 3: Pollinations.ai (free, no key)
-    const encoded = encodeURIComponent(prompt.substring(0, 200));
-    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&nologo=true`;
+    const cleanPrompt = prompt.replace(/[^\w\s,.-]/g, " ").trim().substring(0, 500);
+    const encoded = encodeURIComponent(cleanPrompt);
+    const seed = Math.floor(Math.random() * 1000000);
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&seed=${seed}&nologo=true&model=flux`;
 
     return NextResponse.json({
       success: true,
