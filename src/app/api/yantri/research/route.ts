@@ -81,8 +81,8 @@ export async function POST(request: Request) {
           where: { id: narrativeId },
           data: { status: "planned" },
         });
-        sendEvent({ event: "error", message: `Research failed: ${message}` });
-        sendEvent({ event: "done", success: false, error: message });
+        sendEvent({ event: "error", message: "Research temporarily unavailable. Please try again in a moment." });
+        sendEvent({ event: "done", success: false, error: "Research temporarily unavailable" });
       }
 
       controller.close();

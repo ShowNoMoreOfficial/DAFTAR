@@ -11,7 +11,7 @@ const anthropic =
 if (process.env.NODE_ENV !== "production")
   globalForAnthropic.anthropicClient = anthropic;
 
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
 async function sleep(ms: number) {
@@ -85,6 +85,14 @@ export async function callClaude(
         message.includes("authentication")
       ) {
         throw lastError;
+      }
+
+      // Rate limit: wait longer before retrying
+      const status = (error as { status?: number })?.status;
+      if (status === 429) {
+        console.warn("[callClaude] Rate limited (429), waiting 60s before retry...");
+        await sleep(60000);
+        continue;
       }
 
       if (attempt < MAX_RETRIES - 1) {

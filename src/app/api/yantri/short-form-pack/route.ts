@@ -151,11 +151,11 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[short-form-pack] Error:", message);
+    console.error("[short-form-pack] Error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
-      { error: `Pack generation failed: ${message}` },
-      { status: 500 }
+      { error: "Content generation temporarily unavailable. Please try again in a moment.",
+        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
+      { status: 503 }
     );
   }
 }

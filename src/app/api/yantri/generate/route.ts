@@ -78,11 +78,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ deliverable: parsed, raw });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Generate error:", message);
+    console.error("Generate error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
-      { error: `Content generation failed: ${message}` },
-      { status: 500 }
+      { error: "Content generation temporarily unavailable. Please try again in a moment.",
+        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
+      { status: 503 }
     );
   }
 }

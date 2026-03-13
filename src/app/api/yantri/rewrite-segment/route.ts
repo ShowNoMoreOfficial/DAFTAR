@@ -52,7 +52,11 @@ ${context ? `CONTEXT (for reference only — do NOT rewrite this):\n${typeof con
       model: result.model,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[rewrite-segment] Error:", error instanceof Error ? error.message : error);
+    return NextResponse.json(
+      { error: "Content generation temporarily unavailable. Please try again in a moment.",
+        details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.message : String(error)) : undefined },
+      { status: 503 }
+    );
   }
 }

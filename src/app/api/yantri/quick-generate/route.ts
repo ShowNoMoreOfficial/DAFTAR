@@ -971,11 +971,11 @@ Return ONLY the JSON, no other text.`;
       seo: seoAnalysis ?? undefined,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Quick-generate error:", message);
+    console.error("Quick-generate error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
-      { error: `Generation failed: ${message}` },
-      { status: 500 }
+      { error: "Content generation temporarily unavailable. Please try again in a moment.",
+        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
+      { status: 503 }
     );
   }
 }

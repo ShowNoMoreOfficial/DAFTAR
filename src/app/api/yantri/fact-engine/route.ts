@@ -356,11 +356,11 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Fact Engine POST error:", message);
+    console.error("Fact Engine POST error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
-      { error: `Fact Engine research failed: ${message}` },
-      { status: 500 }
+      { error: "Content generation temporarily unavailable. Please try again in a moment.",
+        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
+      { status: 503 }
     );
   }
 }
@@ -404,10 +404,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ dossier });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Fact Engine GET error:", message);
+    console.error("Fact Engine GET error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
-      { error: `Failed to fetch dossier: ${message}` },
+      { error: "Failed to fetch dossier. Please try again in a moment.",
+        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
       { status: 500 }
     );
   }

@@ -1,5 +1,4 @@
 import { callGemini, callGeminiResearch, type CallGeminiOptions } from "./gemini";
-import { callClaude, type CallClaudeOptions } from "./anthropic";
 
 export type TaskType =
   | "strategy"
@@ -18,22 +17,11 @@ interface ModelResult {
 }
 
 /**
- * Route tasks to the best model:
- * - Gemini: research (web grounding), strategy, analysis
- * - Claude: drafting (creative writing), packaging (titles/descriptions), visual (prompt engineering)
+ * All content generation routes to Gemini.
+ * Claude is reserved exclusively for GI chat (tool use + small prompts).
  */
-export function getModelForTask(task: TaskType): ModelId {
-  switch (task) {
-    case "drafting":
-    case "packaging":
-    case "visual":
-      return "claude";
-    case "research":
-    case "strategy":
-    case "analysis":
-    default:
-      return "gemini";
-  }
+export function getModelForTask(_task: TaskType): ModelId {
+  return "gemini";
 }
 
 export async function routeToModel(
@@ -46,24 +34,13 @@ export async function routeToModel(
     temperature?: number;
   }
 ): Promise<ModelResult> {
-  const model = options?.forceModel ?? getModelForTask(task);
-
-  // Research always uses Gemini (web grounding)
+  // Research uses Gemini with web grounding
   if (task === "research") {
     const raw = await callGeminiResearch(systemPrompt, userMessage);
     return { parsed: null, raw, model: "gemini" };
   }
 
-  if (model === "claude") {
-    const claudeOpts: CallClaudeOptions = {};
-    if (options?.maxTokens) claudeOpts.maxTokens = options.maxTokens;
-    if (options?.temperature) claudeOpts.temperature = options.temperature;
-
-    const result = await callClaude(systemPrompt, userMessage, claudeOpts);
-    return { ...result, model: "claude" };
-  }
-
-  // Default: Gemini
+  // All other tasks use Gemini
   const geminiOpts: CallGeminiOptions = {};
   if (options?.maxTokens) geminiOpts.maxOutputTokens = options.maxTokens;
   if (options?.temperature) geminiOpts.temperature = options.temperature;

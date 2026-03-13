@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession, badRequest, unauthorized, handleApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-import { callClaude } from "@/lib/yantri/anthropic";
-import { callGeminiResearch } from "@/lib/yantri/gemini";
+import { callGemini, callGeminiResearch } from "@/lib/yantri/gemini";
 import { SkillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
 import { runSEOAnalysis, type SEOAnalysis } from "@/lib/yantri/seo-engine";
 
@@ -387,19 +386,19 @@ Use ACTUAL brand IDs. Each brand gets a DIFFERENT angle. Return ONLY valid JSON.
 
     console.log("[recommend] Step 7 PASS: system =", systemPrompt.length, "user =", userPrompt.length);
 
-    // ── Step 8: Call Claude ──
+    // ── Step 8: Call Gemini ──
     let result: { parsed: unknown; raw: string };
     try {
-      result = await callClaude(systemPrompt, userPrompt, {
-        maxTokens: 4096,
+      result = await callGemini(systemPrompt, userPrompt, {
+        maxOutputTokens: 4096,
         temperature: 0.4,
       });
       console.log("[recommend] Step 8 PASS: raw =", result.raw?.length);
-    } catch (claudeErr) {
-      const msg = claudeErr instanceof Error ? claudeErr.message : String(claudeErr);
+    } catch (geminiErr) {
+      const msg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr);
       console.error("[recommend] Step 8 FAIL:", msg);
       return NextResponse.json(
-        { error: "Content recommendation engine is temporarily unavailable. Please try again." },
+        { error: "Content recommendation engine is temporarily unavailable. Please try again in a moment." },
         { status: 503 }
       );
     }

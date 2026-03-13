@@ -30,7 +30,11 @@ export async function POST(req: NextRequest) {
       model: result.model,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[prompt-test] Error:", error instanceof Error ? error.message : error);
+    return NextResponse.json(
+      { error: "Content generation temporarily unavailable. Please try again in a moment.",
+        details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.message : String(error)) : undefined },
+      { status: 503 }
+    );
   }
 }
