@@ -35,8 +35,10 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ProductionTab } from "@/components/content-studio/production-tab";
 
 // ─── Types ───
 
@@ -108,6 +110,7 @@ type FlowState = "input" | "analyzing" | "recommendations" | "generating" | "don
 
 const TABS = [
   { id: "studio", label: "Studio", icon: Layers },
+  { id: "production", label: "Production", icon: Package },
   { id: "calendar", label: "Calendar", icon: Calendar },
   { id: "library", label: "Library", icon: Archive },
 ] as const;
@@ -259,6 +262,7 @@ function ContentStudioInner() {
 
       <div className="flex-1 overflow-auto">
         {activeTab === "studio" && <StudioTab />}
+        {activeTab === "production" && <ProductionTab />}
         {activeTab === "calendar" && <CalendarTab />}
         {activeTab === "library" && <LibraryTab />}
       </div>

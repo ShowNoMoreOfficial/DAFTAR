@@ -54,6 +54,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         roles: ["ADMIN", "DEPT_HEAD", "MEMBER"],
         children: [
           { id: "content-pipeline", label: "Studio", icon: "Layers", href: "/content-studio", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
+          { id: "content-production", label: "Production", icon: "Package", href: "/content-studio?tab=production", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
           { id: "content-calendar", label: "Calendar", icon: "Calendar", href: "/content-studio?tab=calendar", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
           { id: "content-library", label: "Library", icon: "Archive", href: "/content-studio?tab=library", roles: ["ADMIN", "DEPT_HEAD", "MEMBER"] },
         ],

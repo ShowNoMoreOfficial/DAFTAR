@@ -27,6 +27,10 @@ import {
   MonitorPlay,
   Download,
   RefreshCw,
+  Package,
+  ExternalLink,
+  Play,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -272,6 +276,7 @@ export default function DeliverableReviewPage() {
   const imageAssets = deliverable.assets.filter(
     (a) => a.type === "IMAGE" || a.type === "THUMBNAIL" || a.type === "CAROUSEL_SLIDE" || a.type === "SOCIAL_CARD" || a.type === "BROLL"
   );
+  const videoAssets = deliverable.assets.filter((a) => a.type === "VIDEO_CLIP");
 
   // Editorial pack production brief (stored in postingPlan)
   const bRollSheet = posting?.bRollSheet ?? [];
@@ -354,9 +359,60 @@ export default function DeliverableReviewPage() {
         )}
 
         {deliverable.status === "APPROVED" && (
-          <Badge className="bg-emerald-500/10 text-emerald-400 text-sm px-4 py-1.5">
-            Approved — Task Created
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => {
+                window.open(`/api/yantri/deliverables/${deliverable.id}/export-script`, "_blank");
+              }}
+            >
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              Export Script
+            </Button>
+            {(bRollSheet.length > 0) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={() => {
+                  window.open(`/api/yantri/deliverables/${deliverable.id}/export-script?type=broll`, "_blank");
+                }}
+              >
+                <Camera className="h-3.5 w-3.5 mr-1.5" />
+                B-Roll Sheet
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="text-xs bg-[var(--accent-primary)] hover:opacity-90"
+              onClick={async () => {
+                const downloadable = deliverable.assets.filter(
+                  a => a.url && (a.url.startsWith("http") || a.url.startsWith("data:"))
+                );
+                // Export script first
+                window.open(`/api/yantri/deliverables/${deliverable.id}/export-script`, "_blank");
+                // Then download each asset with delay
+                for (const asset of downloadable) {
+                  const a = document.createElement("a");
+                  a.href = asset.url;
+                  a.download = `${(deliverable.brand?.name ?? "asset").toLowerCase()}-${asset.type.toLowerCase()}-${asset.slideIndex ?? 0}.png`;
+                  a.target = "_blank";
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  await new Promise(r => setTimeout(r, 300));
+                }
+              }}
+            >
+              <Package className="h-3.5 w-3.5 mr-1.5" />
+              Download All
+            </Button>
+            <Badge className="bg-emerald-500/10 text-emerald-400 text-sm px-4 py-1.5">
+              Approved
+            </Badge>
+          </div>
         )}
       </div>
 
@@ -449,15 +505,26 @@ export default function DeliverableReviewPage() {
                   </span>
                 )}
               </CardTitle>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-[var(--text-muted)] text-xs"
-                onClick={() => copyText(sections.map((s) => `[${s.timeCode ?? s.duration ?? ""}] ${s.type.toUpperCase()}${s.title ? ` — ${s.title}` : ""}\n${s.text ?? s.script ?? ""}`).join("\n\n"), "script")}
-              >
-                <Copy className="h-3 w-3 mr-1" />
-                {copied === "script" ? "Copied!" : "Copy All"}
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-[var(--text-muted)] text-xs"
+                  onClick={() => window.open(`/api/yantri/deliverables/${deliverable.id}/export-script`, "_blank")}
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Export
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-[var(--text-muted)] text-xs"
+                  onClick={() => copyText(sections.map((s) => `[${s.timeCode ?? s.duration ?? ""}] ${s.type.toUpperCase()}${s.title ? ` — ${s.title}` : ""}\n${s.text ?? s.script ?? ""}`).join("\n\n"), "script")}
+                >
+                  <Copy className="h-3 w-3 mr-1" />
+                  {copied === "script" ? "Copied!" : "Copy All"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -806,37 +873,77 @@ export default function DeliverableReviewPage() {
               )}
             </div>
 
-            {/* B-Roll Sheet Tab */}
+            {/* B-Roll Sheet Tab — Enhanced with stock links */}
             {prodTab === "broll" && bRollSheet.length > 0 && (
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-[var(--text-muted)]">{bRollSheet.reduce((n, e) => n + e.shots.length, 0)} total shots</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-[10px] text-[var(--text-muted)]"
+                    onClick={() => window.open(`/api/yantri/deliverables/${deliverable.id}/export-script?type=broll`, "_blank")}
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Export B-Roll Sheet
+                  </Button>
+                </div>
                 {bRollSheet.map((entry, ei) => (
                   <div key={ei}>
                     <p className="text-[10px] font-bold text-[var(--accent-primary)] uppercase tracking-wider mb-2">
                       Section {entry.section}
                     </p>
                     <div className="space-y-2">
-                      {entry.shots.map((shot, si) => (
-                        <div key={si} className="flex items-start gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-3">
-                          <div className="flex-1">
-                            <p className="text-xs text-[var(--text-primary)]">{shot.description}</p>
-                            <div className="flex items-center gap-3 mt-1.5">
-                              <Badge variant="secondary" className="text-[9px]">{shot.source}</Badge>
-                              <span className="text-[10px] text-[var(--text-muted)]">{shot.duration}</span>
-                              <Badge
-                                variant="secondary"
-                                className={cn(
-                                  "text-[9px]",
-                                  shot.priority === "must-have"
-                                    ? "bg-red-500/10 text-red-400"
-                                    : "bg-blue-500/10 text-blue-400"
-                                )}
+                      {entry.shots.map((shot, si) => {
+                        const searchTerms = shot.description.replace(/[^\w\s]/g, "").split(" ").filter((w: string) => w.length > 3).slice(0, 3).join(" ");
+                        const pexelsUrl = `https://www.pexels.com/search/videos/${encodeURIComponent(searchTerms)}/`;
+                        const pixabayUrl = `https://pixabay.com/videos/search/${encodeURIComponent(searchTerms)}/`;
+                        return (
+                          <div key={si} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-3">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1">
+                                <p className="text-xs text-[var(--text-primary)]">{shot.description}</p>
+                                <div className="flex items-center gap-3 mt-1.5">
+                                  <Badge variant="secondary" className="text-[9px]">{shot.source}</Badge>
+                                  <span className="text-[10px] text-[var(--text-muted)]">{shot.duration}</span>
+                                  <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                      "text-[9px]",
+                                      shot.priority === "must-have"
+                                        ? "bg-red-500/10 text-red-400"
+                                        : "bg-blue-500/10 text-blue-400"
+                                    )}
+                                  >
+                                    {shot.priority}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            {/* Stock footage search links */}
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--border-subtle)]">
+                              <Search className="h-3 w-3 text-[var(--text-muted)]" />
+                              <span className="text-[9px] text-[var(--text-muted)]">Find footage:</span>
+                              <a
+                                href={pexelsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-blue-400 hover:underline flex items-center gap-0.5"
                               >
-                                {shot.priority}
-                              </Badge>
+                                Pexels <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
+                              <a
+                                href={pixabayUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-green-400 hover:underline flex items-center gap-0.5"
+                              >
+                                Pixabay <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -1034,6 +1141,65 @@ export default function DeliverableReviewPage() {
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Video Clips (Remotion Specs) ─── */}
+      {videoAssets.length > 0 && (
+        <Card className="mb-4 border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <Film className="h-4 w-4 text-purple-400" />
+              Video Compositions ({videoAssets.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {videoAssets.map((asset) => {
+              const meta = asset.metadata as Record<string, unknown> | null;
+              const compositions = (meta?.compositions ?? []) as Array<{ id: string; output: string; duration: number }>;
+              const renderCmd = (meta?.renderAllCommand as string) ?? "";
+
+              return (
+                <div key={asset.id} className="rounded-lg border border-purple-500/20 bg-[var(--bg-deep)] p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <Badge variant="secondary" className="text-[9px] bg-purple-500/10 text-purple-400">
+                      Remotion Project — {compositions.length} composition{compositions.length !== 1 ? "s" : ""}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-[var(--text-muted)] text-xs h-7"
+                      onClick={() => {
+                        navigator.clipboard.writeText(renderCmd);
+                        setCopied(`video-${asset.id}`);
+                        setTimeout(() => setCopied(""), 2000);
+                      }}
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      {copied === `video-${asset.id}` ? "Copied!" : "Copy render cmd"}
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {compositions.map((comp, ci) => (
+                      <div key={ci} className="rounded-md bg-[var(--bg-surface)] p-2.5 border border-[var(--border-subtle)]">
+                        <div className="text-[11px] font-medium text-[var(--text-primary)]">{comp.id}</div>
+                        <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                          {comp.output} — {comp.duration.toFixed(1)}s
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {renderCmd && (
+                    <div className="mt-3 rounded-md bg-[#0d1117] p-2.5 overflow-x-auto">
+                      <code className="text-[10px] text-green-400 whitespace-pre-wrap break-all font-mono">
+                        {renderCmd.length > 300 ? renderCmd.slice(0, 300) + "..." : renderCmd}
+                      </code>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}

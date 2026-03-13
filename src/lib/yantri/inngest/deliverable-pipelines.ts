@@ -13,6 +13,7 @@ import { generateEmbedding, findSimilarTree } from "@/lib/yantri/embeddings";
 import { getBrandColorMood } from "@/lib/yantri/brand-voice";
 import { generateVoiceover } from "@/lib/yantri/elevenlabs";
 import { runSEOAnalysis, type SEOAnalysis } from "@/lib/yantri/seo-engine";
+import { generateEditorialVideoSpecs } from "@/lib/video-generator";
 
 type DeliverableEvent = {
   data: { deliverableId: string };
@@ -442,6 +443,43 @@ export const cinematicPipeline = yantriInngest.createFunction(
       await prisma.asset.create({
         data: { deliverableId, type: "THUMBNAIL", url: "", promptUsed: visualResult.thumbnailPrompt, metadata: { socialCardPrompt: visualResult.socialCardPrompt, nanoBananaAngles: JSON.parse(JSON.stringify(visualResult.nanoBananaAngles)) } },
       });
+    });
+
+    await step.run("generate-remotion-video-specs", async () => {
+      try {
+        const spec = generateEditorialVideoSpecs({
+          deliverableId,
+          brandName: deliverable.brand.name,
+          platform: deliverable.platform,
+          scriptSections: (cinematicResult.script.sections as Array<Record<string, unknown>>).map((s) => ({
+            type: (s.type as string) ?? (s.title as string) ?? "section",
+            title: (s.title as string) ?? (s.type as string) ?? "section",
+            dataCards: s.dataCards as string[] | undefined,
+            lowerThirds: s.lowerThirds as Array<{ text: string; timing: string }> | undefined,
+          })),
+        });
+        if (spec.compositions.length > 0) {
+          await prisma.asset.create({
+            data: {
+              deliverableId,
+              type: "VIDEO_CLIP",
+              url: "",
+              metadata: {
+                type: "remotion-project-spec",
+                compositionCount: spec.compositions.length,
+                compositions: spec.compositions.map((c) => ({
+                  id: c.compositionId,
+                  output: c.outputFilename,
+                  duration: c.durationInFrames / c.fps,
+                })),
+                renderAllCommand: spec.renderAllCommand,
+              },
+            },
+          });
+        }
+      } catch (err) {
+        console.warn("[cinematic-pipeline] Remotion spec generation skipped:", err);
+      }
     });
 
     await step.run("save-and-finalize", async () => {
