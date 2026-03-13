@@ -7,6 +7,7 @@ import { routeToModel } from "@/lib/yantri/model-router";
 import { getBrandVoiceBlock, getBrandColorPalette } from "@/lib/yantri/brand-voice";
 import { engineRouter, type ContentType } from "@/lib/yantri/engine-router";
 import { SkillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
+import { getSkillPathsForContentType } from "@/lib/yantri/load-content-skills";
 import { runSEOAnalysis, buildSEOPromptBlock, type SEOAnalysis } from "@/lib/yantri/seo-engine";
 import { generateImage } from "@/lib/image-generator";
 
@@ -676,7 +677,9 @@ export async function POST(request: NextRequest) {
     if (contentType === "carousel" || contentType === "instagram_carousel") {
       extraSkillPaths.push("platforms/meta/story-strategy");
     }
-    const skillPaths = [...new Set([...baseSkillPaths, ...extraSkillPaths])];
+    // Merge engine-router paths + inline extras + centralized helper (CORE + PLATFORM + VOICE skills)
+    const helperPaths = getSkillPathsForContentType(contentType);
+    const skillPaths = [...new Set([...baseSkillPaths, ...extraSkillPaths, ...helperPaths])];
 
     const loadedSkills = await Promise.all(
       skillPaths.map((p) => orchestrator.loadSkill(p).catch(() => null))

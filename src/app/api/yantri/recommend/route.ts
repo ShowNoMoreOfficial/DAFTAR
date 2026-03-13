@@ -3,6 +3,7 @@ import { getAuthSession, badRequest, unauthorized, handleApiError } from "@/lib/
 import { prisma } from "@/lib/prisma";
 import { callGemini, callGeminiResearch } from "@/lib/yantri/gemini";
 import { SkillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
+import { loadSkillsForContentType, getSkillPathsForContentType } from "@/lib/yantri/load-content-skills";
 import { runSEOAnalysis, type SEOAnalysis } from "@/lib/yantri/seo-engine";
 
 // ─── Types ────────────────────────────────────────────────
@@ -163,13 +164,8 @@ Be concise but comprehensive. Max 2000 words.`
           setTimeout(() => resolve(`Topic: ${trimmedTopic} (research timed out)`), 20000)
         ),
       ]),
-      // Load only 4 core skills (not 11)
-      Promise.all([
-        loadSkillSafe(orchestrator, "narrative/editorial/topic-selection.md"),
-        loadSkillSafe(orchestrator, "narrative/editorial/angle-detection.md"),
-        loadSkillSafe(orchestrator, "narrative/editorial/sensitivity-classification.md"),
-        loadSkillSafe(orchestrator, "narrative/editorial/timeliness-optimizer.md"),
-      ]).catch(() => [null, null, null, null] as (SkillFile | null)[]),
+      // Load 7 editorial skills via centralized helper (_editorial mapping)
+      loadSkillsForContentType("_editorial").catch(() => ""),
       // Brands
       prisma.brand.findMany({
         where: brandWhere,
@@ -224,10 +220,10 @@ Be concise but comprehensive. Max 2000 words.`
     ]);
 
     const researchSummary = researchResult;
-    const [topicSelectionSkill, angleDetectionSkill, sensitivitySkill, timelinessSkill] = skillResults;
+    const editorialSkillContext = skillResults;
 
     console.log("[recommend] Step 2+3 PASS: research =", researchSummary?.length,
-      "skills =", skillResults.filter(Boolean).length,
+      "editorialSkills =", editorialSkillContext.length, "chars",
       "brands =", brands.length,
       "perf =", performanceData.length,
       "perfAgg =", performanceAggregates.length,
@@ -260,18 +256,11 @@ Be concise but comprehensive. Max 2000 words.`
     const brandIdentityMap = new Map(brandIdentitySkills.map((b) => [b.brandId, b.skill]));
 
     // ── Step 7: Build LEAN prompt ──
-    // Trim skills to 600 chars each instead of full content
-    const skillSection = (label: string, skill: SkillFile | null) => {
-      const trimmed = trimSkill(skill, 600);
-      return trimmed ? `## ${label}\n${trimmed}\n` : "";
-    };
 
     const systemPrompt = `You are Daftar's editorial intelligence engine for a media agency.
 
-${skillSection("TOPIC SELECTION", topicSelectionSkill)}
-${skillSection("ANGLE DETECTION", angleDetectionSkill)}
-${skillSection("SENSITIVITY", sensitivitySkill)}
-${skillSection("TIMELINESS", timelinessSkill)}
+## EDITORIAL INTELLIGENCE
+${editorialSkillContext}
 
 ## CONTENT TYPES
 youtube_explainer, youtube_short, x_thread, x_single, instagram_carousel, instagram_reel, linkedin_post, linkedin_article, blog_post, newsletter, podcast_script, quick_take, community_post
@@ -446,16 +435,11 @@ Use ACTUAL brand IDs. Each brand gets a DIFFERENT angle. Return ONLY valid JSON.
       console.log("[recommend] Added", crossPlatformVariants.length, "cross-platform variants");
     }
 
-    // Fire-and-forget skill execution logging
-    const loadedSkillPaths = [
-      topicSelectionSkill && "narrative/editorial/topic-selection.md",
-      angleDetectionSkill && "narrative/editorial/angle-detection.md",
-      sensitivitySkill && "narrative/editorial/sensitivity-classification.md",
-      timelinessSkill && "narrative/editorial/timeliness-optimizer.md",
-    ].filter(Boolean) as string[];
+    // Fire-and-forget skill execution logging (all 7 editorial skills)
+    const editorialSkillPaths = getSkillPathsForContentType("_editorial");
 
     Promise.all(
-      loadedSkillPaths.map((skillPath) =>
+      editorialSkillPaths.map((skillPath) =>
         orchestrator
           .executeSkill({
             skillPath,
