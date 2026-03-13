@@ -35,10 +35,10 @@ let genAI: GoogleGenerativeAI | null = null;
 
 function getEmbeddingClient(): GoogleGenerativeAI | null {
   if (genAI) return genAI;
-  const apiKey = process.env.GOOGLE_AI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn(
-      "[VectorStore] GOOGLE_AI_API_KEY not set — embeddings disabled"
+      "[VectorStore] GEMINI_API_KEY not set — embeddings disabled"
     );
     return null;
   }

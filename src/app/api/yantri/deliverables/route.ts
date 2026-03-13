@@ -1,35 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
+import { getAuthSession, unauthorized } from "@/lib/api-utils";
 
 // ─── GET /api/yantri/deliverables ──────────────────────────────────────────────────
 // List deliverables with optional filters: ?status=REVIEW&platform=META_CAROUSEL&brandId=xxx
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const status = searchParams.get("status");
-  const platform = searchParams.get("platform");
-  const brandId = searchParams.get("brandId");
-  const pipelineType = searchParams.get("pipelineType");
+  try {
+    const session = await getAuthSession();
+    if (!session) return unauthorized();
 
-  const where: Record<string, unknown> = {};
-  if (status) where.status = status;
-  if (platform) where.platform = platform;
-  if (brandId) where.brandId = brandId;
-  if (pipelineType) where.pipelineType = pipelineType;
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+    const platform = searchParams.get("platform");
+    const brandId = searchParams.get("brandId");
+    const pipelineType = searchParams.get("pipelineType");
 
-  const deliverables = await prisma.deliverable.findMany({
-    where,
-    include: {
-      brand: { select: { id: true, name: true } },
-      assets: true,
-      tree: { select: { id: true, title: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+    const where: Record<string, unknown> = {};
+    if (status) where.status = status;
+    if (platform) where.platform = platform;
+    if (brandId) where.brandId = brandId;
+    if (pipelineType) where.pipelineType = pipelineType;
 
-  return NextResponse.json(deliverables);
+    const deliverables = await prisma.deliverable.findMany({
+      where,
+      include: {
+        brand: { select: { id: true, name: true } },
+        assets: true,
+        tree: { select: { id: true, title: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+
+    return NextResponse.json(deliverables);
+  } catch (err) {
+    console.error("[deliverables] GET error:", err);
+    return NextResponse.json(
+      { error: "Failed to load deliverables" },
+      { status: 500 }
+    );
+  }
 }
 
 // ─── POST /api/yantri/deliverables ─────────────────────────────────────────────────

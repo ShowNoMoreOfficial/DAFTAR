@@ -146,6 +146,10 @@ RULES:
           ? (parsed.sources as string[])
           : [];
         structuredData = parsed;
+      } else {
+        console.warn(
+          `[factDossierSync] Gemini returned unparseable response for tree ${treeId}. Raw length: ${result.raw?.length || 0}`
+        );
       }
 
       return { structuredData, sources, rawResearch: result.raw };
