@@ -89,11 +89,12 @@ const YOUTUBE_EXPLAINER_STRUCTURE = `Create a complete content package with this
 }
 
 REQUIREMENTS:
-- Each script section "text" field must contain the ACTUAL script text the host reads aloud
-- Apply hook engineering: the hook must be a provocative opening — NOT "today we're going to discuss..."
-- Apply title engineering: use formulas from the title engineering skill — CTR optimized
-- Every claim must be backed by data from the research dossier
-- Visual notes should be specific B-roll/graphic suggestions`;
+- Each script section "text" field must contain the ACTUAL script text the host reads aloud — not a summary
+- HOOK: Must be a provocative opening — a surprising fact, bold claim, or dramatic question. NEVER start with "In this video", "Today we're going to discuss", "Hey guys", or any generic opener
+- TITLES: Apply YouTube CTR formulas — curiosity gap ("X happened, here's why it matters"), data-driven ("$2.7B bet"), provocative question ("Is India ready?"). Each title must use a different proven formula
+- Every claim must be backed by specific data from the research dossier — cite numbers, dates, and sources
+- VISUAL NOTES: Must be SPECIFIC B-roll/graphic suggestions for the editor, not generic. Bad: "relevant footage". Good: "Archive clip of PM Modi at semiconductor plant inauguration, Feb 2026" or "Animated bar chart comparing India vs China chip production capacity 2020-2026"
+- Each section's visualNotes should include: exact B-roll shots, specific data graphics/charts to create, name cards for stakeholders mentioned, and any text overlays the editor should add`;
 
 const X_THREAD_STRUCTURE = `Create a complete thread with this EXACT JSON structure:
 {
@@ -135,16 +136,16 @@ const X_THREAD_STRUCTURE = `Create a complete thread with this EXACT JSON struct
 }
 
 REQUIREMENTS:
-- 7-10 tweets total, each MUST be under 280 characters
-- Tweet 1 is the HOOK — it MUST stand alone as a compelling standalone tweet (this gets 10x the impressions)
-- Apply hook engineering: provocative claim, surprising fact, or bold prediction
-- Include specific data/numbers in at least 3 tweets
-- Visual anchors (hasImage: true) every 3-4 tweets to maintain scroll momentum
+- 7-10 tweets total, each MUST be under 280 characters — count carefully
+- Tweet 1 is the HOOK — it MUST work as a standalone tweet that stops the scroll (this gets 10x the impressions). NEVER start with "Thread:", "🧵", or "A thread on...". Instead: lead with a surprising fact, bold claim, or provocative question
+- Tweets 2-3 MUST include hard data — specific numbers, percentages, dollar amounts, dates. "India invested $2.7 billion" not "India made a large investment"
+- Include specific data/numbers in at least 4 tweets total
+- Visual anchors (hasImage: true) every 3-4 tweets to maintain scroll momentum — each imageDescription must describe a specific data card, chart, or infographic to create
 - Strategic hashtag placement: NOT every tweet — only 2-3 tweets with 1-2 targeted hashtags
-- Final tweet is engagement CTA: question + "Follow for more" + optional retweet ask
-- Include quote tweet suggestion for cross-promotion (reframe the best tweet)
-- Do NOT put external links in tweet text (algorithm suppression) — use reply strategy instead
-- Each tweet must flow naturally from the previous but also be somewhat standalone`;
+- Final tweet is engagement CTA: ask a genuine question that invites debate. NEVER use "Follow for more", "RT if you agree", or generic CTAs. Instead: "What do you think India should prioritize — chip design or manufacturing?"
+- Include quote tweet suggestion for cross-promotion (reframe the best tweet with a new angle)
+- Do NOT put external links in tweet text (40-50% reach suppression) — suggest link in self-reply instead
+- Each tweet must flow naturally from the previous but also work somewhat standalone`;
 
 const CAROUSEL_STRUCTURE = `Create a carousel with this EXACT JSON structure:
 {
@@ -178,15 +179,16 @@ const CAROUSEL_STRUCTURE = `Create a carousel with this EXACT JSON structure:
 
 REQUIREMENTS:
 - 8-10 slides with typed roles (HOOK, SECONDARY_HOOK, CONTEXT, DATA, ESCALATION, CLIMAX, CTA)
-- Apply hook engineering: HOOK slide must stop the scroll — bold text on striking background
-- SECONDARY_HOOK (slide 2) must stand alone as an independent hook
-- DATA slides present ONE clear stat per slide with infographic-style visuals
-- CTA slide drives SAVES, SHARES, follows — "Save this for later" or "Share with someone"
+- HOOK slide (slide 1): MUST be a bold question or provocative statement — NO logos, NO brand names, NO "Swipe to learn". Example: "Did India just bet its future on chips?" in bold white text on dark striking background
+- SECONDARY_HOOK (slide 2): Must work as an independent hook — if someone screenshots only this slide, it should make sense and be shareable
+- Slides must follow a NARRATIVE ARC: Hook → Context → Rising tension (data) → Escalation → Climax (the big reveal/insight) → CTA. NOT just a list of facts
+- DATA slides present ONE clear stat per slide with infographic-style visuals — big number, supporting text, icon
+- CTA slide: clear actionable ask — "Save this to reference later" or "Share with someone who needs to see this" or "Drop a 🔥 if you agree". NOT generic "Follow for more"
 - 4:5 portrait format (1080x1350px) for all slides
-- Caption: 2200 chars with line breaks, storytelling, engagement question, hashtags at end
+- Caption: 2200 chars with line breaks, storytelling hook in first line, engagement question, hashtags at end
 - 20-30 hashtags mixing broad reach + niche targeting
 - Include Facebook cross-post adaptations
-- Each visualDescription must describe a complete, self-contained slide image
+- Each visualDescription must describe a complete, self-contained slide image (60-100 words)
 - body and bodyText should contain the same content
 - visualDescription and visualPrompt should contain the same content
 - colorAccent and colorHex should contain the same hex value`;
@@ -252,12 +254,13 @@ const YOUTUBE_SHORT_STRUCTURE = `Create a 60-second YouTube Short with this EXAC
 }
 
 REQUIREMENTS:
-- HOOK in first 1.5 seconds — text overlay + spoken word
-- Vertical format (9:16, 1080x1920)
-- No intro/outro — jump straight in
-- End with subscribe CTA overlay
-- One key insight only — don't cover everything
-- Max 60 seconds total`;
+- HOOK in first 1.5 seconds — text overlay AND spoken word SIMULTANEOUSLY. The viewer must see bold text on screen while hearing the hook spoken aloud. Example: screen shows "India just spent $2.7 BILLION" while host says "India just made its biggest bet ever on semiconductor manufacturing"
+- Vertical format (9:16, 1080x1920) — design every visual element for phone screens
+- No intro/outro — jump straight into the most surprising fact or claim. NEVER start with "Hey guys" or "Welcome to"
+- ONE KEY INSIGHT ONLY — don't try to explain everything. Pick the single most interesting angle and commit to it
+- End with an OPEN LOOP or provocative question that drives comments — "But here's what nobody's talking about..." or "The real question is..." NOT "Subscribe for more" or "Like and follow"
+- Max 60 seconds total — every second must earn its place
+- Each segment's textOverlay should be a bold, standalone statement that works even on mute`;
 
 const X_SINGLE_STRUCTURE = `Create a single tweet with this EXACT JSON structure:
 {
@@ -783,6 +786,9 @@ ${seoAnalysis ? `\n${buildSEOPromptBlock(seoAnalysis, mapping.platform)}` : ""}
 Apply every skill instruction above to produce exceptional content. Don't just write — think editorially.
 Use the hook engineering principles. Use the title engineering formulas. Use the narrative arc structure.
 Every choice should be deliberate and backed by the skill frameworks above.
+
+## BANNED PHRASES — Do NOT use any of these:
+"In this video", "Today we discuss", "Today we're going to", "Let's dive in", "Without further ado", "Stay tuned", "Don't forget to like and subscribe", "Hey guys", "What's up guys", "Welcome back to", "Before we begin", "Let me explain", "So basically", "As you all know".
 ${seoAnalysis ? "Apply the SEO intelligence above: use primary keyword in titles, include platform-specific hashtags/keywords, structure descriptions for search discovery." : ""}
 ${contentType === "youtube_short" ? `
 ## SHORT-FORM OPTIMIZATION (YouTube Shorts)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1052,17 +1052,144 @@ function StudioTab() {
 // ─── CALENDAR TAB ───
 
 function CalendarTab() {
+  const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  useEffect(() => {
+    setLoading(true);
+    fetch("/api/yantri/deliverables")
+      .then((r) => r.json())
+      .then((data) => setDeliverables(Array.isArray(data) ? data : []))
+      .catch(() => setDeliverables([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
+
+  // Group deliverables by day of month
+  const dayMap = useMemo(() => {
+    const map: Record<number, Deliverable[]> = {};
+    for (const d of deliverables) {
+      const date = new Date(d.createdAt);
+      if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+        const day = date.getDate();
+        if (!map[day]) map[day] = [];
+        map[day].push(d);
+      }
+    }
+    return map;
+  }, [deliverables, currentMonth, currentYear]);
+
+  const selectedDeliverables = selectedDay ? dayMap[selectedDay] ?? [] : [];
+
+  const prevMonth = () => {
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }
+    else setCurrentMonth(currentMonth - 1);
+    setSelectedDay(null);
+  };
+  const nextMonth = () => {
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); }
+    else setCurrentMonth(currentMonth + 1);
+    setSelectedDay(null);
+  };
+
+  const STATUS_DOT: Record<string, string> = {
+    REVIEW: "bg-yellow-400",
+    APPROVED: "bg-green-400",
+    PUBLISHED: "bg-blue-400",
+    DRAFTED: "bg-purple-400",
+    PLANNED: "bg-gray-400",
+  };
+
+  if (loading) {
+    return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-[var(--accent-primary)]" /></div>;
+  }
+
   return (
-    <div className="p-6">
-      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 text-center">
-        <Calendar className="h-10 w-10 mx-auto text-[var(--text-muted)] mb-3" />
-        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">Content Calendar</h3>
-        <p className="text-xs text-[var(--text-secondary)] mb-4">
-          View scheduled publications across all platforms.
-        </p>
-        <Link href="/relay/calendar">
-          <Button variant="outline" size="sm">Open Calendar</Button>
-        </Link>
+    <div className="p-6 flex gap-6">
+      {/* Calendar grid */}
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">{MONTHS[currentMonth]} {currentYear}</h3>
+          <Button variant="ghost" size="sm" onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
+        <div className="grid grid-cols-7 gap-px rounded-xl border border-[var(--border-subtle)] overflow-hidden">
+          {DAYS_OF_WEEK.map((d) => (
+            <div key={d} className="bg-[var(--bg-surface)] px-2 py-2 text-center text-[10px] font-medium text-[var(--text-muted)]">{d}</div>
+          ))}
+          {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+            <div key={`empty-${i}`} className="bg-[var(--bg-base)] min-h-[72px]" />
+          ))}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const items = dayMap[day] ?? [];
+            const isSelected = selectedDay === day;
+            const isToday = day === new Date().getDate() && currentMonth === new Date().getMonth() && currentYear === new Date().getFullYear();
+            return (
+              <div
+                key={day}
+                onClick={() => setSelectedDay(day)}
+                className={cn(
+                  "bg-[var(--bg-surface)] min-h-[72px] px-2 py-1.5 cursor-pointer hover:bg-[var(--bg-elevated)] transition-colors",
+                  isSelected && "ring-1 ring-[#2E86AB] bg-[#2E86AB]/5",
+                )}
+              >
+                <span className={cn(
+                  "text-[11px]",
+                  isToday ? "font-bold text-[#2E86AB]" : "text-[var(--text-muted)]",
+                )}>{day}</span>
+                {items.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {items.slice(0, 3).map((d) => (
+                      <span key={d.id} className={cn("h-1.5 w-1.5 rounded-full", STATUS_DOT[d.status] ?? "bg-gray-400")} />
+                    ))}
+                    {items.length > 3 && <span className="text-[9px] text-[var(--text-muted)]">+{items.length - 3}</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Selected day detail */}
+      <div className="w-72 shrink-0">
+        <h4 className="text-xs font-medium text-[var(--text-muted)] mb-3">
+          {selectedDay ? `${MONTHS[currentMonth]} ${selectedDay}` : "Select a day"}
+        </h4>
+        {selectedDay && selectedDeliverables.length === 0 && (
+          <p className="text-xs text-[var(--text-muted)]">No content on this day</p>
+        )}
+        <div className="space-y-2">
+          {selectedDeliverables.map((d) => {
+            const title = d.tree?.title || d.copyMarkdown?.split("\n")[0]?.replace(/^#\s*/, "").slice(0, 60) || "Untitled";
+            return (
+              <Link key={d.id} href={`/m/yantri/review/${d.id}`}>
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2.5 hover:border-[#2E86AB]/30 transition-all cursor-pointer">
+                  <p className="text-xs font-medium text-[var(--text-primary)] truncate">{title}</p>
+                  <div className="flex items-center gap-2 mt-1 text-[10px] text-[var(--text-muted)]">
+                    <span>{d.brand?.name ?? "—"}</span>
+                    <span>&middot;</span>
+                    <span>{PLATFORM_LABELS[d.platform] || d.platform}</span>
+                    <span className={cn("ml-auto inline-block h-1.5 w-1.5 rounded-full", STATUS_DOT[d.status] ?? "bg-gray-400")} />
+                    <span>{d.status}</span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1071,7 +1198,7 @@ function CalendarTab() {
 // ─── LIBRARY TAB (History + Performance) ───
 
 function LibraryTab() {
-  const [narratives, setNarratives] = useState<Narrative[]>([]);
+  const [items, setItems] = useState<Deliverable[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPlatform, setFilterPlatform] = useState("");
@@ -1081,12 +1208,21 @@ function LibraryTab() {
     const params = new URLSearchParams();
     if (filterStatus) params.set("status", filterStatus);
     if (filterPlatform) params.set("platform", filterPlatform);
-    fetch(`/api/yantri/editorial-narratives?${params}`)
+    fetch(`/api/yantri/deliverables?${params}`)
       .then((r) => r.json())
-      .then((data) => { setNarratives(Array.isArray(data) ? data : []); })
-      .catch(() => setNarratives([]))
+      .then((data) => { setItems(Array.isArray(data) ? data : []); })
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [filterStatus, filterPlatform]);
+
+  const STATUS_COLORS: Record<string, string> = {
+    REVIEW: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    APPROVED: "bg-green-500/10 text-green-400 border-green-500/20",
+    PUBLISHED: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    DRAFTED: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    PLANNED: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+    RESEARCHING: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  };
 
   return (
     <div className="p-6 space-y-4">
@@ -1094,44 +1230,52 @@ function LibraryTab() {
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
           className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--text-primary)]">
           <option value="">All Statuses</option>
-          <option value="PUBLISHED">Published</option>
-          <option value="APPROVED">Approved</option>
           <option value="REVIEW">In Review</option>
+          <option value="APPROVED">Approved</option>
+          <option value="PUBLISHED">Published</option>
           <option value="DRAFTED">Drafted</option>
+          <option value="PLANNED">Planned</option>
         </select>
         <select value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}
           className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--text-primary)]">
           <option value="">All Platforms</option>
           {Object.entries(PLATFORM_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
-        <span className="text-xs text-[var(--text-muted)]">{narratives.length} items</span>
+        <span className="text-xs text-[var(--text-muted)]">{items.length} items</span>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-[var(--accent-primary)]" /></div>
-      ) : narratives.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-5 py-12 text-center text-sm text-[var(--text-muted)]">
           No content found
         </div>
       ) : (
         <div className="space-y-2">
-          {narratives.map((n) => (
-            <div key={n.id} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-5 py-4 hover:border-[#2E86AB]/30 transition-all">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[var(--text-primary)]">{n.angle || n.trend?.headline}</p>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-[var(--text-muted)]">
-                    <span>{n.brand?.name}</span>
-                    <span>&middot;</span>
-                    <span>{PLATFORM_LABELS[n.platform] || n.platform}</span>
-                    <span>&middot;</span>
-                    <span>{new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+          {items.map((d) => {
+            const title = d.tree?.title || d.copyMarkdown?.split("\n")[0]?.replace(/^#\s*/, "").slice(0, 80) || "Untitled";
+            return (
+              <Link key={d.id} href={`/m/yantri/review/${d.id}`}>
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-5 py-4 hover:border-[#2E86AB]/30 transition-all cursor-pointer">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-primary)] truncate">{title}</p>
+                      <div className="flex items-center gap-2 mt-1.5 text-xs text-[var(--text-muted)]">
+                        <span>{d.brand?.name ?? "—"}</span>
+                        <span>&middot;</span>
+                        <span>{PLATFORM_LABELS[d.platform] || d.platform}</span>
+                        <span>&middot;</span>
+                        <span>{d.assets.length} asset{d.assets.length !== 1 ? "s" : ""}</span>
+                        <span>&middot;</span>
+                        <span>{new Date(d.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={cn("text-[10px] shrink-0", STATUS_COLORS[d.status] ?? "")}>{d.status}</Badge>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-[10px] shrink-0">{n.status}</Badge>
-              </div>
-            </div>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
