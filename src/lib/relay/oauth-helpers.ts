@@ -95,7 +95,7 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 export function getYouTubeAuthUrl(state: string): string {
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: process.env.GOOGLE_CLIENT_ID ?? "",
+    client_id: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID ?? "",
     redirect_uri: process.env.GOOGLE_REDIRECT_URI ?? "",
     scope: "https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.upload",
     state,
@@ -116,8 +116,8 @@ export async function exchangeYouTubeCode(
       grant_type: "authorization_code",
       code,
       redirect_uri: process.env.GOOGLE_REDIRECT_URI ?? "",
-      client_id: process.env.GOOGLE_CLIENT_ID ?? "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      client_id: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID ?? "",
+      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET ?? "",
     }),
   });
   return res.json();
@@ -133,8 +133,8 @@ export async function refreshYouTubeToken(
     body: new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
-      client_id: process.env.GOOGLE_CLIENT_ID ?? "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      client_id: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID ?? "",
+      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET ?? "",
     }),
   });
   return res.json();
