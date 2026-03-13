@@ -980,12 +980,21 @@ export default function DeliverableReviewPage() {
                 return (
                   <div key={asset.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] overflow-hidden">
                     {hasRealImage ? (
-                      <img
-                        src={asset.url}
-                        alt={asset.promptUsed ?? asset.type}
-                        className="w-full h-40 object-cover"
-                        loading="lazy"
-                      />
+                      <>
+                        <img
+                          src={asset.url}
+                          alt={asset.promptUsed ?? asset.type}
+                          className="w-full h-40 object-cover rounded-t-lg"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                          }}
+                        />
+                        <div className="hidden w-full h-40 flex items-center justify-center rounded-t-lg bg-[var(--bg-deep)] p-3 text-sm text-[var(--text-muted)]">
+                          Image generation pending — refresh to check
+                        </div>
+                      </>
                     ) : isPending ? (
                       <div className="w-full h-40 flex flex-col items-center justify-center gap-2 text-[var(--text-muted)]">
                         <RefreshCw className="h-5 w-5 animate-spin opacity-40" />

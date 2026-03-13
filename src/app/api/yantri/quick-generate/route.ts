@@ -8,6 +8,7 @@ import { getBrandVoiceBlock, getBrandColorPalette } from "@/lib/yantri/brand-voi
 import { engineRouter, type ContentType } from "@/lib/yantri/engine-router";
 import { SkillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
 import { runSEOAnalysis, buildSEOPromptBlock, type SEOAnalysis } from "@/lib/yantri/seo-engine";
+import { generateImage } from "@/lib/image-generator";
 
 /**
  * POST /api/yantri/quick-generate
@@ -1116,85 +1117,16 @@ async function generateAndSaveImage(
     });
     if (!asset) return;
 
-    let imageUrl: string | null = null;
+    // Determine dimensions based on asset type
+    const dims =
+      assetType === "CAROUSEL_SLIDE"
+        ? { width: 1080, height: 1080 }
+        : { width: 1280, height: 720 };
 
-    // Strategy 1: Gemini image generation
-    try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY || "",
-      });
+    // Pollinations.ai — free, no API key, generates real images via URL
+    const imageUrl = await generateImage(prompt, dims);
 
-      const response = await genAI.models.generateContent({
-        model: "gemini-2.0-flash-preview-image-generation",
-        contents: prompt,
-        config: {
-          responseModalities: ["IMAGE", "TEXT"],
-        },
-      });
-
-      const parts = response.candidates?.[0]?.content?.parts;
-      const imagePart = parts?.find(
-        (p: { inlineData?: { mimeType?: string } }) =>
-          p.inlineData?.mimeType?.startsWith("image/")
-      );
-
-      if (imagePart?.inlineData?.data) {
-        imageUrl = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
-      }
-    } catch (geminiErr) {
-      console.warn(
-        `[quick-generate] Gemini image gen failed for ${assetType}-${index}, trying fallback:`,
-        geminiErr instanceof Error ? geminiErr.message : geminiErr
-      );
-    }
-
-    // Strategy 2: Together.ai FLUX (free tier, high quality)
-    if (!imageUrl && process.env.TOGETHER_API_KEY) {
-      try {
-        const res = await fetch(
-          "https://api.together.xyz/v1/images/generations",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "black-forest-labs/FLUX.1-schnell-Free",
-              prompt: prompt.substring(0, 500),
-              width: 1280,
-              height: 720,
-              n: 1,
-            }),
-          }
-        );
-        const data = await res.json();
-        if (data.data?.[0]?.url) {
-          imageUrl = data.data[0].url;
-        } else if (data.data?.[0]?.b64_json) {
-          imageUrl = `data:image/png;base64,${data.data[0].b64_json}`;
-        }
-      } catch {
-        console.warn(`[quick-generate] Together.ai fallback failed for ${assetType}-${index}`);
-      }
-    }
-
-    // Strategy 3: Pollinations.ai (free, no API key)
-    if (!imageUrl) {
-      const encoded = encodeURIComponent(prompt.substring(0, 200));
-      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&nologo=true`;
-      try {
-        const check = await fetch(pollinationsUrl, { method: "HEAD" });
-        if (check.ok) {
-          imageUrl = pollinationsUrl;
-        }
-      } catch {
-        console.warn(`[quick-generate] Pollinations fallback failed for ${assetType}-${index}`);
-      }
-    }
-
-    // Update the asset with whatever we got
+    // Update the asset with the Pollinations URL
     if (imageUrl) {
       await prisma.asset.update({
         where: { id: asset.id },
@@ -1206,6 +1138,7 @@ async function generateAndSaveImage(
               : {}),
             generated: true,
             generatedAt: new Date().toISOString(),
+            provider: "pollinations",
           },
         },
       });
