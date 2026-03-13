@@ -263,9 +263,9 @@ export const carouselPipeline = yantriInngest.createFunction(
             deliverableId,
             type: "CAROUSEL_SLIDE",
             url: "",
-            promptUsed: slide.visualPrompt,
+            promptUsed: slide.visualDescription || slide.visualPrompt,
             slideIndex: slide.position,
-            metadata: { headline: slide.headline, bodyText: slide.bodyText, textOverlay: slide.textOverlay, role: slide.role, colorHex: slide.colorHex },
+            metadata: { slideType: slide.type, headline: slide.headline, body: slide.body || slide.bodyText, textOverlay: slide.textOverlay, role: slide.role, colorHex: slide.colorAccent || slide.colorHex },
           },
         });
       }
@@ -294,8 +294,9 @@ export const carouselPipeline = yantriInngest.createFunction(
     });
 
     await step.run("save-and-finalize", async () => {
-      const carouselPostingPlan = carouselSeoData ? {
-        seo: {
+      const carouselPostingPlan: Record<string, unknown> = {};
+      if (carouselSeoData) {
+        carouselPostingPlan.seo = {
           primaryKeyword: carouselSeoData.primaryKeyword,
           secondaryKeywords: carouselSeoData.secondaryKeywords,
           searchVolumeTrend: carouselSeoData.searchVolumeTrend,
@@ -304,14 +305,23 @@ export const carouselPipeline = yantriInngest.createFunction(
           seoTitle: carouselSeoData.seoTitle,
           metaDescription: carouselSeoData.metaDescription,
           suggestedSlug: carouselSeoData.suggestedSlug,
-        },
-      } : undefined;
+        };
+      }
+      if (carouselResult.crossPost) {
+        carouselPostingPlan.crossPost = carouselResult.crossPost;
+      }
       await prisma.deliverable.update({
         where: { id: deliverableId },
         data: {
           copyMarkdown: carouselResult.caption,
-          carouselData: { slides: carouselResult.slides, narrativeArc: carouselResult.narrativeArc, slideCount: carouselResult.slideCount, hashtags: carouselResult.hashtags },
-          postingPlan: carouselPostingPlan as object | undefined,
+          carouselData: {
+            slides: carouselResult.slides,
+            narrativeArc: carouselResult.narrativeArc,
+            slideCount: carouselResult.slideCount,
+            hashtags: carouselResult.hashtags,
+            crossPost: carouselResult.crossPost,
+          },
+          postingPlan: Object.keys(carouselPostingPlan).length > 0 ? carouselPostingPlan as object : undefined,
           status: "REVIEW",
         },
       });

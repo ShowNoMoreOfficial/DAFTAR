@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
 import { getAuthSession } from "@/lib/api-utils";
 import { daftarEvents } from "@/lib/event-bus";
+import { generateVisualPrompts } from "@/lib/yantri/engines/nanoBanana";
+import { getBrandColorMood } from "@/lib/yantri/brand-voice";
 
 // ─── GET /api/yantri/deliverables/[id] ─────────────────────────────────────────────
 
@@ -101,6 +103,11 @@ export async function PATCH(
         source: "yantri-deliverable-approval",
         deliverableId: id,
       });
+
+      // Auto-generate Story version for Instagram/YouTube content
+      generateStoryOnApproval(deliverable, updated, creatorId).catch((err) =>
+        console.error("[deliverable] Story auto-gen failed:", err instanceof Error ? err.message : err)
+      );
     }
 
     return NextResponse.json(updated);
@@ -200,6 +207,111 @@ export async function PATCH(
   }
 
   return NextResponse.json(updated);
+}
+
+// ─── Auto-generate Story on approval ────────────────────────────────────────────
+
+async function generateStoryOnApproval(
+  deliverable: { id: string; platform: string; brandId: string; copyMarkdown: string | null; postingPlan: unknown },
+  updated: { brand?: { id: string; name: string } | null },
+  userId: string
+) {
+  // Only generate stories for Instagram and YouTube content
+  const storyPlatforms = ["META_CAROUSEL", "META_REEL", "META_POST", "YOUTUBE"];
+  if (!storyPlatforms.includes(deliverable.platform)) return;
+
+  const brandName = updated.brand?.name ?? "Brand";
+  const title = deliverable.copyMarkdown?.slice(0, 100) ?? "Content";
+
+  // Generate a story visual prompt
+  const storyVisual = await generateVisualPrompts({
+    narrativeAngle: `Story promoting: "${title}"`,
+    platform: "meta",
+    brandName,
+    emotion: "excitement",
+    colorMood: await getBrandColorMood(brandName, "vibrant, eye-catching, story-optimized"),
+    generatedContent: deliverable.copyMarkdown?.slice(0, 2000) ?? "",
+  });
+
+  // Create a Story deliverable (use META_POST with pipelineType instagram_story)
+  const storyDeliverable = await prisma.deliverable.create({
+    data: {
+      brandId: deliverable.brandId,
+      platform: "META_POST",
+      pipelineType: "instagram_story",
+      status: "REVIEW",
+      copyMarkdown: `Story: ${title}`,
+      postingPlan: {
+        sourceDeliverableId: deliverable.id,
+        sourcePlatform: deliverable.platform,
+        storyType: "content_promotion",
+        format: "vertical_1080x1920",
+        notes: "Auto-generated story to promote approved content. Add swipe-up/link sticker.",
+      },
+    },
+  });
+
+  // Create story image asset
+  await prisma.asset.create({
+    data: {
+      deliverableId: storyDeliverable.id,
+      type: "IMAGE",
+      url: "",
+      promptUsed: storyVisual.storyPrompt ?? storyVisual.socialCardPrompt,
+      metadata: {
+        purpose: "story_promotion",
+        sourceDeliverableId: deliverable.id,
+        format: "9:16 (1080x1920)",
+        stickerZone: "bottom 20% reserved for swipe-up/link sticker",
+      },
+    },
+  });
+
+  // Try to generate the actual story image via Gemini
+  try {
+    const { GoogleGenAI } = await import("@google/genai");
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+    const storyPrompt = `Create an Instagram/Facebook Story promoting: "${title}".
+Style: Eye-catching, vertical (1080x1920), vibrant colors.
+Include: Key quote or data point from the content, brand watermark area at top-right.
+Reserve bottom 20% for swipe-up/link sticker area.
+Brand: ${brandName}. Make it scroll-stopping.`;
+
+    const response = await genAI.models.generateContent({
+      model: "gemini-2.0-flash-preview-image-generation",
+      contents: storyPrompt,
+      config: { responseModalities: ["IMAGE", "TEXT"] },
+    });
+
+    const parts = response.candidates?.[0]?.content?.parts;
+    const imagePart = parts?.find(
+      (p: { inlineData?: { mimeType?: string } }) => p.inlineData?.mimeType?.startsWith("image/")
+    );
+
+    if (imagePart?.inlineData?.data) {
+      const asset = await prisma.asset.findFirst({
+        where: { deliverableId: storyDeliverable.id, type: "IMAGE" },
+      });
+      if (asset) {
+        await prisma.asset.update({
+          where: { id: asset.id },
+          data: {
+            url: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
+            metadata: {
+              ...(typeof asset.metadata === "object" && asset.metadata !== null ? asset.metadata : {}),
+              generated: true,
+              generatedAt: new Date().toISOString(),
+            },
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[deliverable] Story image gen failed:", err instanceof Error ? err.message : err);
+  }
+
+  console.log(`[deliverable] Story auto-generated: ${storyDeliverable.id} for source ${deliverable.id}`);
 }
 
 // ─── DELETE /api/yantri/deliverables/[id] ──────────────────────────────────────────

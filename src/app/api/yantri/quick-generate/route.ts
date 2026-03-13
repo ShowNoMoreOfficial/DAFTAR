@@ -98,62 +98,98 @@ REQUIREMENTS:
 const X_THREAD_STRUCTURE = `Create a complete thread with this EXACT JSON structure:
 {
   "tweets": [
-    { "position": 1, "text": "Hook tweet (max 280 chars)", "type": "hook" },
-    { "position": 2, "text": "Context tweet", "type": "context" },
-    { "position": 3, "text": "Data point tweet", "type": "evidence" },
-    { "position": 4, "text": "...", "type": "analysis" },
-    { "position": 5, "text": "...", "type": "analysis" },
-    { "position": 6, "text": "...", "type": "analysis" },
-    { "position": 7, "text": "...", "type": "analysis" },
-    { "position": 8, "text": "...", "type": "implication" },
-    { "position": 9, "text": "Engagement CTA tweet", "type": "cta" }
+    { "position": 1, "text": "Hook tweet — MUST stand alone, stop the scroll (max 280 chars)", "type": "hook", "hasImage": true, "imageDescription": "Bold data card or visual that amplifies the hook", "hashtags": [] },
+    { "position": 2, "text": "Context tweet — set the stage", "type": "context", "hasImage": false, "imageDescription": null, "hashtags": [] },
+    { "position": 3, "text": "Data point tweet with specific numbers", "type": "evidence", "hasImage": true, "imageDescription": "Data visualization or comparison chart", "hashtags": [] },
+    { "position": 4, "text": "...", "type": "analysis", "hasImage": false, "imageDescription": null, "hashtags": [] },
+    { "position": 5, "text": "...", "type": "analysis", "hasImage": true, "imageDescription": "Quote card or infographic", "hashtags": [] },
+    { "position": 6, "text": "...", "type": "evidence", "hasImage": false, "imageDescription": null, "hashtags": [] },
+    { "position": 7, "text": "...", "type": "implication", "hasImage": false, "imageDescription": null, "hashtags": ["#relevant"] },
+    { "position": 8, "text": "CTA tweet — question + follow prompt", "type": "cta", "hasImage": false, "imageDescription": null, "hashtags": [] }
   ],
+  "threadStrategy": {
+    "hookArchetype": "The Contradiction|The Data Bomb|The Question|The Prediction",
+    "narrativeFlow": "Brief description of how tension builds across the thread",
+    "hashtagStrategy": "Strategic placement — NOT every tweet, only 2-3 tweets with 1-2 relevant hashtags each",
+    "visualAnchors": "Place images/data cards every 3-4 tweets to maintain scroll momentum"
+  },
+  "quoteTweetSuggestion": {
+    "targetTweet": "position number of the best tweet to quote-tweet for cross-promotion",
+    "quoteText": "Ready-to-post quote tweet text (max 280 chars) that reframes or amplifies the thread",
+    "timing": "Post quote tweet 2-4 hours after thread for algorithm boost"
+  },
   "titles": [
     { "text": "Thread title option 1", "strategy": "hook" },
     { "text": "Thread title option 2", "strategy": "data" }
   ],
   "description": "Brief summary of the thread (100 words)",
   "tags": ["keyword1", "keyword2", "...10-15 relevant hashtags"],
+  "postingPlan": {
+    "optimalTime": "HH:MM IST",
+    "timeReasoning": "Why this time works for this topic and audience",
+    "dayPreference": "Best day of week for this content"
+  },
   "thumbnailBriefs": [
-    { "concept": "Thread header image", "textOverlay": "4 words max", "colorScheme": "...", "composition": "..." }
+    { "concept": "Thread header image", "textOverlay": "4 words max", "colorScheme": "...", "composition": "1200x675" }
   ]
 }
 
 REQUIREMENTS:
-- 8-12 tweets total, each MUST be under 280 characters
-- Apply hook engineering: hook tweet must stop the scroll — provocative claim or surprising fact
-- Include data in at least 3 tweets
-- Last tweet is engagement CTA (question + follow prompt)`;
+- 7-10 tweets total, each MUST be under 280 characters
+- Tweet 1 is the HOOK — it MUST stand alone as a compelling standalone tweet (this gets 10x the impressions)
+- Apply hook engineering: provocative claim, surprising fact, or bold prediction
+- Include specific data/numbers in at least 3 tweets
+- Visual anchors (hasImage: true) every 3-4 tweets to maintain scroll momentum
+- Strategic hashtag placement: NOT every tweet — only 2-3 tweets with 1-2 targeted hashtags
+- Final tweet is engagement CTA: question + "Follow for more" + optional retweet ask
+- Include quote tweet suggestion for cross-promotion (reframe the best tweet)
+- Do NOT put external links in tweet text (algorithm suppression) — use reply strategy instead
+- Each tweet must flow naturally from the previous but also be somewhat standalone`;
 
 const CAROUSEL_STRUCTURE = `Create a carousel with this EXACT JSON structure:
 {
   "slides": [
-    { "position": 1, "role": "hook", "headline": "...", "bodyText": "...", "visualPrompt": "Image generation prompt", "textOverlay": "...", "colorHex": "#..." },
-    { "position": 2, "role": "context", "headline": "...", "bodyText": "...", "visualPrompt": "...", "textOverlay": "...", "colorHex": "#..." },
-    { "position": 3, "role": "data", "headline": "...", "bodyText": "...", "visualPrompt": "...", "textOverlay": "...", "colorHex": "#..." },
-    { "position": 4, "role": "escalation", "headline": "...", "bodyText": "...", "visualPrompt": "...", "textOverlay": "...", "colorHex": "#..." },
-    { "position": 5, "role": "escalation", "headline": "...", "bodyText": "...", "visualPrompt": "...", "textOverlay": "...", "colorHex": "#..." },
-    { "position": 6, "role": "data", "headline": "...", "bodyText": "...", "visualPrompt": "...", "textOverlay": "...", "colorHex": "#..." },
-    { "position": 7, "role": "climax", "headline": "...", "bodyText": "...", "visualPrompt": "...", "textOverlay": "...", "colorHex": "#..." },
-    { "position": 8, "role": "cta", "headline": "...", "bodyText": "...", "visualPrompt": "...", "textOverlay": "...", "colorHex": "#..." }
+    { "position": 1, "type": "HOOK", "role": "hook", "headline": "Bold 3-8 word hook", "body": "", "bodyText": "", "visualDescription": "Detailed slide visual: background, text layout, imagery (60-100 words)", "visualPrompt": "Same as visualDescription", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "HOOK slide — large text only" },
+    { "position": 2, "type": "SECONDARY_HOOK", "role": "secondary_hook", "headline": "...", "body": "...", "bodyText": "...", "visualDescription": "...", "visualPrompt": "...", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "..." },
+    { "position": 3, "type": "CONTEXT", "role": "context", "headline": "...", "body": "...", "bodyText": "...", "visualDescription": "...", "visualPrompt": "...", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "..." },
+    { "position": 4, "type": "DATA", "role": "data", "headline": "The Numbers", "body": "Key stat 1\\nKey stat 2\\nKey stat 3", "bodyText": "...", "visualDescription": "Infographic with data blocks, icons + numbers", "visualPrompt": "...", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "..." },
+    { "position": 5, "type": "ESCALATION", "role": "escalation", "headline": "...", "body": "...", "bodyText": "...", "visualDescription": "...", "visualPrompt": "...", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "..." },
+    { "position": 6, "type": "DATA", "role": "data", "headline": "...", "body": "...", "bodyText": "...", "visualDescription": "...", "visualPrompt": "...", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "..." },
+    { "position": 7, "type": "ESCALATION", "role": "escalation", "headline": "...", "body": "...", "bodyText": "...", "visualDescription": "...", "visualPrompt": "...", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "..." },
+    { "position": 8, "type": "CLIMAX", "role": "climax", "headline": "...", "body": "...", "bodyText": "...", "visualDescription": "...", "visualPrompt": "...", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "..." },
+    { "position": 9, "type": "CTA", "role": "cta", "headline": "...", "body": "...", "bodyText": "...", "visualDescription": "...", "visualPrompt": "...", "colorAccent": "#hex", "colorHex": "#hex", "textOverlay": "Save this for later" }
   ],
-  "caption": "Instagram caption (500+ chars with line breaks and emojis)",
+  "caption": "2200-char Instagram caption with line breaks, storytelling, question for comments, hashtags at end",
+  "hashtags": ["#hashtag1", "#hashtag2", "...20-30 strategic hashtags mixing broad + niche"],
+  "crossPost": {
+    "facebook": true,
+    "adaptations": "Facebook caption: longer storytelling, fewer hashtags (5-10), more questions for engagement"
+  },
   "titles": [
     { "text": "Carousel title option 1", "strategy": "hook" },
     { "text": "Carousel title option 2", "strategy": "data" }
   ],
   "description": "Brief summary",
-  "tags": ["#hashtag1", "#hashtag2", "...15-20 relevant hashtags"],
+  "tags": ["#hashtag1", "#hashtag2", "...20-30 relevant hashtags"],
   "thumbnailBriefs": [
-    { "concept": "Cover slide design", "textOverlay": "4 words max", "colorScheme": "...", "composition": "..." }
+    { "concept": "Cover slide design", "textOverlay": "4 words max", "colorScheme": "...", "composition": "4:5 portrait 1080x1350" }
   ]
 }
 
 REQUIREMENTS:
-- 8-10 slides with strong visual design direction
-- Apply hook engineering: hook slide must stop the scroll
-- Data slides should present ONE clear stat per slide
-- CTA slide drives saves, shares, follows`;
+- 8-10 slides with typed roles (HOOK, SECONDARY_HOOK, CONTEXT, DATA, ESCALATION, CLIMAX, CTA)
+- Apply hook engineering: HOOK slide must stop the scroll — bold text on striking background
+- SECONDARY_HOOK (slide 2) must stand alone as an independent hook
+- DATA slides present ONE clear stat per slide with infographic-style visuals
+- CTA slide drives SAVES, SHARES, follows — "Save this for later" or "Share with someone"
+- 4:5 portrait format (1080x1350px) for all slides
+- Caption: 2200 chars with line breaks, storytelling, engagement question, hashtags at end
+- 20-30 hashtags mixing broad reach + niche targeting
+- Include Facebook cross-post adaptations
+- Each visualDescription must describe a complete, self-contained slide image
+- body and bodyText should contain the same content
+- visualDescription and visualPrompt should contain the same content
+- colorAccent and colorHex should contain the same hex value`;
 
 const QUICK_TAKE_STRUCTURE = `Create a quick take with this EXACT JSON structure:
 {
@@ -229,26 +265,40 @@ const X_SINGLE_STRUCTURE = `Create a single tweet with this EXACT JSON structure
     { "position": 1, "text": "Tweet text (max 280 chars)", "type": "main" }
   ],
   "variants": [
-    { "text": "Provocative variant (max 280 chars)", "strategy": "provocative" },
-    { "text": "Data-driven variant (max 280 chars)", "strategy": "data_driven" },
-    { "text": "Question variant (max 280 chars)", "strategy": "question" }
+    { "text": "Provocative hot-take variant (max 280 chars)", "strategy": "provocative" },
+    { "text": "Data-driven variant with specific number (max 280 chars)", "strategy": "data_driven" },
+    { "text": "Question that invites debate (max 280 chars)", "strategy": "question" }
   ],
+  "replyBait": {
+    "selfReply": "A follow-up reply from the same account to boost engagement (max 280 chars). Add context, a source link, or a counter-perspective.",
+    "anticipatedReplies": ["Likely reply angle 1", "Likely reply angle 2"],
+    "replyStrategy": "How to engage with replies to maximize thread visibility"
+  },
+  "postingPlan": {
+    "optimalTime": "HH:MM IST",
+    "timeReasoning": "Why this specific time maximizes reach for this topic",
+    "dayPreference": "Best day of week"
+  },
   "titles": [
     { "text": "Main tweet", "strategy": "primary" }
   ],
   "description": "Brief context about this tweet",
   "tags": ["#hashtag1", "#hashtag2", "...3-5 relevant hashtags"],
-  "mediaDescription": "Suggested image/graphic to accompany the tweet",
+  "mediaDescription": "Suggested image/graphic to accompany the tweet — data card, quote card, or comparison visual",
   "thumbnailBriefs": [
-    { "concept": "Social card image", "textOverlay": "4 words max", "colorScheme": "...", "composition": "..." }
+    { "concept": "Social card image", "textOverlay": "4 words max", "colorScheme": "...", "composition": "1200x675" }
   ]
 }
 
 REQUIREMENTS:
-- MUST be under 280 characters
-- Provide 3 variants with different strategies
-- Include media suggestion for higher engagement
-- Strategic hashtag placement (2-3 max in tweet)`;
+- MUST be under 280 characters — count carefully
+- Provide 3 variants with different strategies (provocative, data-driven, question)
+- Include reply bait: self-reply for engagement boost + anticipated reply angles
+- Include optimal posting time with reasoning
+- Media suggestion for higher engagement (data cards get 2x engagement)
+- Strategic hashtag placement: 2-3 max in tweet body, NOT at the end
+- Do NOT include external links in tweet text (40-50% reach suppression)
+- If linking needed, suggest putting link in self-reply instead`;
 
 const INSTAGRAM_REEL_STRUCTURE = `Create a 60-90 second Instagram Reel with this EXACT JSON structure:
 {
@@ -599,7 +649,7 @@ export async function POST(request: NextRequest) {
     const orchestrator = new SkillOrchestrator();
     const baseSkillPaths = engineRouter.getSkillPaths(mapping.engineType);
 
-    // Load additional short-form platform skills alongside engine-router defaults
+    // Load additional platform skills alongside engine-router defaults
     const extraSkillPaths: string[] = [];
     if (contentType === "youtube_short") {
       extraSkillPaths.push("platforms/youtube/shorts-strategy");
@@ -609,6 +659,18 @@ export async function POST(request: NextRequest) {
       extraSkillPaths.push("platforms/meta/reel-production");
       extraSkillPaths.push("production/short-form/vertical-video-adaptation");
       extraSkillPaths.push("platforms/x-twitter/algorithm-awareness");
+    }
+    if (contentType === "x_thread") {
+      extraSkillPaths.push("platforms/x-twitter/algorithm-awareness");
+      extraSkillPaths.push("platforms/x-twitter/tweet-crafting");
+      extraSkillPaths.push("platforms/x-twitter/visual-anchor-selection");
+    }
+    if (contentType === "x_single") {
+      extraSkillPaths.push("platforms/x-twitter/reply-strategy");
+      extraSkillPaths.push("platforms/x-twitter/tag-strategy");
+    }
+    if (contentType === "carousel" || contentType === "instagram_carousel") {
+      extraSkillPaths.push("platforms/meta/story-strategy");
     }
     const skillPaths = [...new Set([...baseSkillPaths, ...extraSkillPaths])];
 
@@ -789,10 +851,11 @@ Return ONLY the JSON, no other text.`;
         scriptData:
           contentType === "youtube_explainer" ||
           contentType === "quick_take" ||
-          contentType === "x_thread"
+          contentType === "x_thread" ||
+          contentType === "x_single"
             ? (parsed as Record<string, unknown> as any)
             : undefined,
-        carouselData: contentType === "carousel" ? (parsed as Record<string, unknown> as any) : undefined,
+        carouselData: (contentType === "carousel" || contentType === "instagram_carousel") ? (parsed as Record<string, unknown> as any) : undefined,
         postingPlan: parsed.tags
           ? ({
               tags: parsed.tags,
@@ -946,18 +1009,20 @@ async function fireImageGeneration(
     );
   }
 
-  // Carousel slide images
+  // Carousel slide images — generate for EVERY slide
   if (contentType === "carousel" || contentType === "instagram_carousel") {
     const slides = (parsed.slides as Array<{
       position: number;
       visualPrompt: string;
+      visualDescription: string;
       headline: string;
     }>) ?? [];
 
-    for (const slide of slides.slice(0, 4)) {
+    for (const slide of slides) {
+      const slideVisual = slide.visualDescription || slide.visualPrompt;
       imagePromises.push(
         generateAndSaveImage(
-          `Instagram carousel slide ${slide.position}: ${slide.visualPrompt}.${colorHint}`,
+          `Instagram carousel slide ${slide.position} (4:5 portrait, 1080x1350px): ${slideVisual}.${colorHint}`,
           deliverableId,
           "CAROUSEL_SLIDE",
           slide.position
@@ -1302,14 +1367,18 @@ function buildCopyMarkdown(
   if (contentType === "carousel" || contentType === "instagram_carousel") {
     const slides = (parsed.slides as Array<{
       position: number;
+      type?: string;
       headline: string;
-      bodyText: string;
+      body?: string;
+      bodyText?: string;
     }>) ?? [];
     const slideText = slides
-      .map((s) => `**Slide ${s.position}: ${s.headline}**\n${s.bodyText}`)
+      .map((s) => `**Slide ${s.position}${s.type ? ` [${s.type}]` : ""}: ${s.headline}**\n${s.body ?? s.bodyText ?? ""}`)
       .join("\n\n");
     const caption = (parsed.caption as string) ?? "";
-    return `# ${title}\n\n${slideText}\n\n---\n\n**Caption:** ${caption}`;
+    const crossPost = parsed.crossPost as { facebook?: boolean; adaptations?: string } | undefined;
+    const crossPostText = crossPost?.facebook ? `\n\n**Facebook Cross-Post:** ${crossPost.adaptations ?? "Adapt caption for Facebook"}` : "";
+    return `# ${title}\n\n${slideText}\n\n---\n\n**Caption:** ${caption}${crossPostText}`;
   }
 
   // LinkedIn post
@@ -1393,22 +1462,28 @@ function buildAssets(
   if (contentType === "carousel" || contentType === "instagram_carousel") {
     const slides = (parsed.slides as Array<{
       position: number;
+      type?: string;
       headline: string;
-      visualPrompt: string;
+      body?: string;
+      bodyText?: string;
+      visualDescription?: string;
+      visualPrompt?: string;
       textOverlay: string;
-      colorHex: string;
+      colorAccent?: string;
+      colorHex?: string;
     }>) ?? [];
     slides.forEach((s) => {
       assets.push({
         deliverableId,
         type: "CAROUSEL_SLIDE",
         url: `placeholder://slide-${s.position}`,
-        promptUsed: s.visualPrompt,
+        promptUsed: s.visualDescription ?? s.visualPrompt ?? "",
         slideIndex: s.position,
         metadata: {
+          slideType: s.type,
           headline: s.headline,
           textOverlay: s.textOverlay,
-          colorHex: s.colorHex,
+          colorHex: s.colorAccent ?? s.colorHex ?? "",
         },
       });
     });
