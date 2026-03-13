@@ -12,6 +12,7 @@ import { generateVisualPrompts } from "@/lib/yantri/engines/nanoBanana";
 import { generateEmbedding, findSimilarTree } from "@/lib/yantri/embeddings";
 import { getBrandColorMood } from "@/lib/yantri/brand-voice";
 import { generateVoiceover } from "@/lib/yantri/elevenlabs";
+import { runSEOAnalysis, type SEOAnalysis } from "@/lib/yantri/seo-engine";
 
 type DeliverableEvent = {
   data: { deliverableId: string };
@@ -115,6 +116,14 @@ export const viralMicroPipeline = yantriInngest.createFunction(
       return await resolveResearch(deliverableId, treeId, deliverable.copyMarkdown ?? "", deliverable.brand.name, deliverable.platform, deliverable.researchPrompt);
     });
 
+    const seoData = await step.run("seo-analysis", async () => {
+      return await runSEOAnalysis(
+        deliverable.copyMarkdown?.slice(0, 200) ?? "",
+        deliverable.brand.name,
+        deliverable.brand.language ?? "English"
+      ).catch(() => null as SEOAnalysis | null);
+    });
+
     await step.run("set-scripting", async () => {
       await prisma.deliverable.update({ where: { id: deliverableId }, data: { status: "SCRIPTING" } });
     });
@@ -170,9 +179,21 @@ export const viralMicroPipeline = yantriInngest.createFunction(
     });
 
     await step.run("save-and-finalize", async () => {
+      const postingPlan = {
+        ...(viralResult.postingPlan as object),
+        ...(seoData ? { seo: {
+          primaryKeyword: seoData.primaryKeyword,
+          secondaryKeywords: seoData.secondaryKeywords,
+          searchVolumeTrend: seoData.searchVolumeTrend,
+          competitionLevel: seoData.competitionLevel,
+          seoTitle: seoData.seoTitle,
+          metaDescription: seoData.metaDescription,
+          suggestedSlug: seoData.suggestedSlug,
+        }} : {}),
+      };
       await prisma.deliverable.update({
         where: { id: deliverableId },
-        data: { copyMarkdown: viralResult.primaryPost, postingPlan: viralResult.postingPlan as object, status: "REVIEW" },
+        data: { copyMarkdown: viralResult.primaryPost, postingPlan: postingPlan as object, status: "REVIEW" },
       });
     });
 
@@ -201,6 +222,14 @@ export const carouselPipeline = yantriInngest.createFunction(
 
     const research = await step.run("research", async () => {
       return await resolveResearch(deliverableId, treeId, deliverable.copyMarkdown ?? "", deliverable.brand.name, deliverable.platform, deliverable.researchPrompt);
+    });
+
+    const carouselSeoData = await step.run("seo-analysis", async () => {
+      return await runSEOAnalysis(
+        deliverable.copyMarkdown?.slice(0, 200) ?? "",
+        deliverable.brand.name,
+        deliverable.brand.language ?? "English"
+      ).catch(() => null as SEOAnalysis | null);
     });
 
     await step.run("set-scripting", async () => {
@@ -265,11 +294,24 @@ export const carouselPipeline = yantriInngest.createFunction(
     });
 
     await step.run("save-and-finalize", async () => {
+      const carouselPostingPlan = carouselSeoData ? {
+        seo: {
+          primaryKeyword: carouselSeoData.primaryKeyword,
+          secondaryKeywords: carouselSeoData.secondaryKeywords,
+          searchVolumeTrend: carouselSeoData.searchVolumeTrend,
+          competitionLevel: carouselSeoData.competitionLevel,
+          instagramHashtags: carouselSeoData.instagramHashtags,
+          seoTitle: carouselSeoData.seoTitle,
+          metaDescription: carouselSeoData.metaDescription,
+          suggestedSlug: carouselSeoData.suggestedSlug,
+        },
+      } : undefined;
       await prisma.deliverable.update({
         where: { id: deliverableId },
         data: {
           copyMarkdown: carouselResult.caption,
           carouselData: { slides: carouselResult.slides, narrativeArc: carouselResult.narrativeArc, slideCount: carouselResult.slideCount, hashtags: carouselResult.hashtags },
+          postingPlan: carouselPostingPlan as object | undefined,
           status: "REVIEW",
         },
       });
@@ -300,6 +342,14 @@ export const cinematicPipeline = yantriInngest.createFunction(
 
     const research = await step.run("research", async () => {
       return await resolveResearch(deliverableId, treeId, deliverable.copyMarkdown ?? "", deliverable.brand.name, deliverable.platform, deliverable.researchPrompt);
+    });
+
+    const cinematicSeoData = await step.run("seo-analysis", async () => {
+      return await runSEOAnalysis(
+        deliverable.copyMarkdown?.slice(0, 200) ?? "",
+        deliverable.brand.name,
+        deliverable.brand.language ?? "English"
+      ).catch(() => null as SEOAnalysis | null);
     });
 
     if (treeId) {
@@ -385,12 +435,25 @@ export const cinematicPipeline = yantriInngest.createFunction(
     });
 
     await step.run("save-and-finalize", async () => {
+      const postingPlan = {
+        ...(cinematicResult.postingPlan as object),
+        ...(cinematicSeoData ? { seo: {
+          primaryKeyword: cinematicSeoData.primaryKeyword,
+          secondaryKeywords: cinematicSeoData.secondaryKeywords,
+          searchVolumeTrend: cinematicSeoData.searchVolumeTrend,
+          competitionLevel: cinematicSeoData.competitionLevel,
+          youtubeKeywords: cinematicSeoData.youtubeKeywords,
+          seoTitle: cinematicSeoData.seoTitle,
+          metaDescription: cinematicSeoData.metaDescription,
+          suggestedSlug: cinematicSeoData.suggestedSlug,
+        }} : {}),
+      };
       await prisma.deliverable.update({
         where: { id: deliverableId },
         data: {
           copyMarkdown: cinematicResult.script.fullScript,
           scriptData: { sections: cinematicResult.script.sections, runtimeEstimate: cinematicResult.script.runtimeEstimate, actStructure: cinematicResult.script.actStructure },
-          postingPlan: cinematicResult.postingPlan as object,
+          postingPlan: postingPlan as object,
           status: "REVIEW",
         },
       });
@@ -421,6 +484,14 @@ export const reelPipeline = yantriInngest.createFunction(
 
     const research = await step.run("research", async () => {
       return await resolveResearch(deliverableId, treeId, deliverable.copyMarkdown ?? "", deliverable.brand.name, deliverable.platform, deliverable.researchPrompt);
+    });
+
+    const reelSeoData = await step.run("seo-analysis", async () => {
+      return await runSEOAnalysis(
+        deliverable.copyMarkdown?.slice(0, 200) ?? "",
+        deliverable.brand.name,
+        deliverable.brand.language ?? "English"
+      ).catch(() => null as SEOAnalysis | null);
     });
 
     await step.run("set-scripting", async () => {
@@ -483,13 +554,26 @@ export const reelPipeline = yantriInngest.createFunction(
 
     await step.run("save-and-finalize", async () => {
       const content = reelResult.content as Record<string, unknown> | undefined;
-      const postingPlan = reelResult.postingPlan as object | undefined;
+      const rawPostingPlan = reelResult.postingPlan as object | undefined;
+      const postingPlan = {
+        ...(rawPostingPlan ?? {}),
+        ...(reelSeoData ? { seo: {
+          primaryKeyword: reelSeoData.primaryKeyword,
+          secondaryKeywords: reelSeoData.secondaryKeywords,
+          searchVolumeTrend: reelSeoData.searchVolumeTrend,
+          competitionLevel: reelSeoData.competitionLevel,
+          instagramHashtags: reelSeoData.instagramHashtags,
+          seoTitle: reelSeoData.seoTitle,
+          metaDescription: reelSeoData.metaDescription,
+          suggestedSlug: reelSeoData.suggestedSlug,
+        }} : {}),
+      };
       await prisma.deliverable.update({
         where: { id: deliverableId },
         data: {
           copyMarkdown: (content?.script as string) ?? JSON.stringify(content),
           scriptData: { textOverlays: content?.text_overlays ?? [], duration: content?.duration ?? null, musicMood: content?.music_mood ?? null, type: "reel" },
-          postingPlan: postingPlan ?? {},
+          postingPlan: postingPlan as object,
           status: "REVIEW",
         },
       });

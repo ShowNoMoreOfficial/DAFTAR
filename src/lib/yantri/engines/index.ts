@@ -1,5 +1,6 @@
 import { buildContentGenerationPrompt, buildPackagingPrompt } from "@/lib/yantri/prompts";
 import { routeToModel } from "@/lib/yantri/model-router";
+import { type SEOAnalysis } from "@/lib/yantri/seo-engine";
 
 export interface ContentEngineParams {
   narrativeAngle: string;
@@ -11,6 +12,7 @@ export interface ContentEngineParams {
   voiceRules: string;
   language: string;
   researchResults: string;
+  seo?: SEOAnalysis | null;
 }
 
 export interface ContentEngineResult {
@@ -89,7 +91,9 @@ export async function runContentEngine(
     voiceRules,
     language,
     researchResults,
-    trendHeadline
+    trendHeadline,
+    undefined,
+    params.seo
   );
 
   const result = await routeToModel("drafting", systemPrompt, userMessage, {

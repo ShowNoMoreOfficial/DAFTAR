@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { callClaude } from "@/lib/yantri/anthropic";
 import { callGeminiResearch } from "@/lib/yantri/gemini";
 import { SkillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
+import { runSEOAnalysis, type SEOAnalysis } from "@/lib/yantri/seo-engine";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ interface RecommendResponse {
   recommendations: ContentRecommendation[];
   topicAssessment: TopicAssessment;
   researchSummary: string;
+  seo?: SEOAnalysis;
 }
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -144,6 +146,7 @@ export async function POST(request: Request) {
       skillLearningLogs,
       recentSignals,
       activeTrends,
+      seoAnalysis,
     ] = await Promise.all([
       // Gemini research (with timeout race)
       Promise.race([
@@ -197,6 +200,11 @@ Be concise but comprehensive. Max 2000 words.`
         where: { lifecycle: "emerging" },
         take: 5,
       }).catch(() => [] as Awaited<ReturnType<typeof prisma.trend.findMany>>),
+      // SEO keyword analysis
+      runSEOAnalysis(trimmedTopic).catch((e) => {
+        console.error("[recommend] SEO analysis failed:", e?.message || e);
+        return null as SEOAnalysis | null;
+      }),
     ]);
 
     const researchSummary = researchResult;
@@ -205,7 +213,8 @@ Be concise but comprehensive. Max 2000 words.`
     console.log("[recommend] Step 2+3 PASS: research =", researchSummary?.length,
       "skills =", skillResults.filter(Boolean).length,
       "brands =", brands.length,
-      "perf =", performanceData.length);
+      "perf =", performanceData.length,
+      "seo =", seoAnalysis ? "yes" : "no");
 
     if (brands.length === 0) {
       console.log("[recommend] No brands for role", userRole, "ids", accessibleBrandIds);
@@ -291,7 +300,18 @@ ${activeTrends.length > 0
   ? activeTrends.slice(0, 3).map((t) =>
       `- ${t.name} (${t.lifecycle}, velocity: ${t.velocityScore ?? "?"})`
     ).join("\n")
-  : ""}`;
+  : ""}
+
+${seoAnalysis ? `## SEO INTELLIGENCE
+Primary Keyword: ${seoAnalysis.primaryKeyword}
+Secondary Keywords: ${seoAnalysis.secondaryKeywords.slice(0, 5).join(", ")}
+Long-tail Keywords: ${seoAnalysis.longTailKeywords.slice(0, 3).join(", ")}
+Search Trend: ${seoAnalysis.searchVolumeTrend} | Competition: ${seoAnalysis.competitionLevel}
+YouTube Keywords: ${seoAnalysis.youtubeKeywords.slice(0, 6).join(", ")}
+Twitter Hashtags: ${seoAnalysis.twitterHashtags.slice(0, 5).map((h) => `#${h}`).join(" ")}
+Instagram Hashtags: ${seoAnalysis.instagramHashtags.slice(0, 8).map((h) => `#${h}`).join(" ")}
+
+USE THIS SEO DATA: Include primary keyword in suggested titles. Use platform-specific hashtags/keywords in recommendations. Factor search trend and competition into priority ranking.` : ""}`;
 
     const signalContext = signalMetadata
       ? `\nSIGNAL: ${signalMetadata.source || "?"} (credibility: ${signalMetadata.sourceCredibility ?? "?"}, type: ${signalMetadata.eventType || "?"}, sentiment: ${signalMetadata.sentiment || "?"})\nContext: ${signalMetadata.content?.slice(0, 500) || "N/A"}\n`
@@ -363,6 +383,37 @@ Use ACTUAL brand IDs. Each brand gets a DIFFERENT angle. Return ONLY valid JSON.
     }
     console.log("[recommend] Step 9 PASS:", parsed.recommendations.length, "recs");
 
+    // ── Step 9b: Cross-platform short-form variants ──
+    const crossPlatformVariants: ContentRecommendation[] = [];
+    for (const rec of parsed.recommendations) {
+      if (rec.contentType === "youtube_short") {
+        crossPlatformVariants.push({
+          ...rec,
+          rank: rec.rank + 0.5,
+          platform: "INSTAGRAM",
+          contentType: "instagram_reel",
+          reasoning: `Cross-platform adaptation of the YouTube Short. Instagram Reels algorithm favors similar vertical content but needs platform-specific hashtags and caption style.`,
+          priority: "medium",
+        });
+      }
+      if (rec.contentType === "instagram_reel") {
+        crossPlatformVariants.push({
+          ...rec,
+          rank: rec.rank + 0.5,
+          platform: "YOUTUBE",
+          contentType: "youtube_short",
+          reasoning: `Cross-platform adaptation of the Instagram Reel. YouTube Shorts algorithm rewards high retention and fast hooks — adapt the first 1.5 seconds.`,
+          priority: "medium",
+        });
+      }
+    }
+    if (crossPlatformVariants.length > 0) {
+      parsed.recommendations.push(...crossPlatformVariants);
+      // Re-sort by rank
+      parsed.recommendations.sort((a, b) => a.rank - b.rank);
+      console.log("[recommend] Added", crossPlatformVariants.length, "cross-platform variants");
+    }
+
     // Fire-and-forget skill execution logging
     const loadedSkillPaths = [
       topicSelectionSkill && "narrative/editorial/topic-selection.md",
@@ -384,11 +435,12 @@ Use ACTUAL brand IDs. Each brand gets a DIFFERENT angle. Return ONLY valid JSON.
       )
     ).catch(() => {});
 
-    console.log("[recommend] DONE:", parsed.recommendations.length, "recommendations");
+    console.log("[recommend] DONE:", parsed.recommendations.length, "recommendations", seoAnalysis ? "(with SEO)" : "");
     return NextResponse.json({
       recommendations: parsed.recommendations,
       topicAssessment: parsed.topicAssessment ?? null,
       researchSummary,
+      seo: seoAnalysis ?? undefined,
     });
   } catch (error) {
     console.error("[recommend] UNHANDLED ERROR:", error);

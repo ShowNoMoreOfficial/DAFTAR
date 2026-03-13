@@ -1,4 +1,5 @@
 import { Brand, PlatformRule, ImportedTrend } from "@prisma/client";
+import { type SEOAnalysis, buildSEOPromptBlock } from "@/lib/yantri/seo-engine";
 
 export function buildEditorialScanPrompt(
   brands: Brand[],
@@ -203,7 +204,13 @@ function sharedContext(params: {
   language: string;
   researchResults: string;
   format: string;
+  platform?: string;
+  seo?: SEOAnalysis | null;
 }): string {
+  const seoBlock = params.seo && params.platform
+    ? `\n${buildSEOPromptBlock(params.seo, params.platform)}\n`
+    : "";
+
   return `
 NARRATIVE ANGLE: ${params.narrativeAngle}
 SOURCE TREND: ${params.trendHeadline}
@@ -212,7 +219,7 @@ BRAND TONE: ${params.brandTone}
 BRAND VOICE RULES: ${params.voiceRules}
 LANGUAGE: ${params.language}
 FORMAT: ${params.format}
-
+${seoBlock}
 RESEARCH DOSSIER:
 ${params.researchResults}`;
 }
@@ -325,9 +332,10 @@ export async function buildContentGenerationPrompt(
   language: string,
   researchResults: string,
   trendHeadline: string,
-  promptTemplateId?: string
+  promptTemplateId?: string,
+  seo?: SEOAnalysis | null
 ): Promise<{ systemPrompt: string; userMessage: string }> {
-  const ctx = sharedContext({ narrativeAngle, trendHeadline, brandName, brandTone, voiceRules, language, researchResults, format });
+  const ctx = sharedContext({ narrativeAngle, trendHeadline, brandName, brandTone, voiceRules, language, researchResults, format, platform, seo });
 
   if (promptTemplateId || true) {
     try {
