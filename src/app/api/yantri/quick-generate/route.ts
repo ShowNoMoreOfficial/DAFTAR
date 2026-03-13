@@ -9,7 +9,7 @@ import { engineRouter, type ContentType } from "@/lib/yantri/engine-router";
 import { SkillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
 import { getSkillPathsForContentType } from "@/lib/yantri/load-content-skills";
 import { runSEOAnalysis, buildSEOPromptBlock, type SEOAnalysis } from "@/lib/yantri/seo-engine";
-import { generateImage } from "@/lib/image-generator";
+import { planAssets } from "@/lib/yantri/asset-planner";
 
 /**
  * POST /api/yantri/quick-generate
@@ -43,15 +43,6 @@ interface RecommendationContext {
   stakeholders: string[];
   sensitivityLevel: string;
   suggestedTitle: string;
-}
-
-interface AssetInput {
-  deliverableId: string;
-  type: string;
-  url: string;
-  promptUsed?: string;
-  slideIndex?: number;
-  metadata?: Record<string, unknown>;
 }
 
 interface ContentTypeMapping {
@@ -896,10 +887,26 @@ Return ONLY the JSON, no other text.`;
       },
     });
 
-    // Create assets from generated content
-    const assets = buildAssets(parsed, contentType, deliverable.id);
-    if (assets.length > 0) {
-      await prisma.asset.createMany({ data: assets as any });
+    // Plan what assets are needed (NO generation yet — user generates on demand)
+    const plannedAssets = planAssets(contentType, mapping.platform, parsed, topic, brand.name);
+    if (plannedAssets.length > 0) {
+      await prisma.asset.createMany({
+        data: plannedAssets.map((planned) => ({
+          deliverableId: deliverable.id,
+          type: planned.type as any,
+          url: "",  // No image yet — user generates on demand
+          promptUsed: planned.prompt,
+          slideIndex: planned.slideIndex ?? null,
+          metadata: {
+            label: planned.label,
+            description: planned.description,
+            dimensions: planned.dimensions,
+            required: planned.required,
+            platformNote: planned.platformNote,
+            status: "planned",
+          },
+        })),
+      });
     }
 
     // Save research as NarrativeTree + FactDossier
@@ -936,13 +943,7 @@ Return ONLY the JSON, no other text.`;
       data: { treeId: tree.id },
     });
 
-    // ─── STEP 7: Fire image generation in background ───
-
-    fireImageGeneration(parsed, contentType, deliverable.id, brand.name, brandColorPalette).catch(
-      (err) => console.error("[quick-generate] Image generation error:", err)
-    );
-
-    // ─── STEP 7b: Fire voiceover generation in background ───
+    // ─── STEP 7: Fire voiceover generation in background ───
 
     fireVoiceover(parsed, contentType, deliverable.id, brand.language ?? "English").catch(
       (err) => console.error("[quick-generate] Voiceover error:", err)
@@ -980,176 +981,6 @@ Return ONLY the JSON, no other text.`;
       { error: "Content generation temporarily unavailable. Please try again in a moment.",
         details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
       { status: 503 }
-    );
-  }
-}
-
-// ─── Image Generation ───
-
-async function fireImageGeneration(
-  parsed: Record<string, unknown>,
-  contentType: string,
-  deliverableId: string,
-  brandName: string,
-  colorPalette: { colors: string[]; description: string } | null
-) {
-  const colorHint = colorPalette
-    ? ` Use brand colors: ${colorPalette.description}.`
-    : "";
-
-  const imagePromises: Promise<void>[] = [];
-
-  // Thumbnail generation for all content types
-  const thumbs = (parsed.thumbnailBriefs as Array<{
-    concept: string;
-    textOverlay: string;
-    colorScheme: string;
-    composition: string;
-  }>) ?? [];
-
-  if (thumbs.length > 0) {
-    const thumb = thumbs[0];
-    imagePromises.push(
-      generateAndSaveImage(
-        `Professional ${contentType.replace(/_/g, " ")} thumbnail for ${brandName}: ${thumb.concept}. Text overlay: "${thumb.textOverlay}". ${thumb.composition}.${colorHint}`,
-        deliverableId,
-        "THUMBNAIL",
-        0
-      )
-    );
-  }
-
-  // Carousel slide images — generate for EVERY slide
-  if (contentType === "carousel" || contentType === "instagram_carousel") {
-    const slides = (parsed.slides as Array<{
-      position: number;
-      visualPrompt: string;
-      visualDescription: string;
-      headline: string;
-    }>) ?? [];
-
-    for (const slide of slides) {
-      const slideVisual = slide.visualDescription || slide.visualPrompt;
-      imagePromises.push(
-        generateAndSaveImage(
-          `Instagram carousel slide ${slide.position} (4:5 portrait, 1080x1350px): ${slideVisual}.${colorHint}`,
-          deliverableId,
-          "CAROUSEL_SLIDE",
-          slide.position
-        )
-      );
-    }
-  }
-
-  // Cover frame for short-form video (YouTube Shorts / Instagram Reels)
-  if (contentType === "youtube_short" || contentType === "instagram_reel") {
-    const title = (parsed.titles as Array<{ text: string }>)?.[0]?.text ?? "Short";
-    imagePromises.push(
-      generateAndSaveImage(
-        `Vertical cover frame for a ${contentType.replace(/_/g, " ")} about "${title}". Bold, eye-catching, 1080x1920 aspect ratio.${colorHint}`,
-        deliverableId,
-        "SOCIAL_CARD",
-        0
-      )
-    );
-  }
-
-  // Social card for X threads / singles
-  if (contentType === "x_thread" || contentType === "x_single") {
-    const title = (parsed.titles as Array<{ text: string }>)?.[0]?.text ?? "Thread";
-    imagePromises.push(
-      generateAndSaveImage(
-        `Twitter/X social card header for a thread about "${title}". 1200x675, bold typography, political analysis style.${colorHint}`,
-        deliverableId,
-        "SOCIAL_CARD",
-        0
-      )
-    );
-  }
-
-  // Professional header for LinkedIn
-  if (contentType === "linkedin_post" || contentType === "linkedin_article") {
-    const title = (parsed.titles as Array<{ text: string }>)?.[0]?.text ?? "Post";
-    imagePromises.push(
-      generateAndSaveImage(
-        `Professional LinkedIn header image about "${title}". Clean, corporate, data-driven aesthetic. 1200x627.${colorHint}`,
-        deliverableId,
-        "SOCIAL_CARD",
-        0
-      )
-    );
-  }
-
-  // Featured image for blog posts
-  if (contentType === "blog_post") {
-    const title = (parsed.titles as Array<{ text: string }>)?.[0]?.text ?? "Article";
-    imagePromises.push(
-      generateAndSaveImage(
-        `Blog featured image for article about "${title}". Professional, editorial style. 1200x630.${colorHint}`,
-        deliverableId,
-        "IMAGE",
-        0
-      )
-    );
-  }
-
-  if (imagePromises.length > 0) {
-    const results = await Promise.allSettled(imagePromises);
-    const succeeded = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.filter((r) => r.status === "rejected").length;
-    console.log(
-      `[quick-generate] Image gen: ${succeeded} succeeded, ${failed} failed`
-    );
-  }
-}
-
-async function generateAndSaveImage(
-  prompt: string,
-  deliverableId: string,
-  assetType: "THUMBNAIL" | "CAROUSEL_SLIDE" | "SOCIAL_CARD" | "IMAGE",
-  index: number
-) {
-  try {
-    // Find the placeholder asset first
-    const asset = await prisma.asset.findFirst({
-      where: {
-        deliverableId,
-        type: assetType,
-        ...(assetType === "CAROUSEL_SLIDE" ? { slideIndex: index } : {}),
-      },
-    });
-    if (!asset) return;
-
-    // Determine dimensions based on asset type
-    const dims =
-      assetType === "CAROUSEL_SLIDE"
-        ? { width: 1080, height: 1080 }
-        : { width: 1280, height: 720 };
-
-    // Pollinations.ai — free, no API key, generates real images via URL
-    const imageUrl = await generateImage(prompt, dims);
-
-    // Update the asset with the Pollinations URL
-    if (imageUrl) {
-      await prisma.asset.update({
-        where: { id: asset.id },
-        data: {
-          url: imageUrl,
-          metadata: {
-            ...(typeof asset.metadata === "object" && asset.metadata !== null
-              ? asset.metadata
-              : {}),
-            generated: true,
-            generatedAt: new Date().toISOString(),
-            provider: "pollinations",
-          },
-        },
-      });
-    }
-  } catch (err) {
-    console.error(
-      `[quick-generate] Image gen failed for ${assetType}-${index}:`,
-      err instanceof Error ? err.message : err
     );
   }
 }
@@ -1426,113 +1257,6 @@ function buildCopyMarkdown(
   }
 
   return `# ${title}\n\n${description}`;
-}
-
-function buildAssets(
-  parsed: Record<string, unknown>,
-  contentType: string,
-  deliverableId: string
-): AssetInput[] {
-  const assets: AssetInput[] = [];
-
-  // Thumbnail briefs → THUMBNAIL assets
-  const thumbs = (parsed.thumbnailBriefs as Array<{
-    concept: string;
-    textOverlay: string;
-    colorScheme: string;
-    composition: string;
-  }>) ?? [];
-  thumbs.forEach((t, i) => {
-    assets.push({
-      deliverableId,
-      type: "THUMBNAIL",
-      url: `placeholder://thumbnail-${i + 1}`,
-      promptUsed: `${t.concept}. Text: "${t.textOverlay}". Colors: ${t.colorScheme}. Composition: ${t.composition}.`,
-      metadata: {
-        concept: t.concept,
-        textOverlay: t.textOverlay,
-        colorScheme: t.colorScheme,
-        composition: t.composition,
-      },
-    });
-  });
-
-  // Carousel slides → CAROUSEL_SLIDE assets
-  if (contentType === "carousel" || contentType === "instagram_carousel") {
-    const slides = (parsed.slides as Array<{
-      position: number;
-      type?: string;
-      headline: string;
-      body?: string;
-      bodyText?: string;
-      visualDescription?: string;
-      visualPrompt?: string;
-      textOverlay: string;
-      colorAccent?: string;
-      colorHex?: string;
-    }>) ?? [];
-    slides.forEach((s) => {
-      assets.push({
-        deliverableId,
-        type: "CAROUSEL_SLIDE",
-        url: `placeholder://slide-${s.position}`,
-        promptUsed: s.visualDescription ?? s.visualPrompt ?? "",
-        slideIndex: s.position,
-        metadata: {
-          slideType: s.type,
-          headline: s.headline,
-          textOverlay: s.textOverlay,
-          colorHex: s.colorAccent ?? s.colorHex ?? "",
-        },
-      });
-    });
-  }
-
-  // Cover frame for short-form video
-  if (contentType === "youtube_short" || contentType === "instagram_reel") {
-    assets.push({
-      deliverableId,
-      type: "SOCIAL_CARD",
-      url: "placeholder://cover-frame",
-      promptUsed: "Vertical cover frame for short-form video",
-      metadata: { purpose: "cover_frame" },
-    });
-  }
-
-  // Social card for X content
-  if (contentType === "x_thread" || contentType === "x_single") {
-    assets.push({
-      deliverableId,
-      type: "SOCIAL_CARD",
-      url: "placeholder://social-card",
-      promptUsed: "Twitter/X social card header",
-      metadata: { purpose: "social_card" },
-    });
-  }
-
-  // LinkedIn header
-  if (contentType === "linkedin_post" || contentType === "linkedin_article") {
-    assets.push({
-      deliverableId,
-      type: "SOCIAL_CARD",
-      url: "placeholder://linkedin-header",
-      promptUsed: "Professional LinkedIn header image",
-      metadata: { purpose: "linkedin_header" },
-    });
-  }
-
-  // Blog featured image
-  if (contentType === "blog_post") {
-    assets.push({
-      deliverableId,
-      type: "IMAGE",
-      url: "placeholder://featured-image",
-      promptUsed: "Blog featured image",
-      metadata: { purpose: "featured_image" },
-    });
-  }
-
-  return assets;
 }
 
 function extractSources(research: string): string[] {

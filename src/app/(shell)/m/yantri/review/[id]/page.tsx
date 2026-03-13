@@ -31,6 +31,8 @@ import {
   ExternalLink,
   Play,
   Search,
+  AlertTriangle,
+  ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -187,6 +189,7 @@ export default function DeliverableReviewPage() {
   const [showRevisionBox, setShowRevisionBox] = useState(false);
   const [revisionNotes, setRevisionNotes] = useState("");
   const [prodTab, setProdTab] = useState<"broll" | "stakeholders" | "visuals" | "production">("broll");
+  const [generatingAssets, setGeneratingAssets] = useState<Set<string>>(new Set());
 
   const fetchDeliverable = useCallback(async () => {
     try {
@@ -237,6 +240,45 @@ export default function DeliverableReviewPage() {
     navigator.clipboard.writeText(text);
     setCopied(label);
     setTimeout(() => setCopied(""), 2000);
+  };
+
+  const handleGenerateImage = async (assetId: string, prompt: string | null) => {
+    if (!prompt) return;
+    setGeneratingAssets((prev) => new Set(prev).add(assetId));
+    try {
+      const res = await fetch("/api/yantri/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assetId, prompt }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchDeliverable();
+      } else {
+        alert(data.error || "Image generation failed. Try again.");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setGeneratingAssets((prev) => {
+        const next = new Set(prev);
+        next.delete(assetId);
+        return next;
+      });
+    }
+  };
+
+  const handleGenerateAllRequired = async () => {
+    if (!deliverable) return;
+    const requiredAssets = deliverable.assets.filter((a) => {
+      const meta = a.metadata as Record<string, unknown> | null;
+      const hasImage = a.url?.startsWith("data:") || a.url?.startsWith("http");
+      return !hasImage && meta?.required && a.promptUsed;
+    });
+    for (const asset of requiredAssets) {
+      await handleGenerateImage(asset.id, asset.promptUsed);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
   };
 
   if (loading) {
@@ -1068,79 +1110,130 @@ export default function DeliverableReviewPage() {
         </Card>
       )}
 
-      {/* ─── Generated Assets (thumbnails, images) ─── */}
+      {/* ─── Visual Assets (smart asset cards with generate buttons) ─── */}
       {imageAssets.length > 0 && (
         <Card className="mb-4 border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
               <Image className="h-4 w-4 text-[var(--accent-primary)]" />
-              Generated Assets ({imageAssets.length})
+              Visual Assets ({imageAssets.length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {imageAssets.map((asset) => {
-                const hasRealImage = asset.url && (asset.url.startsWith("data:") || asset.url.startsWith("http"));
-                const isPending = !asset.url || asset.url.startsWith("placeholder://");
-                const isPromptAsUrl = asset.url && !hasRealImage && !isPending && asset.url.length > 100;
+                const meta = (asset.metadata as Record<string, unknown>) || {};
+                const hasImage = asset.url && (asset.url.startsWith("data:") || asset.url.startsWith("http"));
+                const isGenerating = generatingAssets.has(asset.id) || meta.status === "generating";
+                const isFailed = meta.status === "failed";
+                const metaLabel = typeof meta.label === "string" ? meta.label : asset.type;
+                const metaDesc = typeof meta.description === "string" ? meta.description : "";
+                const metaPlatform = typeof meta.platformNote === "string" ? meta.platformNote : "";
+                const metaDims = meta.dimensions as { width: number; height: number } | undefined;
 
                 return (
-                  <div key={asset.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] overflow-hidden">
-                    {hasRealImage ? (
-                      <>
-                        <img
-                          src={asset.url}
-                          alt={asset.promptUsed ?? asset.type}
-                          className="w-full h-40 object-cover rounded-t-lg"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                            e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                          }}
-                        />
-                        <div className="hidden w-full h-40 flex items-center justify-center rounded-t-lg bg-[var(--bg-deep)] p-3 text-sm text-[var(--text-muted)]">
-                          Image generation pending — refresh to check
-                        </div>
-                      </>
-                    ) : isPending ? (
-                      <div className="w-full h-40 flex flex-col items-center justify-center gap-2 text-[var(--text-muted)]">
-                        <RefreshCw className="h-5 w-5 animate-spin opacity-40" />
-                        <p className="text-[10px]">Generating...</p>
-                      </div>
-                    ) : isPromptAsUrl ? (
-                      <div className="w-full h-40 p-3 overflow-auto">
-                        <p className="text-[9px] font-medium text-[var(--text-muted)] mb-1">Image prompt (not yet rendered):</p>
-                        <p className="text-[9px] text-[var(--text-muted)] leading-relaxed">{asset.url?.substring(0, 200)}</p>
-                      </div>
-                    ) : (
-                      <div className="w-full h-40 flex items-center justify-center text-[var(--text-muted)]">
-                        <p className="text-[10px]">No image</p>
-                      </div>
-                    )}
-                    <div className="p-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className="text-[9px]">
-                          {asset.type}{asset.slideIndex != null ? ` — Slide ${asset.slideIndex + 1}` : ""}
-                        </Badge>
-                        {hasRealImage && (
+                  <div key={asset.id} className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden">
+                    {/* Image area */}
+                    <div className="aspect-video relative bg-[var(--bg-deep)]">
+                      {hasImage ? (
+                        <>
+                          <img
+                            src={asset.url}
+                            alt={metaLabel}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
                           <a
                             href={asset.url}
-                            download={`${asset.type.toLowerCase()}-${asset.slideIndex ?? 0}.png`}
-                            className="text-[var(--accent-primary)] hover:opacity-80"
-                            title="Download"
+                            download={`${deliverable.tree?.title || "asset"}-${metaLabel}.png`}
+                            className="absolute top-2 right-2 p-2 rounded-lg bg-black/50 text-white hover:bg-black/70 transition"
                           >
-                            <Download className="h-3.5 w-3.5" />
+                            <Download className="w-4 h-4" />
                           </a>
+                          <button
+                            onClick={() => handleGenerateImage(asset.id, asset.promptUsed)}
+                            className="absolute top-2 left-2 p-2 rounded-lg bg-black/50 text-white hover:bg-black/70 transition"
+                            title="Generate a new version"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : isGenerating ? (
+                        <div className="flex flex-col items-center justify-center h-full gap-2">
+                          <Loader2 className="w-6 h-6 animate-spin text-[var(--accent-primary)]" />
+                          <span className="text-xs text-[var(--text-muted)]">Generating with Gemini...</span>
+                        </div>
+                      ) : isFailed ? (
+                        <div className="flex flex-col items-center justify-center h-full gap-2">
+                          <AlertTriangle className="w-6 h-6 text-red-400" />
+                          <span className="text-xs text-red-400">Generation failed</span>
+                          <button
+                            onClick={() => handleGenerateImage(asset.id, asset.promptUsed)}
+                            className="text-xs text-[var(--accent-primary)] underline"
+                          >
+                            Try again
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full gap-3 p-4">
+                          <ImageIcon className="w-8 h-8 text-[var(--text-muted)]" />
+                          <button
+                            onClick={() => handleGenerateImage(asset.id, asset.promptUsed)}
+                            className="px-4 py-2 rounded-lg bg-[var(--accent-primary)] text-white text-sm font-medium hover:opacity-90 transition flex items-center gap-2"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            Generate Image
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info area */}
+                    <div className="p-3 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-[var(--text-primary)]">
+                          {metaLabel}
+                          {asset.slideIndex != null ? ` — Slide ${asset.slideIndex + 1}` : ""}
+                        </span>
+                        {!!meta.required && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-medium">
+                            Required
+                          </span>
                         )}
                       </div>
-                      {asset.promptUsed && (
-                        <p className="text-[10px] text-[var(--text-muted)] line-clamp-2">{asset.promptUsed}</p>
+                      {metaDesc && (
+                        <p className="text-xs text-[var(--text-secondary)]">{metaDesc}</p>
+                      )}
+                      {metaPlatform && (
+                        <p className="text-[10px] text-[var(--text-muted)]">{metaPlatform}</p>
+                      )}
+                      {metaDims && (
+                        <p className="text-[10px] text-[var(--text-muted)]">
+                          {metaDims.width}x{metaDims.height}
+                        </p>
                       )}
                     </div>
                   </div>
                 );
               })}
             </div>
+
+            {/* Generate All Required button */}
+            {deliverable.assets.some((a) => {
+              const m = (a.metadata as Record<string, unknown>) || {};
+              const hasImg = a.url?.startsWith("data:") || a.url?.startsWith("http");
+              return !hasImg && m.required;
+            }) && (
+              <button
+                onClick={handleGenerateAllRequired}
+                className="w-full py-3 rounded-lg border border-[var(--accent-primary)] text-[var(--accent-primary)] text-sm font-medium hover:bg-[var(--accent-primary)]/10 transition flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate All Required Assets
+              </button>
+            )}
           </CardContent>
         </Card>
       )}
