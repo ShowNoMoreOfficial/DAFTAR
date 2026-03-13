@@ -25,6 +25,8 @@ import {
   Calendar,
   Sparkles,
   MonitorPlay,
+  Download,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -267,7 +269,9 @@ export default function DeliverableReviewPage() {
   const endScreen = structured.endScreen;
   const statusInfo = STATUS_STYLES[deliverable.status] ?? STATUS_STYLES.REVIEW;
   const previousRevisionNotes = posting?.revisionNotes;
-  const imageAssets = deliverable.assets.filter((a) => a.type === "IMAGE" || a.type === "THUMBNAIL" || a.url);
+  const imageAssets = deliverable.assets.filter(
+    (a) => a.type === "IMAGE" || a.type === "THUMBNAIL" || a.type === "CAROUSEL_SLIDE" || a.type === "SOCIAL_CARD" || a.type === "BROLL"
+  );
 
   // Editorial pack production brief (stored in postingPlan)
   const bRollSheet = posting?.bRollSheet ?? [];
@@ -968,26 +972,58 @@ export default function DeliverableReviewPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {imageAssets.map((asset) => (
-                <div key={asset.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] overflow-hidden">
-                  {asset.url && (
-                    <img
-                      src={asset.url}
-                      alt={asset.promptUsed ?? asset.type}
-                      className="w-full h-40 object-cover"
-                      loading="lazy"
-                    />
-                  )}
-                  <div className="p-2 space-y-1">
-                    <Badge variant="secondary" className="text-[9px]">
-                      {asset.type}{asset.slideIndex != null ? ` — Slide ${asset.slideIndex + 1}` : ""}
-                    </Badge>
-                    {asset.promptUsed && (
-                      <p className="text-[10px] text-[var(--text-muted)] line-clamp-2">{asset.promptUsed}</p>
+              {imageAssets.map((asset) => {
+                const hasRealImage = asset.url && (asset.url.startsWith("data:") || asset.url.startsWith("http"));
+                const isPending = !asset.url || asset.url.startsWith("placeholder://");
+                const isPromptAsUrl = asset.url && !hasRealImage && !isPending && asset.url.length > 100;
+
+                return (
+                  <div key={asset.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] overflow-hidden">
+                    {hasRealImage ? (
+                      <img
+                        src={asset.url}
+                        alt={asset.promptUsed ?? asset.type}
+                        className="w-full h-40 object-cover"
+                        loading="lazy"
+                      />
+                    ) : isPending ? (
+                      <div className="w-full h-40 flex flex-col items-center justify-center gap-2 text-[var(--text-muted)]">
+                        <RefreshCw className="h-5 w-5 animate-spin opacity-40" />
+                        <p className="text-[10px]">Generating...</p>
+                      </div>
+                    ) : isPromptAsUrl ? (
+                      <div className="w-full h-40 p-3 overflow-auto">
+                        <p className="text-[9px] font-medium text-[var(--text-muted)] mb-1">Image prompt (not yet rendered):</p>
+                        <p className="text-[9px] text-[var(--text-muted)] leading-relaxed">{asset.url?.substring(0, 200)}</p>
+                      </div>
+                    ) : (
+                      <div className="w-full h-40 flex items-center justify-center text-[var(--text-muted)]">
+                        <p className="text-[10px]">No image</p>
+                      </div>
                     )}
+                    <div className="p-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary" className="text-[9px]">
+                          {asset.type}{asset.slideIndex != null ? ` — Slide ${asset.slideIndex + 1}` : ""}
+                        </Badge>
+                        {hasRealImage && (
+                          <a
+                            href={asset.url}
+                            download={`${asset.type.toLowerCase()}-${asset.slideIndex ?? 0}.png`}
+                            className="text-[var(--accent-primary)] hover:opacity-80"
+                            title="Download"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
+                      {asset.promptUsed && (
+                        <p className="text-[10px] text-[var(--text-muted)] line-clamp-2">{asset.promptUsed}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

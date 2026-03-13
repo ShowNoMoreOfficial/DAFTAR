@@ -1100,52 +1100,109 @@ async function generateAndSaveImage(
   index: number
 ) {
   try {
-    const { GoogleGenAI } = await import("@google/genai");
-    const genAI = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY || "",
-    });
-
-    const response = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-preview-image-generation",
-      contents: prompt,
-      config: {
-        responseModalities: ["IMAGE", "TEXT"],
+    // Find the placeholder asset first
+    const asset = await prisma.asset.findFirst({
+      where: {
+        deliverableId,
+        type: assetType,
+        ...(assetType === "CAROUSEL_SLIDE" ? { slideIndex: index } : {}),
       },
     });
+    if (!asset) return;
 
-    const parts = response.candidates?.[0]?.content?.parts;
-    const imagePart = parts?.find(
-      (p: { inlineData?: { mimeType?: string } }) =>
-        p.inlineData?.mimeType?.startsWith("image/")
-    );
+    let imageUrl: string | null = null;
 
-    if (imagePart?.inlineData?.data) {
-      // Update the placeholder asset with real image data
-      const asset = await prisma.asset.findFirst({
-        where: {
-          deliverableId,
-          type: assetType,
-          ...(assetType === "CAROUSEL_SLIDE"
-            ? { slideIndex: index }
-            : {}),
+    // Strategy 1: Gemini image generation
+    try {
+      const { GoogleGenAI } = await import("@google/genai");
+      const genAI = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY || "",
+      });
+
+      const response = await genAI.models.generateContent({
+        model: "gemini-2.0-flash-preview-image-generation",
+        contents: prompt,
+        config: {
+          responseModalities: ["IMAGE", "TEXT"],
         },
       });
 
-      if (asset) {
-        await prisma.asset.update({
-          where: { id: asset.id },
-          data: {
-            url: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
-            metadata: {
-              ...(typeof asset.metadata === "object" && asset.metadata !== null
-                ? asset.metadata
-                : {}),
-              generated: true,
-              generatedAt: new Date().toISOString(),
-            },
-          },
-        });
+      const parts = response.candidates?.[0]?.content?.parts;
+      const imagePart = parts?.find(
+        (p: { inlineData?: { mimeType?: string } }) =>
+          p.inlineData?.mimeType?.startsWith("image/")
+      );
+
+      if (imagePart?.inlineData?.data) {
+        imageUrl = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
       }
+    } catch (geminiErr) {
+      console.warn(
+        `[quick-generate] Gemini image gen failed for ${assetType}-${index}, trying fallback:`,
+        geminiErr instanceof Error ? geminiErr.message : geminiErr
+      );
+    }
+
+    // Strategy 2: Together.ai FLUX (free tier, high quality)
+    if (!imageUrl && process.env.TOGETHER_API_KEY) {
+      try {
+        const res = await fetch(
+          "https://api.together.xyz/v1/images/generations",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "black-forest-labs/FLUX.1-schnell-Free",
+              prompt: prompt.substring(0, 500),
+              width: 1280,
+              height: 720,
+              n: 1,
+            }),
+          }
+        );
+        const data = await res.json();
+        if (data.data?.[0]?.url) {
+          imageUrl = data.data[0].url;
+        } else if (data.data?.[0]?.b64_json) {
+          imageUrl = `data:image/png;base64,${data.data[0].b64_json}`;
+        }
+      } catch {
+        console.warn(`[quick-generate] Together.ai fallback failed for ${assetType}-${index}`);
+      }
+    }
+
+    // Strategy 3: Pollinations.ai (free, no API key)
+    if (!imageUrl) {
+      const encoded = encodeURIComponent(prompt.substring(0, 200));
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&nologo=true`;
+      try {
+        const check = await fetch(pollinationsUrl, { method: "HEAD" });
+        if (check.ok) {
+          imageUrl = pollinationsUrl;
+        }
+      } catch {
+        console.warn(`[quick-generate] Pollinations fallback failed for ${assetType}-${index}`);
+      }
+    }
+
+    // Update the asset with whatever we got
+    if (imageUrl) {
+      await prisma.asset.update({
+        where: { id: asset.id },
+        data: {
+          url: imageUrl,
+          metadata: {
+            ...(typeof asset.metadata === "object" && asset.metadata !== null
+              ? asset.metadata
+              : {}),
+            generated: true,
+            generatedAt: new Date().toISOString(),
+          },
+        },
+      });
     }
   } catch (err) {
     console.error(

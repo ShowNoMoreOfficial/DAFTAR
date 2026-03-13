@@ -306,6 +306,19 @@ Brand: ${brandName}. Make it scroll-stopping.`;
           },
         });
       }
+    } else {
+      // Gemini returned no image — use Pollinations fallback
+      const encoded = encodeURIComponent(storyPrompt.substring(0, 200));
+      const fallbackUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1080&height=1920&nologo=true`;
+      const asset = await prisma.asset.findFirst({
+        where: { deliverableId: storyDeliverable.id, type: "IMAGE" },
+      });
+      if (asset) {
+        await prisma.asset.update({
+          where: { id: asset.id },
+          data: { url: fallbackUrl, metadata: { ...(typeof asset.metadata === "object" && asset.metadata !== null ? asset.metadata : {}), generated: true, source: "pollinations" } },
+        });
+      }
     }
   } catch (err) {
     console.error("[deliverable] Story image gen failed:", err instanceof Error ? err.message : err);
