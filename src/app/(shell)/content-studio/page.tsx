@@ -33,6 +33,8 @@ import {
   RotateCcw,
   Film,
   Zap,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
