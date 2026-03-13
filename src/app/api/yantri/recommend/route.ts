@@ -143,6 +143,7 @@ export async function POST(request: Request) {
       skillResults,
       brands,
       performanceData,
+      performanceAggregates,
       skillLearningLogs,
       recentSignals,
       activeTrends,
@@ -184,6 +185,22 @@ Be concise but comprehensive. Max 2000 words.`
         orderBy: { lastUpdated: "desc" },
         take: 10,
       }).catch(() => [] as Awaited<ReturnType<typeof prisma.contentPerformance.findMany>>),
+      // Performance aggregates by platform (avg score per platform+contentType)
+      prisma.$queryRaw<Array<{ platform: string; avg_score: number; count: number }>>`
+        SELECT platform,
+               AVG(CASE
+                 WHEN "performanceTier" = 'top' THEN 9
+                 WHEN "performanceTier" = 'above_avg' THEN 7
+                 WHEN "performanceTier" = 'average' THEN 5
+                 WHEN "performanceTier" = 'below_avg' THEN 3
+                 ELSE 1
+               END) as avg_score,
+               COUNT(*)::int as count
+        FROM content_performances
+        WHERE "performanceTier" IS NOT NULL
+        GROUP BY platform
+        ORDER BY avg_score DESC
+      `.catch(() => [] as Array<{ platform: string; avg_score: number; count: number }>),
       // Learning logs
       prisma.skillLearningLog.findMany({
         where: { source: "auto", periodEnd: { gte: new Date(Date.now() - 30 * 86400000) } },
@@ -214,6 +231,8 @@ Be concise but comprehensive. Max 2000 words.`
       "skills =", skillResults.filter(Boolean).length,
       "brands =", brands.length,
       "perf =", performanceData.length,
+      "perfAgg =", performanceAggregates.length,
+      "learningLogs =", skillLearningLogs.length,
       "seo =", seoAnalysis ? "yes" : "no");
 
     if (brands.length === 0) {
@@ -278,10 +297,24 @@ ${identity ? `- Identity: ${identity}` : ""}`;
 
 ## RECENT PERFORMANCE
 ${performanceData.length > 0
-  ? performanceData.slice(0, 5).map((p) =>
-      `- ${p.platform} | tier: ${p.performanceTier || "?"} | angle: ${p.narrativeAngle || "?"} | hook: ${p.hookType || "?"}`
-    ).join("\n")
+  ? performanceData.slice(0, 5).map((p) => {
+      const m = (p.metrics ?? {}) as Record<string, unknown>;
+      return `- ${p.platform} | tier: ${p.performanceTier || "?"} | score: ${typeof m.engagementRate === "number" ? m.engagementRate.toFixed(1) + "%" : "?"} eng | angle: ${p.narrativeAngle || "?"} | hook: ${p.hookType || "?"}`;
+    }).join("\n")
   : "No performance data yet."}
+
+## PLATFORM PERFORMANCE TRENDS
+${performanceAggregates.length > 0
+  ? performanceAggregates.map((a) =>
+      `- ${a.platform}: avg score ${Number(a.avg_score).toFixed(1)}/10 across ${a.count} pieces. ${Number(a.avg_score) >= 7 ? "STRONG — prioritize this platform." : Number(a.avg_score) >= 5 ? "Average — room for improvement." : "WEAK — reconsider approach."}`
+    ).join("\n")
+  : "No aggregate performance data yet — recommendations are based on editorial judgment."}
+${skillLearningLogs.length > 0
+  ? "\n## SKILL LEARNINGS (recent)\n" + skillLearningLogs.slice(0, 5).map((l) => {
+      const e = (l.entry ?? {}) as Record<string, unknown>;
+      return `- [${l.source}] ${e.type || "feedback"}: ${e.diagnosis || e.pattern || e.recommendation || "see log"}`;
+    }).join("\n")
+  : ""}
 
 ## RECENT CONTENT (avoid duplication)
 ${pastDeliverables.length > 0

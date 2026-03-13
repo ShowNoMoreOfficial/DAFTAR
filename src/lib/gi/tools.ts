@@ -280,6 +280,28 @@ export const GI_TOOLS: Anthropic.Tool[] = [
       },
     },
   },
+  {
+    name: "get_performance_insights",
+    description:
+      "Analyze content performance patterns — which platforms, content types, and angles perform best. Use proactively to suggest what to create next based on real data. Shows avg scores, top/bottom performers, and matches with trending signals for smart recommendations.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        brandName: {
+          type: "string",
+          description: "Filter by brand name (optional)",
+        },
+        platform: {
+          type: "string",
+          description: "Filter by platform (optional)",
+        },
+        days: {
+          type: "number",
+          description: "Lookback period in days (default 30)",
+        },
+      },
+    },
+  },
 ];
 
 // ─── Tool Executor ─────────────────────────────────────────
@@ -412,7 +434,169 @@ export async function executeTool(
     case "suggest_topics":
       return await suggestTopics(params.brandName as string | undefined);
 
+    case "get_performance_insights":
+      return await getPerformanceInsights(
+        params.brandName as string | undefined,
+        params.platform as string | undefined,
+        Number(params.days) || 30
+      );
+
     default:
       return { error: `Unknown tool: ${name}` };
   }
+}
+
+// ─── Performance Insights (proactive suggestions) ─────────
+
+async function getPerformanceInsights(
+  brandName?: string,
+  platform?: string,
+  days = 30
+): Promise<unknown> {
+  const since = new Date(Date.now() - days * 86400000);
+
+  // Build filter
+  const where: Record<string, unknown> = {
+    publishedAt: { gte: since },
+    performanceTier: { not: null },
+  };
+
+  if (platform) where.platform = platform;
+
+  if (brandName) {
+    const brand = await prisma.brand.findFirst({
+      where: { name: { contains: brandName, mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (brand) where.brandId = brand.id;
+  }
+
+  // Get all performance records
+  const records = await prisma.contentPerformance.findMany({
+    where,
+    orderBy: { lastUpdated: "desc" },
+    take: 50,
+  });
+
+  if (records.length === 0) {
+    return {
+      message: "No performance data found for the specified filters.",
+      hasData: false,
+    };
+  }
+
+  // Aggregate by platform
+  const platformStats: Record<string, { scores: number[]; count: number; angles: string[] }> = {};
+  const topPerformers: Array<{ platform: string; angle: string | null; tier: string | null; hookType: string | null }> = [];
+  const bottomPerformers: Array<{ platform: string; angle: string | null; tier: string | null; hookType: string | null }> = [];
+
+  for (const r of records) {
+    const plat = r.platform;
+    if (!platformStats[plat]) {
+      platformStats[plat] = { scores: [], count: 0, angles: [] };
+    }
+
+    const tierScore =
+      r.performanceTier === "top" ? 9 :
+      r.performanceTier === "above_avg" ? 7 :
+      r.performanceTier === "average" ? 5 :
+      r.performanceTier === "below_avg" ? 3 : 1;
+
+    platformStats[plat].scores.push(tierScore);
+    platformStats[plat].count++;
+    if (r.narrativeAngle) platformStats[plat].angles.push(r.narrativeAngle);
+
+    if (r.performanceTier === "top" || r.performanceTier === "above_avg") {
+      topPerformers.push({
+        platform: plat,
+        angle: r.narrativeAngle,
+        tier: r.performanceTier,
+        hookType: r.hookType,
+      });
+    }
+
+    if (r.performanceTier === "poor" || r.performanceTier === "below_avg") {
+      bottomPerformers.push({
+        platform: plat,
+        angle: r.narrativeAngle,
+        tier: r.performanceTier,
+        hookType: r.hookType,
+      });
+    }
+  }
+
+  // Compute averages
+  const platformSummary = Object.entries(platformStats).map(([plat, stat]) => ({
+    platform: plat,
+    avgScore: Math.round((stat.scores.reduce((a, b) => a + b, 0) / stat.scores.length) * 10) / 10,
+    count: stat.count,
+    topAngles: [...new Set(stat.angles)].slice(0, 3),
+  })).sort((a, b) => b.avgScore - a.avgScore);
+
+  // Get trending signals that match top-performing patterns
+  const trendingSignals = await prisma.signal.findMany({
+    where: {
+      isDuplicate: false,
+      detectedAt: { gte: new Date(Date.now() - 7 * 86400000) },
+    },
+    orderBy: { detectedAt: "desc" },
+    take: 5,
+    select: { title: true, eventType: true, sentiment: true },
+  });
+
+  // Get recent skill learnings
+  const recentLearnings = await prisma.skillLearningLog.findMany({
+    where: { createdAt: { gte: since } },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  });
+
+  const learningInsights = recentLearnings.map((l) => {
+    const e = (l.entry ?? {}) as Record<string, unknown>;
+    return {
+      type: e.type,
+      platform: e.platform,
+      pattern: e.pattern || e.diagnosis,
+      recommendation: e.recommendation,
+    };
+  });
+
+  // Build proactive suggestions
+  const suggestions: string[] = [];
+
+  if (platformSummary.length > 0) {
+    const best = platformSummary[0];
+    if (best.avgScore >= 7) {
+      suggestions.push(
+        `${best.platform} content consistently outperforms (avg ${best.avgScore}/10 across ${best.count} pieces). Prioritize this platform.`
+      );
+    }
+
+    const worst = platformSummary[platformSummary.length - 1];
+    if (worst.avgScore < 4 && platformSummary.length > 1) {
+      suggestions.push(
+        `${worst.platform} content underperforms (avg ${worst.avgScore}/10). Consider reviewing the content strategy or reducing output for this platform.`
+      );
+    }
+  }
+
+  // Match signals with top-performing platforms
+  if (trendingSignals.length > 0 && platformSummary.length > 0) {
+    const bestPlatform = platformSummary[0];
+    suggestions.push(
+      `Trending signal "${trendingSignals[0].title}" could be a strong ${bestPlatform.platform} candidate based on past performance patterns.`
+    );
+  }
+
+  return {
+    hasData: true,
+    periodDays: days,
+    totalRecords: records.length,
+    platformSummary,
+    topPerformers: topPerformers.slice(0, 5),
+    bottomPerformers: bottomPerformers.slice(0, 3),
+    trendingSignals,
+    learningInsights,
+    proactiveSuggestions: suggestions,
+  };
 }

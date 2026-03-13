@@ -19,7 +19,7 @@ interface PromptContext {
  */
 export async function buildSystemPrompt(ctx: PromptContext): Promise<string> {
   // Gather quick stats in parallel
-  const [taskStats, contentStats, signalStats, teamStats, tierConfig] =
+  const [taskStats, contentStats, signalStats, teamStats, tierConfig, perfStats] =
     await Promise.all([
       getTaskStats(ctx.userId),
       getContentStats(),
@@ -28,6 +28,7 @@ export async function buildSystemPrompt(ctx: PromptContext): Promise<string> {
         ? getTeamStats()
         : null,
       getCurrentTier(),
+      getPerformanceStats(),
     ]);
 
   // Load relevant skill context
@@ -96,6 +97,9 @@ export async function buildSystemPrompt(ctx: PromptContext): Promise<string> {
     `- Tasks: ${taskStats.total} total, ${taskStats.active} active, ${taskStats.overdue} overdue, ${taskStats.review} in review`,
     `- Content: ${contentStats.drafts} drafts, ${contentStats.scheduled} scheduled, ${contentStats.published} published`,
     `- Signals: ${signalStats.recent} recent (7d), ${signalStats.unprocessed} unprocessed`,
+    perfStats.tracked > 0
+      ? `- Performance: ${perfStats.tracked} pieces tracked, ${perfStats.topCount} top performers, ${perfStats.poorCount} underperformers`
+      : `- Performance: No tracked content yet`,
   );
 
   if (teamStats) {
@@ -111,14 +115,20 @@ export async function buildSystemPrompt(ctx: PromptContext): Promise<string> {
   parts.push(
     ``,
     `## HOW TO RESPOND`,
-    `- Talk naturally, like a smart colleague.`,
-    `- Be opinionated. If something is overdue, say so directly. If a strategy is wrong, say why.`,
-    `- If the user asks "what should I focus on", actually prioritize based on deadlines, importance, and urgency.`,
+    `- Keep responses concise — 2-3 sentences for simple questions, 1 short paragraph for complex ones.`,
+    `- Lead with the answer, then explain if needed.`,
+    `- Use bullet points for lists, not paragraphs.`,
+    `- When citing numbers, put them first: "3 tasks overdue" not "You currently have three tasks that are overdue".`,
+    `- Don't repeat the question back.`,
+    `- If the user asks "what should I focus on", give a prioritized list of 3 items max, not a summary of everything.`,
+    `- Talk naturally, like a smart colleague. Be opinionated.`,
+    `- If something is overdue, say so directly. If a strategy is wrong, say why.`,
     `- Use your tools to look up real data before answering questions about tasks, content, team, or signals.`,
     `- For action requests (reassign, create task, extend deadline, start pipeline): confirm with the user first, then execute.`,
     `- Remember what was said earlier in the conversation — reference previous messages when relevant.`,
-    `- Keep responses concise. Use bullet points and bold for key info. Don't lecture.`,
     `- If the user asks about content strategy, reference editorial skill files and brand context.`,
+    `- PROACTIVE INSIGHTS: When a user asks "what should we create next" or about content strategy, use get_performance_insights to check which platforms/angles perform best, then cross-reference with trending signals to make data-backed suggestions.`,
+    `- When you notice a pattern (e.g. YouTube Explainers consistently outperform other types), proactively mention it.`,
     ``,
     `## YOUR AUTONOMY TIER`,
     `Current tier: ${tierConfig.tier} (${tierConfig.behavior})`,
@@ -198,6 +208,32 @@ async function getTeamStats() {
     activeMembers,
     avgTasks: activeMembers > 0 ? Math.round(totalActiveTasks / activeMembers) : 0,
   };
+}
+
+async function getPerformanceStats() {
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+    const [tracked, topCount, poorCount] = await Promise.all([
+      prisma.contentPerformance.count({
+        where: { publishedAt: { gte: thirtyDaysAgo } },
+      }),
+      prisma.contentPerformance.count({
+        where: {
+          publishedAt: { gte: thirtyDaysAgo },
+          performanceTier: { in: ["top", "above_avg"] },
+        },
+      }),
+      prisma.contentPerformance.count({
+        where: {
+          publishedAt: { gte: thirtyDaysAgo },
+          performanceTier: { in: ["poor", "below_avg"] },
+        },
+      }),
+    ]);
+    return { tracked, topCount, poorCount };
+  } catch {
+    return { tracked: 0, topCount: 0, poorCount: 0 };
+  }
 }
 
 async function getBrandContext(): Promise<string[]> {
