@@ -17,6 +17,14 @@ import {
   Hash,
   FileText,
   Palette,
+  Camera,
+  Users,
+  BarChart3,
+  Clapperboard,
+  Music,
+  Calendar,
+  Sparkles,
+  MonitorPlay,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,17 +57,33 @@ interface DeliverableDetail {
 
 interface ScriptSection {
   type: string;
-  timeCode: string;
-  text: string;
-  visualNotes: string;
+  text?: string;
+  // Original format
+  timeCode?: string;
+  visualNotes?: string;
+  // Editorial pack format
+  position?: number;
+  title?: string;
+  duration?: string;
+  visualNote?: string;
+  bRoll?: string[];
+  dataCards?: string[];
+  lowerThirds?: Array<{ text: string; timing: string }>;
+  musicMood?: string;
+  // Cinematic format
+  timestamp?: string;
+  script?: string;
+  productionCues?: string[];
+  visualAnchors?: string[];
 }
 
 interface ScriptData {
-  script?: { sections?: ScriptSection[] };
-  titles?: Array<{ text: string; strategy: string }>;
+  script?: { sections?: ScriptSection[]; totalDuration?: string };
+  titles?: Array<{ text: string; type?: string; strategy: string }>;
   description?: string;
   tags?: string[];
   thumbnailBriefs?: Array<{ concept: string; textOverlay: string; colorScheme: string; composition: string }>;
+  endScreen?: { cta: string; suggestedVideo: string };
   // X thread
   tweets?: Array<{ position: number; text: string; type: string }>;
   // Carousel
@@ -68,7 +92,28 @@ interface ScriptData {
 }
 
 type CarouselData = ScriptData;
-type PostingPlan = { tags?: string[]; description?: string; revisionNotes?: string; revisionRequestedAt?: string };
+
+interface BRollShot { description: string; source: string; duration: string; priority: string }
+interface BRollSheetEntry { section: number; shots: BRollShot[] }
+interface KeyStakeholder { name: string; title: string; relevance: string; photoNeeded: boolean; nameCardText: string }
+interface VisualAnchorItem { type: string; description: string; data: string; section: number }
+interface EventMarker { date: string; event: string; visualTreatment: string }
+interface AnimationBrief { section: number; type: string; description: string; duration: string }
+interface MusicBriefEntry { section: string; mood: string; tempo: string; reference: string }
+
+interface PostingPlan {
+  tags?: string[];
+  description?: string;
+  revisionNotes?: string;
+  revisionRequestedAt?: string;
+  // Editorial pack production brief
+  bRollSheet?: BRollSheetEntry[];
+  keyStakeholders?: KeyStakeholder[];
+  visualAnchors?: VisualAnchorItem[];
+  eventMarkers?: EventMarker[];
+  animationBriefs?: AnimationBrief[];
+  musicBrief?: MusicBriefEntry[];
+}
 
 /** Safely parse JSON fields that might be double-serialized strings */
 function safeParseJson<T>(value: T | string | null | undefined): T | null {
@@ -103,12 +148,21 @@ const STATUS_STYLES: Record<string, { label: string; color: string; bg: string }
 
 const SECTION_ICONS: Record<string, string> = {
   hook: "🎣",
+  HOOK: "🎣",
   context: "📋",
+  CONTEXT: "📋",
   thesis: "💡",
+  THESIS: "💡",
   evidence: "📊",
+  EVIDENCE: "📊",
   counterpoint: "⚖️",
+  COUNTERPOINT: "⚖️",
+  escalation: "📈",
+  ESCALATION: "📈",
   implications: "🔮",
+  IMPLICATIONS: "🔮",
   cta: "📢",
+  CTA: "📢",
   opinion: "🎯",
   implication: "🔮",
 };
@@ -126,6 +180,7 @@ export default function DeliverableReviewPage() {
   const [copied, setCopied] = useState("");
   const [showRevisionBox, setShowRevisionBox] = useState(false);
   const [revisionNotes, setRevisionNotes] = useState("");
+  const [prodTab, setProdTab] = useState<"broll" | "stakeholders" | "visuals" | "production">("broll");
 
   const fetchDeliverable = useCallback(async () => {
     try {
@@ -209,9 +264,20 @@ export default function DeliverableReviewPage() {
   const slides = structured.slides ?? [];
   const caption = structured.caption ?? "";
   const thumbnailBriefs = structured.thumbnailBriefs ?? [];
+  const endScreen = structured.endScreen;
   const statusInfo = STATUS_STYLES[deliverable.status] ?? STATUS_STYLES.REVIEW;
   const previousRevisionNotes = posting?.revisionNotes;
   const imageAssets = deliverable.assets.filter((a) => a.type === "IMAGE" || a.type === "THUMBNAIL" || a.url);
+
+  // Editorial pack production brief (stored in postingPlan)
+  const bRollSheet = posting?.bRollSheet ?? [];
+  const keyStakeholders = posting?.keyStakeholders ?? [];
+  const visualAnchors = posting?.visualAnchors ?? [];
+  const eventMarkers = posting?.eventMarkers ?? [];
+  const animationBriefs = posting?.animationBriefs ?? [];
+  const musicBrief = posting?.musicBrief ?? [];
+  const hasProductionBrief = bRollSheet.length > 0 || keyStakeholders.length > 0 || visualAnchors.length > 0 || eventMarkers.length > 0;
+  const isEditorialPack = deliverable.pipelineType === "editorial_pack" || hasProductionBrief;
 
   const isReviewable = deliverable.status === "REVIEW" || deliverable.status === "DRAFTED";
 
@@ -365,7 +431,7 @@ export default function DeliverableReviewPage() {
         </Card>
       )}
 
-      {/* ─── Script Sections (YouTube / Quick Take) ─── */}
+      {/* ─── Script Sections (YouTube / Quick Take / Editorial Pack) ─── */}
       {sections.length > 0 && (
         <Card className="mb-4 border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <CardHeader className="pb-2">
@@ -373,12 +439,17 @@ export default function DeliverableReviewPage() {
               <CardTitle className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
                 <Film className="h-4 w-4 text-[var(--accent-primary)]" />
                 Script
+                {structured.script?.totalDuration && (
+                  <span className="text-[10px] text-[var(--text-muted)] font-normal ml-1">
+                    ({structured.script.totalDuration})
+                  </span>
+                )}
               </CardTitle>
               <Button
                 size="sm"
                 variant="ghost"
                 className="text-[var(--text-muted)] text-xs"
-                onClick={() => copyText(sections.map((s) => `[${s.timeCode}] ${s.type.toUpperCase()}\n${s.text}`).join("\n\n"), "script")}
+                onClick={() => copyText(sections.map((s) => `[${s.timeCode ?? s.duration ?? ""}] ${s.type.toUpperCase()}${s.title ? ` — ${s.title}` : ""}\n${s.text ?? s.script ?? ""}`).join("\n\n"), "script")}
               >
                 <Copy className="h-3 w-3 mr-1" />
                 {copied === "script" ? "Copied!" : "Copy All"}
@@ -386,28 +457,79 @@ export default function DeliverableReviewPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {sections.map((s, i) => (
-              <div key={i} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-base">{SECTION_ICONS[s.type] ?? "📝"}</span>
-                  <span className="text-xs font-bold text-[var(--accent-primary)] uppercase tracking-wider">
-                    {s.type}
-                  </span>
-                  <span className="text-[10px] text-[var(--text-muted)] ml-auto font-mono">
-                    {s.timeCode}
-                  </span>
-                </div>
-                <p className="text-sm text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap">
-                  {s.text}
-                </p>
-                {s.visualNotes && (
-                  <div className="mt-3 rounded-md bg-[var(--bg-surface)] px-3 py-2 border border-[var(--border-subtle)]">
-                    <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1">Visual Notes</p>
-                    <p className="text-xs text-[var(--text-secondary)]">{s.visualNotes}</p>
+            {sections.map((s, i) => {
+              const sectionText = s.text ?? s.script ?? "";
+              const timeDisplay = s.timeCode ?? s.duration ?? s.timestamp ?? "";
+              const visualDisplay = s.visualNotes ?? s.visualNote ?? "";
+
+              return (
+                <div key={i} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-base">{SECTION_ICONS[s.type] ?? "📝"}</span>
+                    <span className="text-xs font-bold text-[var(--accent-primary)] uppercase tracking-wider">
+                      {s.type}
+                    </span>
+                    {s.title && (
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        — {s.title}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-[var(--text-muted)] ml-auto font-mono">
+                      {timeDisplay}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                  <p className="text-sm text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap">
+                    {sectionText}
+                  </p>
+                  {visualDisplay && (
+                    <div className="mt-3 rounded-md bg-[var(--bg-surface)] px-3 py-2 border border-[var(--border-subtle)]">
+                      <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1">Visual Notes</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{visualDisplay}</p>
+                    </div>
+                  )}
+                  {/* Editorial pack extras */}
+                  {s.bRoll && s.bRoll.length > 0 && (
+                    <div className="mt-3 rounded-md bg-[var(--bg-surface)] px-3 py-2 border border-[var(--border-subtle)]">
+                      <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Camera className="h-3 w-3" /> B-Roll
+                      </p>
+                      <ul className="text-xs text-[var(--text-secondary)] space-y-0.5">
+                        {s.bRoll.map((b, bi) => <li key={bi}>• {b}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {s.dataCards && s.dataCards.length > 0 && (
+                    <div className="mt-2 rounded-md bg-[var(--bg-surface)] px-3 py-2 border border-[var(--border-subtle)]">
+                      <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <BarChart3 className="h-3 w-3" /> Data Cards
+                      </p>
+                      <ul className="text-xs text-[var(--text-secondary)] space-y-0.5">
+                        {s.dataCards.map((d, di) => <li key={di}>• {d}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {s.lowerThirds && s.lowerThirds.length > 0 && (
+                    <div className="mt-2 rounded-md bg-[var(--bg-surface)] px-3 py-2 border border-[var(--border-subtle)]">
+                      <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-1">Lower Thirds</p>
+                      <div className="space-y-1">
+                        {s.lowerThirds.map((lt, lti) => (
+                          <div key={lti} className="flex items-center justify-between text-xs">
+                            <span className="text-[var(--text-secondary)]">{lt.text}</span>
+                            <span className="text-[10px] text-[var(--text-muted)] font-mono">{lt.timing}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {s.musicMood && (
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <Music className="h-3 w-3 text-[var(--text-muted)]" />
+                      <span className="text-[10px] text-[var(--text-muted)]">Mood: {s.musicMood}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}
@@ -578,6 +700,259 @@ export default function DeliverableReviewPage() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── End Screen ─── */}
+      {endScreen && (endScreen.cta || endScreen.suggestedVideo) && (
+        <Card className="mb-4 border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <MonitorPlay className="h-4 w-4 text-[var(--accent-primary)]" />
+              End Screen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {endScreen.cta && (
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-4">
+                  <p className="text-[10px] font-bold text-[var(--accent-primary)] uppercase mb-2">Call to Action</p>
+                  <p className="text-sm text-[var(--text-primary)]">{endScreen.cta}</p>
+                </div>
+              )}
+              {endScreen.suggestedVideo && (
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-4">
+                  <p className="text-[10px] font-bold text-[var(--accent-primary)] uppercase mb-2">Suggested Next Video</p>
+                  <p className="text-sm text-[var(--text-primary)]">{endScreen.suggestedVideo}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Production Brief (Editorial Pack) ─── */}
+      {isEditorialPack && hasProductionBrief && (
+        <Card className="mb-4 border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <Clapperboard className="h-4 w-4 text-[var(--accent-primary)]" />
+              Production Brief
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Tab bar */}
+            <div className="flex gap-1 mb-4 border-b border-[var(--border-subtle)] pb-2">
+              {bRollSheet.length > 0 && (
+                <button
+                  onClick={() => setProdTab("broll")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+                    prodTab === "broll"
+                      ? "bg-[rgba(0,212,170,0.1)] text-[var(--accent-primary)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-deep)]"
+                  )}
+                >
+                  <Camera className="h-3 w-3" />
+                  B-Roll Sheet
+                </button>
+              )}
+              {keyStakeholders.length > 0 && (
+                <button
+                  onClick={() => setProdTab("stakeholders")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+                    prodTab === "stakeholders"
+                      ? "bg-[rgba(0,212,170,0.1)] text-[var(--accent-primary)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-deep)]"
+                  )}
+                >
+                  <Users className="h-3 w-3" />
+                  Stakeholders
+                </button>
+              )}
+              {visualAnchors.length > 0 && (
+                <button
+                  onClick={() => setProdTab("visuals")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+                    prodTab === "visuals"
+                      ? "bg-[rgba(0,212,170,0.1)] text-[var(--accent-primary)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-deep)]"
+                  )}
+                >
+                  <BarChart3 className="h-3 w-3" />
+                  Visual Anchors
+                </button>
+              )}
+              {(eventMarkers.length > 0 || animationBriefs.length > 0 || musicBrief.length > 0) && (
+                <button
+                  onClick={() => setProdTab("production")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+                    prodTab === "production"
+                      ? "bg-[rgba(0,212,170,0.1)] text-[var(--accent-primary)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-deep)]"
+                  )}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Events & Animations
+                </button>
+              )}
+            </div>
+
+            {/* B-Roll Sheet Tab */}
+            {prodTab === "broll" && bRollSheet.length > 0 && (
+              <div className="space-y-4">
+                {bRollSheet.map((entry, ei) => (
+                  <div key={ei}>
+                    <p className="text-[10px] font-bold text-[var(--accent-primary)] uppercase tracking-wider mb-2">
+                      Section {entry.section}
+                    </p>
+                    <div className="space-y-2">
+                      {entry.shots.map((shot, si) => (
+                        <div key={si} className="flex items-start gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-3">
+                          <div className="flex-1">
+                            <p className="text-xs text-[var(--text-primary)]">{shot.description}</p>
+                            <div className="flex items-center gap-3 mt-1.5">
+                              <Badge variant="secondary" className="text-[9px]">{shot.source}</Badge>
+                              <span className="text-[10px] text-[var(--text-muted)]">{shot.duration}</span>
+                              <Badge
+                                variant="secondary"
+                                className={cn(
+                                  "text-[9px]",
+                                  shot.priority === "must-have"
+                                    ? "bg-red-500/10 text-red-400"
+                                    : "bg-blue-500/10 text-blue-400"
+                                )}
+                              >
+                                {shot.priority}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Stakeholders Tab */}
+            {prodTab === "stakeholders" && keyStakeholders.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {keyStakeholders.map((person, pi) => (
+                  <div key={pi} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">{person.name}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{person.title}</p>
+                      </div>
+                      {person.photoNeeded && (
+                        <Badge variant="secondary" className="text-[9px] bg-amber-500/10 text-amber-400">
+                          Photo Needed
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-[var(--text-secondary)] mb-2">{person.relevance}</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      Name Card: &quot;{person.nameCardText}&quot;
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Visual Anchors Tab */}
+            {prodTab === "visuals" && visualAnchors.length > 0 && (
+              <div className="space-y-3">
+                {visualAnchors.map((va, vi) => (
+                  <div key={vi} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary" className="text-[9px] uppercase">{va.type}</Badge>
+                      <span className="text-[10px] text-[var(--text-muted)]">Section {va.section}</span>
+                    </div>
+                    <p className="text-xs text-[var(--text-primary)] mb-1">{va.description}</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-surface)] rounded px-2 py-1 font-mono">
+                      {va.data}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Events & Animations Tab */}
+            {prodTab === "production" && (
+              <div className="space-y-6">
+                {/* Event Markers */}
+                {eventMarkers.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-1.5 mb-3">
+                      <Calendar className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                      Event Markers
+                    </p>
+                    <div className="space-y-2">
+                      {eventMarkers.map((em, emi) => (
+                        <div key={emi} className="flex items-start gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-3">
+                          <span className="text-[10px] font-mono text-[var(--accent-primary)] whitespace-nowrap mt-0.5">{em.date}</span>
+                          <div className="flex-1">
+                            <p className="text-xs text-[var(--text-primary)]">{em.event}</p>
+                            <p className="text-[10px] text-[var(--text-muted)] mt-1">{em.visualTreatment}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Animation Briefs */}
+                {animationBriefs.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-1.5 mb-3">
+                      <Sparkles className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                      Animation Briefs
+                    </p>
+                    <div className="space-y-2">
+                      {animationBriefs.map((ab, abi) => (
+                        <div key={abi} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-3">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <Badge variant="secondary" className="text-[9px] uppercase">{ab.type}</Badge>
+                            <span className="text-[10px] text-[var(--text-muted)]">Section {ab.section}</span>
+                            <span className="text-[10px] text-[var(--text-muted)] ml-auto font-mono">{ab.duration}</span>
+                          </div>
+                          <p className="text-xs text-[var(--text-primary)]">{ab.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Music Brief */}
+                {musicBrief.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--text-primary)] flex items-center gap-1.5 mb-3">
+                      <Music className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                      Music Brief
+                    </p>
+                    <div className="space-y-2">
+                      {musicBrief.map((mb, mbi) => (
+                        <div key={mbi} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-deep)] p-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-bold text-[var(--accent-primary)] uppercase">
+                              Sections {mb.section}
+                            </span>
+                            <span className="text-[10px] text-[var(--text-muted)]">{mb.tempo}</span>
+                          </div>
+                          <p className="text-xs text-[var(--text-primary)]">Mood: {mb.mood}</p>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-1">Reference: {mb.reference}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
