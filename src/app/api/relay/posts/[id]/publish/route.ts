@@ -76,10 +76,11 @@ export const POST = apiHandler(async (req: NextRequest, { session, params }) => 
 
     return NextResponse.json(post);
   } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
     await prisma.contentPost.update({
       where: { id },
-      data: { status: "FAILED", errorMessage: String(err) },
+      data: { status: "FAILED", errorMessage: errorMsg },
     });
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Publishing failed" }, { status: 500 });
   }
 });

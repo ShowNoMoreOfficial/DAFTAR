@@ -116,7 +116,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
           contentType,
           label,
           status: "error",
-          error: err instanceof Error ? err.message : "Unknown error",
+          error: "Generation failed",
         };
       }
     })
