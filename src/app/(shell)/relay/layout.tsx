@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Calendar, FileText, BarChart3, Link2 } from "lucide-react";
+import { Calendar, FileText, BarChart3, Link2, Inbox } from "lucide-react";
 
 const tabs = [
+  { label: "Queue", href: "/relay/queue", icon: Inbox },
   { label: "Calendar", href: "/relay/calendar", icon: Calendar },
   { label: "Posts", href: "/relay/posts", icon: FileText },
   { label: "Analytics", href: "/relay/analytics", icon: BarChart3 },

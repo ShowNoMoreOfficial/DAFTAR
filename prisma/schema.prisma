@@ -149,6 +149,8 @@ model User {
   giConversations     GIConversation[]
   // Team Feedback
   teamFeedbacks       TeamFeedback[]
+  // PPC Campaigns
+  ppcCampaigns        PPCCampaign[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
@@ -284,6 +286,7 @@ model Brand {
   narratives           Narrative[]
   contentPieces        ContentPiece[]
   deliverables         Deliverable[]
+  ppcCampaigns         PPCCampaign[]
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -1551,6 +1554,33 @@ enum NarrativeStatus {
   ARCHIVED // Old, no longer active
 }
 
+// ─── PPC Enums ──────────────────────────────────────────
+
+enum PPCCampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum PPCCampaignObjective {
+  BRAND_AWARENESS
+  TRAFFIC
+  ENGAGEMENT
+  VIDEO_VIEWS
+  LEAD_GENERATION
+  CONVERSIONS
+}
+
+enum PPCPlatform {
+  GOOGLE_ADS
+  META_ADS
+  YOUTUBE_ADS
+  LINKEDIN_ADS
+  X_ADS
+}
+
 model NarrativeTree {
   id            String          @id @default(cuid())
   title         String
@@ -1962,4 +1992,69 @@ model DepartmentMetrics {
   recordedAt DateTime   @default(now())
 
   @@map("department_metrics")
+}
+
+// ─── PPC Campaign Management ────────────────────────────
+
+model PPCCampaign {
+  id              String               @id @default(cuid())
+  name            String
+  brand           Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brandId         String
+  platform        PPCPlatform
+  objective       PPCCampaignObjective
+  status          PPCCampaignStatus    @default(DRAFT)
+  dailyBudget     Float?
+  totalBudget     Float?
+  startDate       DateTime?
+  endDate         DateTime?
+  targeting       Json? // Audience targeting config
+  adCopy          Json? // Ad creatives / copy
+  notes           String?              @db.Text
+  externalId      String? // External platform campaign ID
+  createdBy       User                 @relation(fields: [createdById], references: [id])
+  createdById     String
+  dailyMetrics    PPCDailyMetric[]
+  recommendations PPCRecommendation[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([brandId])
+  @@index([status])
+  @@index([platform])
+  @@map("ppc_campaigns")
+}
+
+model PPCDailyMetric {
+  id          String      @id @default(cuid())
+  campaign    PPCCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId  String
+  date        DateTime    @db.Date
+  impressions Int         @default(0)
+  clicks      Int         @default(0)
+  conversions Int         @default(0)
+  spend       Float       @default(0)
+  ctr         Float?      @default(0) // Click-through rate
+  cpc         Float?      @default(0) // Cost per click
+  cpm         Float?      @default(0) // Cost per mille
+  roas        Float?      @default(0) // Return on ad spend
+
+  @@unique([campaignId, date])
+  @@map("ppc_daily_metrics")
+}
+
+model PPCRecommendation {
+  id          String      @id @default(cuid())
+  campaign    PPCCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId  String
+  type        String // budget | targeting | creative | timing | platform
+  title       String
+  description String      @db.Text
+  confidence  Float // 0-1
+  applied     Boolean     @default(false)
+  appliedAt   DateTime?
+  createdAt   DateTime    @default(now())
+
+  @@index([campaignId])
+  @@map("ppc_recommendations")
 }
