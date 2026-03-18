@@ -81,6 +81,13 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
           { id: "pub-connections", label: "Connections", icon: "Link", href: "/relay/connections", roles: ["ADMIN", "DEPT_HEAD"] },
         ],
       },
+      {
+        id: "ppc",
+        label: "Campaigns",
+        icon: "Target",
+        href: "/ppc",
+        roles: ["ADMIN", "DEPT_HEAD", "MEMBER"],
+      },
     ],
   },
 
