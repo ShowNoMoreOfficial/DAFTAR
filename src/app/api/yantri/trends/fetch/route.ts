@@ -73,9 +73,10 @@ export async function POST() {
     const ranked = rankResult.parsed;
 
     if (!Array.isArray(ranked) || ranked.length === 0) {
+      console.error("[trends/fetch] No trends from ranking. Raw:", rankResult.raw?.slice(0, 300));
       return NextResponse.json(
-        { error: "No trends returned from ranking", raw: rankResult.raw },
-        { status: 500 }
+        { error: "No trends could be identified. Please try again." },
+        { status: 502 }
       );
     }
 
@@ -123,11 +124,10 @@ export async function POST() {
       { status: 201 }
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Trend fetch error:", message);
+    console.error("[trends/fetch] Error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
-      { error: `Trend fetch failed: ${message}` },
-      { status: 500 }
+      { error: "Trend fetching temporarily unavailable. Please try again in a moment." },
+      { status: 503 }
     );
   }
 }

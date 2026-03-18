@@ -1,6 +1,7 @@
 import { yantriInngest } from "./client";
 import { prisma } from "@/lib/prisma";
 import { routeToModel } from "@/lib/yantri/model-router";
+import { safeParseJSON } from "@/lib/yantri/gemini";
 import { analyzeGap } from "@/lib/yantri/gap-analysis";
 import { runStrategist } from "@/lib/yantri/strategist";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
@@ -140,8 +141,11 @@ RULES:
       let structuredData: unknown = {};
       let sources: string[] = [];
 
-      if (result.parsed && typeof result.parsed === "object") {
-        const parsed = result.parsed as Record<string, unknown>;
+      // routeToModel("research") returns parsed: null — parse the raw text
+      const parsedData = result.parsed ?? safeParseJSON(result.raw);
+
+      if (parsedData && typeof parsedData === "object") {
+        const parsed = parsedData as Record<string, unknown>;
         sources = Array.isArray(parsed.sources)
           ? (parsed.sources as string[])
           : [];

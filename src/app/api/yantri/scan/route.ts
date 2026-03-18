@@ -32,7 +32,11 @@ export async function POST(request: Request) {
     const { parsed, raw } = await callGemini(systemPrompt, userMessage);
 
     if (!parsed) {
-      return NextResponse.json({ error: "Failed to parse AI response", raw }, { status: 500 });
+      console.error("[scan] Failed to parse AI response. Raw:", raw?.slice(0, 300));
+      return NextResponse.json(
+        { error: "Editorial scan could not be completed. Please try again." },
+        { status: 502 }
+      );
     }
 
     // Create editorial narratives for priorities
@@ -121,11 +125,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ plan: parsed, narratives, raw });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Scan error:", message);
+    console.error("[scan] Error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
-      { error: `Scan failed: ${message}. Make sure GEMINI_API_KEY is set in .env` },
-      { status: 500 }
+      { error: "Editorial scan temporarily unavailable. Please try again in a moment." },
+      { status: 503 }
     );
   }
 }

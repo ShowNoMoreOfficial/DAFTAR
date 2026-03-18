@@ -171,9 +171,21 @@ export async function generateStrategies(
   );
 
   // Call LLM
-  const result = await routeToModel("strategy", system, user, {
-    temperature: 0.4,
-  });
+  let result: Awaited<ReturnType<typeof routeToModel>>;
+  try {
+    result = await routeToModel("strategy", system, user, {
+      temperature: 0.4,
+    });
+  } catch (err) {
+    console.error("[Strategist] LLM call failed for tree:", treeId, err instanceof Error ? err.message : err);
+    return {
+      treeId,
+      treeTitle: tree.title,
+      strategies: [],
+      generatedAt: new Date().toISOString(),
+      model: "gemini",
+    };
+  }
 
   // Parse response
   const parsed = result.parsed as {
@@ -303,7 +315,13 @@ export async function runStrategist(input: {
 
   const { system, user } = buildStrategyPrompt(tree.title, enrichedSummary, brandContexts);
 
-  const result = await routeToModel("strategy", system, user, { temperature: 0.4 });
+  let result: Awaited<ReturnType<typeof routeToModel>>;
+  try {
+    result = await routeToModel("strategy", system, user, { temperature: 0.4 });
+  } catch (err) {
+    console.error("[Strategist] runStrategist LLM call failed:", err instanceof Error ? err.message : err);
+    return [];
+  }
 
   const parsed = result.parsed as {
     strategies?: Array<{

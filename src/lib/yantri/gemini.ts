@@ -84,6 +84,37 @@ export interface InlineImageData {
   base64: string;
 }
 
+/**
+ * Safely parse LLM text as JSON — strips markdown fences, finds JSON objects/arrays.
+ * Returns null if parsing fails entirely.
+ */
+export function safeParseJSON(text: string): unknown {
+  if (!text?.trim()) return null;
+
+  // Strip markdown code fences
+  let clean = text.replace(/```(?:json)?\s*/g, "").replace(/```\s*/g, "").trim();
+
+  // Try direct parse
+  try {
+    return JSON.parse(clean);
+  } catch {
+    // noop
+  }
+
+  // Try finding the first JSON object or array
+  const jsonMatch = clean.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+  if (jsonMatch) {
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      // noop
+    }
+  }
+
+  console.error("[safeParseJSON] Could not parse LLM response:", clean.substring(0, 200));
+  return null;
+}
+
 export async function callGeminiResearch(
   systemPrompt: string,
   userMessage: string,

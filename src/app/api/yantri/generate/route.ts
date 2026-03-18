@@ -47,9 +47,10 @@ export async function POST(request: Request) {
     const { parsed, raw } = await callGemini(systemPrompt, userMessage);
 
     if (!parsed) {
+      console.error("[generate] Failed to parse AI response. Raw:", raw?.slice(0, 300));
       return NextResponse.json(
-        { error: "Failed to generate content. AI response could not be parsed.", raw },
-        { status: 500 }
+        { error: "Content generation failed — AI response could not be processed. Please try again." },
+        { status: 502 }
       );
     }
 
