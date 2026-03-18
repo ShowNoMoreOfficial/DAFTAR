@@ -77,6 +77,17 @@ const ENTITY_ICONS: Record<string, React.ReactNode> = {
   LOCATION: <MapPin className="h-3 w-3" />,
 };
 
+// Safe JSON parser — prevents crash when API returns HTML/text error pages
+async function safeJson(res: Response) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("API returned non-JSON:", text.substring(0, 100));
+    throw new Error(text.substring(0, 200) || "Request failed");
+  }
+}
+
 const ARC_CONFIG: Record<string, { label: string; color: string }> = {
   EMERGENCE: { label: "Emergence", color: "bg-[rgba(59,130,246,0.15)] text-blue-700" },
   ESCALATION: { label: "Escalation", color: "bg-[rgba(234,179,8,0.15)] text-yellow-700" },
@@ -160,7 +171,7 @@ export default function IntelligencePage() {
                   setScanResult(null);
                   try {
                     const res = await fetch("/api/khabri/scan", { method: "POST" });
-                    const data = await res.json();
+                    const data = await safeJson(res);
                     if (!res.ok) throw new Error(data.error || "Scan failed");
                     setScanResult(
                       `${data.articlesScraped} scraped, ${data.signalsCreated} new`
@@ -240,7 +251,7 @@ function SignalsTab() {
         body: JSON.stringify({ signalId }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
+        const data = await safeJson(res).catch(() => null);
         throw new Error(data?.error || "Research failed");
       }
       setToast({ message: `Research complete: "${signalTitle}"`, type: "success" });
@@ -261,10 +272,10 @@ function SignalsTab() {
           : `/api/khabri/signals?page=${page}&pageSize=25`
       );
       if (!res.ok) {
-        const errData = await res.json().catch(() => null);
+        const errData = await safeJson(res).catch(() => null);
         throw new Error(errData?.error || `Failed to fetch signals (${res.status})`);
       }
-      const data = await res.json();
+      const data = await safeJson(res);
       let fetchedSignals: KhabriSignal[] = data.data || [];
       if (sourceFilter) {
         fetchedSignals = fetchedSignals.filter((s) => s.source === sourceFilter);
@@ -503,7 +514,7 @@ function TrendsTab() {
     try {
       const res = await fetch(`/api/khabri/trends/${trendId}/signals?limit=10`);
       if (res.ok) {
-        const data = await res.json();
+        const data = await safeJson(res);
         setTrendSignals((prev) => ({ ...prev, [trendId]: data.data || [] }));
       }
     } catch { /* silent */ }
@@ -516,7 +527,7 @@ function TrendsTab() {
     try {
       const res = await fetch(`/api/khabri/trends?page=${page}&pageSize=20`);
       if (!res.ok) throw new Error(`Failed to fetch trends (${res.status})`);
-      const data = await res.json();
+      const data = await safeJson(res);
       setTrends(data.data || []);
       setMeta(data.meta || null);
     } catch (err) {
@@ -679,7 +690,7 @@ function ResearchTab() {
       if (filter !== "ALL") params.set("status", filter);
       const res = await fetch(`/api/yantri/narrative-trees?${params}`);
       if (!res.ok) throw new Error(`Failed to fetch (${res.status})`);
-      const data = await res.json();
+      const data = await safeJson(res);
       setTrees(data.trees || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load research");
