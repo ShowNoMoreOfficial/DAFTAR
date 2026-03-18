@@ -20,7 +20,7 @@ export const GET = apiHandler(async (req: NextRequest, { session }) => {
       avatar: true,
       role: true,
       assignedTasks: {
-        where: { status: { in: ["ASSIGNED", "IN_PROGRESS", "REVIEW"] } },
+        where: { status: { in: ["CREATED", "ASSIGNED", "IN_PROGRESS", "REVIEW"] } },
         select: {
           id: true,
           title: true,
@@ -65,5 +65,14 @@ export const GET = apiHandler(async (req: NextRequest, { session }) => {
   // Sort by total weight descending (most loaded first)
   workload.sort((a, b) => b.totalWeight - a.totalWeight);
 
-  return NextResponse.json(workload);
+  // Count unassigned tasks so the UI can surface them
+  const unassignedCount = await prisma.task.count({
+    where: {
+      assigneeId: null,
+      status: { notIn: ["DONE", "CANCELLED"] },
+      ...(departmentId ? { departmentId } : {}),
+    },
+  });
+
+  return NextResponse.json({ members: workload, unassignedTasks: unassignedCount });
 });

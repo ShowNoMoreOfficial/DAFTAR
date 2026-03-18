@@ -160,6 +160,21 @@ function formatDateTime(dateStr: string): string {
   });
 }
 
+function cleanSummary(text: string): string {
+  if (!text) return "";
+  let clean = text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
+  if (clean.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(clean);
+      return parsed.topic || parsed.summary || parsed.title || clean.substring(0, 200);
+    } catch {
+      return clean.substring(0, 200);
+    }
+  }
+  clean = clean.replace(/^(Okay|Sure|I will|Let me|Here is)[^.]*\.\s*/i, "");
+  return clean;
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function NarrativeTreeDetailPage() {
@@ -468,7 +483,7 @@ export default function NarrativeTreeDetailPage() {
         <Card className="rounded-2xl border-border mb-6">
           <CardContent className="p-5">
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Summary</h3>
-            <p className="text-sm text-zinc-300 leading-relaxed">{tree.summary}</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">{cleanSummary(tree.summary)}</p>
           </CardContent>
         </Card>
       )}

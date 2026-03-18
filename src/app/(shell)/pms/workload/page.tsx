@@ -36,6 +36,7 @@ interface KPIData {
 
 export default function PMSWorkloadPage() {
   const [workload, setWorkload] = useState<WorkloadEntry[]>([]);
+  const [unassignedTasks, setUnassignedTasks] = useState(0);
   const [kpi, setKpi] = useState<KPIData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +45,13 @@ export default function PMSWorkloadPage() {
       fetch("/api/tasks/workload").then((r) => r.json()),
       fetch("/api/kpi").then((r) => r.json()),
     ]).then(([w, k]) => {
-      setWorkload(w);
+      // Handle both old array format and new { members, unassignedTasks } format
+      if (Array.isArray(w)) {
+        setWorkload(w);
+      } else {
+        setWorkload(w.members || []);
+        setUnassignedTasks(w.unassignedTasks || 0);
+      }
       setKpi(k);
       setLoading(false);
     });
@@ -142,6 +149,17 @@ export default function PMSWorkloadPage() {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Unassigned tasks warning */}
+      {unassignedTasks > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-yellow-200 bg-[rgba(234,179,8,0.1)] px-4 py-3">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600" />
+          <p className="text-sm text-yellow-700">
+            <span className="font-semibold">{unassignedTasks} unassigned task{unassignedTasks !== 1 ? "s" : ""}</span>
+            {" "}— these won&apos;t appear in anyone&apos;s workload until assigned.
+          </p>
         </div>
       )}
 

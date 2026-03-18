@@ -676,6 +676,21 @@ interface NarrativeTree {
   narratives: { brandId: string; platform: string; status: string }[];
 }
 
+function cleanSummary(text: string): string {
+  if (!text) return "";
+  let clean = text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
+  if (clean.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(clean);
+      return parsed.topic || parsed.summary || parsed.title || clean.substring(0, 200);
+    } catch {
+      return clean.substring(0, 200);
+    }
+  }
+  clean = clean.replace(/^(Okay|Sure|I will|Let me|Here is)[^.]*\.\s*/i, "");
+  return clean;
+}
+
 function ResearchTab() {
   const [trees, setTrees] = useState<NarrativeTree[]>([]);
   const [loading, setLoading] = useState(true);
@@ -751,7 +766,7 @@ function ResearchTab() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-[var(--text-primary)]">{tree.title}</h3>
-                    {tree.summary && <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{tree.summary}</p>}
+                    {tree.summary && <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{cleanSummary(tree.summary)}</p>}
                     <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-muted)]">
                       <span>{tree.createdBy.name}</span>
                       <span>{new Date(tree.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>

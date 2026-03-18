@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Plus, Image, Hash, AtSign, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -367,9 +368,9 @@ export function CreatePostDialog({ open, onClose, brands, onCreated }: CreatePos
 
             {/* Content preview */}
             {content && (
-              <p className="mt-1.5 text-[10px] text-[var(--text-secondary)] line-clamp-6 whitespace-pre-wrap">
-                {content}
-              </p>
+              <div className="mt-1.5 text-[10px] text-[var(--text-secondary)] line-clamp-6 [&_p]:mb-0 [&_p]:text-[10px] [&_p]:text-[var(--text-secondary)]">
+                <MarkdownContent content={content} />
+              </div>
             )}
 
             {/* Media indicator */}

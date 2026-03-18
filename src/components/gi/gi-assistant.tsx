@@ -7,6 +7,7 @@ import { Sparkles, Send, X, ChevronUp, ChevronDown, Minus, Database, Loader2 } f
 import { useGIContext } from "./gi-context";
 import { useSidebarStore } from "@/store/sidebar-store";
 import { cn } from "@/lib/utils";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 
 interface ChatMessage {
   role: "user" | "gi";
@@ -281,9 +282,11 @@ export function GIAssistant() {
                     : "bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-bl-sm border-l-2 border-l-[var(--accent-primary)]"
                 )}
               >
-                <div className="whitespace-pre-line [&_strong]:font-semibold [&_em]:italic">
-                  {msg.content}
-                </div>
+                {msg.role === "gi" ? (
+                  <MarkdownContent content={msg.content} />
+                ) : (
+                  <div className="whitespace-pre-line text-sm">{msg.content}</div>
+                )}
               </div>
             </div>
           ))}

@@ -35,6 +35,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 
 // ─── Types ───
 
@@ -1317,8 +1318,8 @@ export default function DeliverableReviewPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap">
-              {deliverable.copyMarkdown}
+            <div className="text-sm text-[var(--text-primary)] leading-relaxed">
+              <MarkdownContent content={deliverable.copyMarkdown!} />
             </div>
           </CardContent>
         </Card>

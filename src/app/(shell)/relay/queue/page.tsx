@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 
 // ─── Types ───
 
@@ -208,9 +209,9 @@ export default function PublishQueuePage() {
                       {item.title}
                     </h3>
                     {item.content && (
-                      <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2">
-                        {item.content}
-                      </p>
+                      <div className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2 [&_p]:mb-0 [&_p]:text-xs [&_p]:text-[var(--text-secondary)]">
+                        <MarkdownContent content={item.content} />
+                      </div>
                     )}
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-[10px]">
