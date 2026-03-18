@@ -376,8 +376,8 @@ export const autoEscalateSignal = inngest.createFunction(
   async ({ event, step }) => {
     const { signalId, title, escalationLevel } = event.data;
 
+    // Step 1: Create/merge into NarrativeTree (triggers downstream dossier + strategist via Inngest events)
     const result = await step.run("ingest-into-narrative", async () => {
-      // Fetch the full signal from DB
       const signal = await prisma.signal.findUnique({
         where: { id: signalId },
       });
@@ -386,7 +386,6 @@ export const autoEscalateSignal = inngest.createFunction(
         return { error: `Signal ${signalId} not found` };
       }
 
-      // Use the ingest helper to create/merge into a NarrativeTree
       const { ingestSignal } = await import("@/lib/yantri/ingest-helper");
 
       const ingestResult = await ingestSignal(
@@ -397,7 +396,7 @@ export const autoEscalateSignal = inngest.createFunction(
           signalId: signal.id,
           urgency: escalationLevel === "BREAKING" ? "breaking" : "high",
         },
-        "system" // createdById
+        "system",
       );
 
       return {
@@ -407,6 +406,31 @@ export const autoEscalateSignal = inngest.createFunction(
         merged: ingestResult.merged,
       };
     });
+
+    // Step 2: Notify admins so they can review recommendations
+    if (!("error" in result)) {
+      await step.run("notify-admins", async () => {
+        const admins = await prisma.user.findMany({
+          where: { role: "ADMIN" },
+          select: { id: true },
+        });
+
+        if (admins.length === 0) return;
+
+        const label = escalationLevel === "BREAKING" ? "Breaking" : "High priority";
+        const shortTitle = (title || result.title || "Signal").substring(0, 60);
+
+        await prisma.notification.createMany({
+          data: admins.map((admin) => ({
+            userId: admin.id,
+            type: "SYSTEM" as const,
+            title: `${label} signal escalated`,
+            message: `"${shortTitle}" has been auto-escalated to the content pipeline. Review strategy recommendations.`,
+            link: `/intelligence?tab=signals`,
+          })),
+        });
+      });
+    }
 
     return {
       signalId,
