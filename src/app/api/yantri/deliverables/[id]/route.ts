@@ -5,6 +5,7 @@ import { getAuthSession } from "@/lib/api-utils";
 import { daftarEvents } from "@/lib/event-bus";
 import { generateVisualPrompts } from "@/lib/yantri/engines/nanoBanana";
 import { getBrandColorMood } from "@/lib/yantri/brand-voice";
+import { generateImage } from "@/lib/image-generator";
 
 // ─── GET /api/yantri/deliverables/[id] ─────────────────────────────────────────────
 
@@ -267,37 +268,26 @@ async function generateStoryOnApproval(
     },
   });
 
-  // Try to generate the actual story image via Gemini
+  // Try to generate the actual story image via shared image generator
   try {
-    const { GoogleGenAI } = await import("@google/genai");
-    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
     const storyPrompt = `Create an Instagram/Facebook Story promoting: "${title}".
 Style: Eye-catching, vertical (1080x1920), vibrant colors.
 Include: Key quote or data point from the content, brand watermark area at top-right.
 Reserve bottom 20% for swipe-up/link sticker area.
 Brand: ${brandName}. Make it scroll-stopping.`;
 
-    const response = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-preview-image-generation",
-      contents: storyPrompt,
-      config: { responseModalities: ["IMAGE", "TEXT"] },
+    const result = await generateImage(storyPrompt);
+
+    const asset = await prisma.asset.findFirst({
+      where: { deliverableId: storyDeliverable.id, type: "IMAGE" },
     });
 
-    const parts = response.candidates?.[0]?.content?.parts;
-    const imagePart = parts?.find(
-      (p: { inlineData?: { mimeType?: string } }) => p.inlineData?.mimeType?.startsWith("image/")
-    );
-
-    if (imagePart?.inlineData?.data) {
-      const asset = await prisma.asset.findFirst({
-        where: { deliverableId: storyDeliverable.id, type: "IMAGE" },
-      });
-      if (asset) {
+    if (asset) {
+      if (result) {
         await prisma.asset.update({
           where: { id: asset.id },
           data: {
-            url: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
+            url: result.url,
             metadata: {
               ...(typeof asset.metadata === "object" && asset.metadata !== null ? asset.metadata : {}),
               generated: true,
@@ -305,15 +295,10 @@ Brand: ${brandName}. Make it scroll-stopping.`;
             },
           },
         });
-      }
-    } else {
-      // Gemini returned no image — use Pollinations fallback
-      const encoded = encodeURIComponent(storyPrompt.substring(0, 200));
-      const fallbackUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1080&height=1920&nologo=true`;
-      const asset = await prisma.asset.findFirst({
-        where: { deliverableId: storyDeliverable.id, type: "IMAGE" },
-      });
-      if (asset) {
+      } else {
+        // Gemini returned no image — use Pollinations fallback
+        const encoded = encodeURIComponent(storyPrompt.substring(0, 200));
+        const fallbackUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1080&height=1920&nologo=true`;
         await prisma.asset.update({
           where: { id: asset.id },
           data: { url: fallbackUrl, metadata: { ...(typeof asset.metadata === "object" && asset.metadata !== null ? asset.metadata : {}), generated: true, source: "pollinations" } },
