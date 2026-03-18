@@ -82,7 +82,9 @@ export async function GET(
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[OAuth Callback] ${platform} error:`, msg);
     return NextResponse.redirect(
-      `${BASE_URL}/relay/connections?error=${encodeURIComponent(msg)}`
+      `${BASE_URL}/relay/connections?error=${encodeURIComponent(
+        `Connection failed: ${msg}`
+      )}`
     );
   }
 }
@@ -91,10 +93,6 @@ export async function GET(
 
 async function handleTwitterCallback(code: string, codeVerifier: string, brandId: string) {
   const tokens = await exchangeTwitterCode(code, codeVerifier);
-
-  if (!tokens.access_token) {
-    throw new Error("Twitter token exchange failed — no access token returned");
-  }
 
   // Fetch user info
   const userRes = await fetch("https://api.twitter.com/2/users/me", {
@@ -129,10 +127,6 @@ async function handleTwitterCallback(code: string, codeVerifier: string, brandId
 
 async function handleYouTubeCallback(code: string, brandId: string) {
   const tokens = await exchangeYouTubeCode(code);
-
-  if (!tokens.access_token) {
-    throw new Error("YouTube token exchange failed — no access token returned");
-  }
 
   // Fetch channel info
   const channelRes = await fetch(
@@ -169,10 +163,6 @@ async function handleYouTubeCallback(code: string, brandId: string) {
 async function handleLinkedInCallback(code: string, brandId: string) {
   const tokens = await exchangeLinkedInCode(code);
 
-  if (!tokens.access_token) {
-    throw new Error("LinkedIn token exchange failed — no access token returned");
-  }
-
   // Fetch profile info
   const profileRes = await fetch("https://api.linkedin.com/v2/userinfo", {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
@@ -206,9 +196,6 @@ async function handleLinkedInCallback(code: string, brandId: string) {
 async function handleInstagramCallback(code: string, brandId: string) {
   // Step 1: Exchange code for short-lived token
   const shortLived = await exchangeInstagramCode(code);
-  if (!shortLived.access_token) {
-    throw new Error("Instagram token exchange failed — no access token returned");
-  }
 
   // Step 2: Exchange for long-lived token (60 days)
   const longLived = await exchangeForLongLivedToken(shortLived.access_token);
@@ -259,9 +246,6 @@ async function handleInstagramCallback(code: string, brandId: string) {
 async function handleFacebookCallback(code: string, brandId: string) {
   // Step 1: Exchange code for short-lived token
   const shortLived = await exchangeFacebookCode(code);
-  if (!shortLived.access_token) {
-    throw new Error("Facebook token exchange failed — no access token returned");
-  }
 
   // Step 2: Exchange for long-lived token (60 days)
   const longLived = await exchangeForLongLivedToken(shortLived.access_token);

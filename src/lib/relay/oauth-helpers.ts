@@ -1,43 +1,59 @@
 /**
  * OAuth 2.0 helpers for Relay platform connections.
  *
- * Required environment variables:
+ * All redirect URIs are auto-derived from NEXTAUTH_URL when
+ * platform-specific env vars aren't set.
  *
- * Twitter / X (OAuth 2.0 PKCE):
- *   TWITTER_CLIENT_ID        — Twitter app client ID
- *   TWITTER_CLIENT_SECRET     — Twitter app client secret
- *   TWITTER_REDIRECT_URI      — e.g. https://your-domain.com/api/relay/oauth/twitter/callback
+ * Required environment variables per platform:
  *
- * YouTube / Google (OAuth 2.0):
- *   GOOGLE_CLIENT_ID          — Google Cloud OAuth client ID
- *   GOOGLE_CLIENT_SECRET      — Google Cloud OAuth client secret
- *   GOOGLE_REDIRECT_URI       — e.g. https://your-domain.com/api/relay/oauth/youtube/callback
+ * Twitter / X:    TWITTER_CLIENT_ID, TWITTER_CLIENT_SECRET
+ * YouTube:        GOOGLE_CLIENT_ID (or AUTH_GOOGLE_ID), GOOGLE_CLIENT_SECRET (or AUTH_GOOGLE_SECRET)
+ * LinkedIn:       LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET
+ * Instagram/FB:   META_APP_ID, META_APP_SECRET
  *
- * LinkedIn (OAuth 2.0):
- *   LINKEDIN_CLIENT_ID        — LinkedIn app client ID
- *   LINKEDIN_CLIENT_SECRET    — LinkedIn app client secret
- *   LINKEDIN_REDIRECT_URI     — e.g. https://your-domain.com/api/relay/oauth/linkedin/callback
- *
- * Instagram (via Facebook/Meta OAuth 2.0):
- *   META_APP_ID               — Meta app ID
- *   META_APP_SECRET           — Meta app secret
- *   META_REDIRECT_URI         — e.g. https://your-domain.com/api/relay/oauth/instagram/callback
+ * Optional (auto-derived if missing):
+ *   TWITTER_REDIRECT_URI, GOOGLE_REDIRECT_URI, LINKEDIN_REDIRECT_URI,
+ *   META_IG_REDIRECT_URI, META_FB_REDIRECT_URI, META_REDIRECT_URI
  */
 
 // ─── Base URL / Redirect URI helper ────────────────────
-// Derives redirect URIs from NEXTAUTH_URL when platform-specific
-// env vars aren't set, so OAuth works without extra config.
 
 const BASE_URL = (
   process.env.NEXTAUTH_URL || "https://daftar-one.vercel.app"
 ).replace(/\/$/, "");
 
 function redirectUri(platform: string, envVar: string | undefined, ...fallbacks: (string | undefined)[]): string {
-  // Check explicit env var first, then fallbacks
   const explicit = envVar || fallbacks.find(Boolean);
   if (explicit) return explicit;
-  // Derive from NEXTAUTH_URL
   return `${BASE_URL}/api/relay/oauth/${platform}/callback`;
+}
+
+// ─── Token exchange helper ─────────────────────────────
+
+async function exchangeToken<T>(
+  url: string,
+  body: URLSearchParams,
+  platform: string,
+  headers?: Record<string, string>
+): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      ...headers,
+    },
+    body,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || data.error) {
+    const errMsg = data.error_description || data.error || `HTTP ${res.status}`;
+    console.error(`[OAuth] ${platform} token exchange failed:`, data);
+    throw new Error(`${platform} token exchange failed: ${errMsg}`);
+  }
+
+  return data as T;
 }
 
 // ─── Twitter / X ────────────────────────────────────────
@@ -64,42 +80,40 @@ export async function exchangeTwitterCode(
   code: string,
   codeVerifier: string
 ): Promise<{ access_token: string; refresh_token?: string; expires_in: number }> {
-  const res = await fetch(TWITTER_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${Buffer.from(
-        `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
-      ).toString("base64")}`,
-    },
-    body: new URLSearchParams({
+  return exchangeToken(
+    TWITTER_TOKEN_URL,
+    new URLSearchParams({
       grant_type: "authorization_code",
       code,
       redirect_uri: redirectUri("x", process.env.TWITTER_REDIRECT_URI),
       code_verifier: codeVerifier,
     }),
-  });
-  return res.json();
+    "Twitter",
+    {
+      Authorization: `Basic ${Buffer.from(
+        `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
+      ).toString("base64")}`,
+    }
+  );
 }
 
 /** Refresh a Twitter access token. */
 export async function refreshTwitterToken(
   refreshToken: string
 ): Promise<{ access_token: string; refresh_token?: string; expires_in: number }> {
-  const res = await fetch(TWITTER_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${Buffer.from(
-        `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
-      ).toString("base64")}`,
-    },
-    body: new URLSearchParams({
+  return exchangeToken(
+    TWITTER_TOKEN_URL,
+    new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
     }),
-  });
-  return res.json();
+    "Twitter",
+    {
+      Authorization: `Basic ${Buffer.from(
+        `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
+      ).toString("base64")}`,
+    }
+  );
 }
 
 // ─── YouTube / Google ───────────────────────────────────
@@ -125,35 +139,33 @@ export function getYouTubeAuthUrl(state: string): string {
 export async function exchangeYouTubeCode(
   code: string
 ): Promise<{ access_token: string; refresh_token?: string; expires_in: number }> {
-  const res = await fetch(GOOGLE_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+  return exchangeToken(
+    GOOGLE_TOKEN_URL,
+    new URLSearchParams({
       grant_type: "authorization_code",
       code,
       redirect_uri: redirectUri("youtube", process.env.GOOGLE_REDIRECT_URI),
       client_id: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID ?? "",
       client_secret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET ?? "",
     }),
-  });
-  return res.json();
+    "YouTube"
+  );
 }
 
 /** Refresh a Google/YouTube access token. */
 export async function refreshYouTubeToken(
   refreshToken: string
 ): Promise<{ access_token: string; expires_in: number }> {
-  const res = await fetch(GOOGLE_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+  return exchangeToken(
+    GOOGLE_TOKEN_URL,
+    new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
       client_id: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID ?? "",
       client_secret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET ?? "",
     }),
-  });
-  return res.json();
+    "YouTube"
+  );
 }
 
 // ─── LinkedIn ───────────────────────────────────────────
@@ -177,18 +189,17 @@ export function getLinkedInAuthUrl(state: string): string {
 export async function exchangeLinkedInCode(
   code: string
 ): Promise<{ access_token: string; expires_in: number }> {
-  const res = await fetch(LINKEDIN_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+  return exchangeToken(
+    LINKEDIN_TOKEN_URL,
+    new URLSearchParams({
       grant_type: "authorization_code",
       code,
       redirect_uri: redirectUri("linkedin", process.env.LINKEDIN_REDIRECT_URI),
       client_id: process.env.LINKEDIN_CLIENT_ID ?? "",
       client_secret: process.env.LINKEDIN_CLIENT_SECRET ?? "",
     }),
-  });
-  return res.json();
+    "LinkedIn"
+  );
 }
 
 // ─── Instagram / Meta ───────────────────────────────────
@@ -212,18 +223,17 @@ export function getInstagramAuthUrl(state: string): string {
 export async function exchangeInstagramCode(
   code: string
 ): Promise<{ access_token: string; token_type: string; expires_in: number }> {
-  const res = await fetch(META_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+  return exchangeToken(
+    META_TOKEN_URL,
+    new URLSearchParams({
       grant_type: "authorization_code",
       code,
       redirect_uri: redirectUri("instagram", process.env.META_IG_REDIRECT_URI, process.env.META_REDIRECT_URI),
       client_id: process.env.META_APP_ID ?? "",
       client_secret: process.env.META_APP_SECRET ?? "",
     }),
-  });
-  return res.json();
+    "Instagram"
+  );
 }
 
 /** Build the Meta OAuth URL for Facebook Page management. */
@@ -242,18 +252,17 @@ export function getFacebookAuthUrl(state: string): string {
 export async function exchangeFacebookCode(
   code: string
 ): Promise<{ access_token: string; token_type: string; expires_in: number }> {
-  const res = await fetch(META_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+  return exchangeToken(
+    META_TOKEN_URL,
+    new URLSearchParams({
       grant_type: "authorization_code",
       code,
       redirect_uri: redirectUri("facebook", process.env.META_FB_REDIRECT_URI, process.env.META_REDIRECT_URI),
       client_id: process.env.META_APP_ID ?? "",
       client_secret: process.env.META_APP_SECRET ?? "",
     }),
-  });
-  return res.json();
+    "Facebook"
+  );
 }
 
 // ─── Utilities ──────────────────────────────────────────
