@@ -110,22 +110,32 @@ export async function GET(
  * Returns the missing var names, or null if all are present.
  */
 function checkPlatformCredentials(platform: string): string | null {
-  const checks: Record<string, string[]> = {
-    x: ["TWITTER_CLIENT_ID", "TWITTER_CLIENT_SECRET", "TWITTER_REDIRECT_URI"],
-    youtube: ["GOOGLE_REDIRECT_URI"], // client ID/secret fall back to AUTH_GOOGLE_*
-    linkedin: ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET", "LINKEDIN_REDIRECT_URI"],
-    instagram: ["META_APP_ID", "META_APP_SECRET"],
-    facebook: ["META_APP_ID", "META_APP_SECRET"],
-  };
-
-  // YouTube also needs at least one set of Google client credentials
-  if (platform === "youtube") {
-    if (!process.env.GOOGLE_CLIENT_ID && !process.env.AUTH_GOOGLE_ID) {
-      return "GOOGLE_CLIENT_ID (or AUTH_GOOGLE_ID)";
-    }
+  switch (platform) {
+    case "x":
+      if (!process.env.TWITTER_CLIENT_ID) return "TWITTER_CLIENT_ID";
+      if (!process.env.TWITTER_CLIENT_SECRET) return "TWITTER_CLIENT_SECRET";
+      // TWITTER_REDIRECT_URI auto-constructed if missing
+      break;
+    case "youtube":
+      if (!process.env.GOOGLE_CLIENT_ID && !process.env.AUTH_GOOGLE_ID) {
+        return "GOOGLE_CLIENT_ID (or AUTH_GOOGLE_ID)";
+      }
+      if (!process.env.GOOGLE_CLIENT_SECRET && !process.env.AUTH_GOOGLE_SECRET) {
+        return "GOOGLE_CLIENT_SECRET (or AUTH_GOOGLE_SECRET)";
+      }
+      // GOOGLE_REDIRECT_URI auto-constructed if missing
+      break;
+    case "linkedin":
+      if (!process.env.LINKEDIN_CLIENT_ID) return "LINKEDIN_CLIENT_ID";
+      if (!process.env.LINKEDIN_CLIENT_SECRET) return "LINKEDIN_CLIENT_SECRET";
+      // LINKEDIN_REDIRECT_URI auto-constructed if missing
+      break;
+    case "instagram":
+    case "facebook":
+      if (!process.env.META_APP_ID) return "META_APP_ID";
+      if (!process.env.META_APP_SECRET) return "META_APP_SECRET";
+      break;
   }
-
-  const required = checks[platform] || [];
-  const missing = required.filter((key) => !process.env[key]);
-  return missing.length > 0 ? missing.join(", ") : null;
+  return null;
 }
+

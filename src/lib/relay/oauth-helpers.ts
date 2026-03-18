@@ -24,6 +24,22 @@
  *   META_REDIRECT_URI         — e.g. https://your-domain.com/api/relay/oauth/instagram/callback
  */
 
+// ─── Base URL / Redirect URI helper ────────────────────
+// Derives redirect URIs from NEXTAUTH_URL when platform-specific
+// env vars aren't set, so OAuth works without extra config.
+
+const BASE_URL = (
+  process.env.NEXTAUTH_URL || "https://daftar-one.vercel.app"
+).replace(/\/$/, "");
+
+function redirectUri(platform: string, envVar: string | undefined, ...fallbacks: (string | undefined)[]): string {
+  // Check explicit env var first, then fallbacks
+  const explicit = envVar || fallbacks.find(Boolean);
+  if (explicit) return explicit;
+  // Derive from NEXTAUTH_URL
+  return `${BASE_URL}/api/relay/oauth/${platform}/callback`;
+}
+
 // ─── Twitter / X ────────────────────────────────────────
 
 const TWITTER_AUTH_URL = "https://twitter.com/i/oauth2/authorize";
@@ -34,7 +50,7 @@ export function getTwitterAuthUrl(state: string, codeChallenge: string): string 
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.TWITTER_CLIENT_ID ?? "",
-    redirect_uri: process.env.TWITTER_REDIRECT_URI ?? "",
+    redirect_uri: redirectUri("x", process.env.TWITTER_REDIRECT_URI),
     scope: "tweet.read tweet.write users.read offline.access",
     state,
     code_challenge: codeChallenge,
@@ -59,7 +75,7 @@ export async function exchangeTwitterCode(
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.TWITTER_REDIRECT_URI ?? "",
+      redirect_uri: redirectUri("x", process.env.TWITTER_REDIRECT_URI),
       code_verifier: codeVerifier,
     }),
   });
@@ -96,7 +112,7 @@ export function getYouTubeAuthUrl(state: string): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID ?? "",
-    redirect_uri: process.env.GOOGLE_REDIRECT_URI ?? "",
+    redirect_uri: redirectUri("youtube", process.env.GOOGLE_REDIRECT_URI),
     scope: "https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.upload",
     state,
     access_type: "offline",
@@ -115,7 +131,7 @@ export async function exchangeYouTubeCode(
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.GOOGLE_REDIRECT_URI ?? "",
+      redirect_uri: redirectUri("youtube", process.env.GOOGLE_REDIRECT_URI),
       client_id: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID ?? "",
       client_secret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET ?? "",
     }),
@@ -150,7 +166,7 @@ export function getLinkedInAuthUrl(state: string): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.LINKEDIN_CLIENT_ID ?? "",
-    redirect_uri: process.env.LINKEDIN_REDIRECT_URI ?? "",
+    redirect_uri: redirectUri("linkedin", process.env.LINKEDIN_REDIRECT_URI),
     scope: "openid profile w_member_social",
     state,
   });
@@ -167,7 +183,7 @@ export async function exchangeLinkedInCode(
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.LINKEDIN_REDIRECT_URI ?? "",
+      redirect_uri: redirectUri("linkedin", process.env.LINKEDIN_REDIRECT_URI),
       client_id: process.env.LINKEDIN_CLIENT_ID ?? "",
       client_secret: process.env.LINKEDIN_CLIENT_SECRET ?? "",
     }),
@@ -185,7 +201,7 @@ export function getInstagramAuthUrl(state: string): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.META_APP_ID ?? "",
-    redirect_uri: process.env.META_IG_REDIRECT_URI ?? process.env.META_REDIRECT_URI ?? "",
+    redirect_uri: redirectUri("instagram", process.env.META_IG_REDIRECT_URI, process.env.META_REDIRECT_URI),
     scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
     state,
   });
@@ -202,7 +218,7 @@ export async function exchangeInstagramCode(
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.META_IG_REDIRECT_URI ?? process.env.META_REDIRECT_URI ?? "",
+      redirect_uri: redirectUri("instagram", process.env.META_IG_REDIRECT_URI, process.env.META_REDIRECT_URI),
       client_id: process.env.META_APP_ID ?? "",
       client_secret: process.env.META_APP_SECRET ?? "",
     }),
@@ -215,7 +231,7 @@ export function getFacebookAuthUrl(state: string): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.META_APP_ID ?? "",
-    redirect_uri: process.env.META_FB_REDIRECT_URI ?? process.env.META_REDIRECT_URI ?? "",
+    redirect_uri: redirectUri("facebook", process.env.META_FB_REDIRECT_URI, process.env.META_REDIRECT_URI),
     scope: "pages_manage_posts,pages_read_engagement,pages_show_list",
     state,
   });
@@ -232,7 +248,7 @@ export async function exchangeFacebookCode(
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: process.env.META_FB_REDIRECT_URI ?? process.env.META_REDIRECT_URI ?? "",
+      redirect_uri: redirectUri("facebook", process.env.META_FB_REDIRECT_URI, process.env.META_REDIRECT_URI),
       client_id: process.env.META_APP_ID ?? "",
       client_secret: process.env.META_APP_SECRET ?? "",
     }),
