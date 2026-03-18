@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,8 +116,11 @@ function SentimentBar({ score: rawScore }: { score: number }) {
 export default function IntelligencePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const initialTab = (searchParams.get("tab") as TabId) || "signals";
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<string | null>(null);
 
   // Sync tab when URL params change (e.g. sidebar navigation)
   useEffect(() => {
@@ -139,6 +143,44 @@ export default function IntelligencePage() {
             <p className="text-sm text-[var(--text-secondary)] mt-0.5">
               Signals, trends, and research — everything happening in the world.
             </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {scanResult && (
+              <span className="text-xs text-[var(--text-secondary)] max-w-[200px] truncate">
+                {scanResult}
+              </span>
+            )}
+            {session?.user?.role === "ADMIN" && (
+              <Button
+                size="sm"
+                disabled={scanning}
+                className="gap-1.5 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90 text-white"
+                onClick={async () => {
+                  setScanning(true);
+                  setScanResult(null);
+                  try {
+                    const res = await fetch("/api/khabri/scan", { method: "POST" });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Scan failed");
+                    setScanResult(
+                      `${data.articlesScraped} scraped, ${data.signalsCreated} new`
+                    );
+                    router.refresh();
+                  } catch (err) {
+                    setScanResult(err instanceof Error ? err.message : "Scan failed");
+                  } finally {
+                    setScanning(false);
+                  }
+                }}
+              >
+                {scanning ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {scanning ? "Scanning..." : "Scan Now"}
+              </Button>
+            )}
           </div>
         </div>
 

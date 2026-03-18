@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       return Response.json({
         success: true,
         url: result.url,
-        model: "gemini-2.5-flash-image",
+        model: "gemini-3.1-flash-image-preview",
       });
     } else {
       // Mark as failed

@@ -44,7 +44,7 @@ export const khabriHourlyScan = inngest.createFunction(
     // Limit to 1 concurrent scan — prevent overlap if previous run is slow
     concurrency: [{ limit: 1 }],
   },
-  { cron: "0 * * * *" }, // Every hour at :00
+  [{ cron: "0 * * * *" }, { event: "khabri/scan.trigger" }],
   async ({ step }) => {
     // ──────────────────────────────────────────────────────
     // Step 1: Scrape all monitored feeds
@@ -357,6 +357,61 @@ export const khabriHourlyScan = inngest.createFunction(
       enriched: enrichedSignals.length,
       saved: savedSignals.length,
       urgent: savedSignals.filter((s) => s.impactScore > 8.0).length,
+    };
+  }
+);
+
+// ─── Auto-Escalation: Signal → Narrative Tree ──────────────
+// Listens for khabri/signal.escalate events (fired when processSignal
+// detects BREAKING/CRISIS). Fetches the signal from DB and calls
+// ingestSignal() to create/merge into a NarrativeTree.
+
+export const autoEscalateSignal = inngest.createFunction(
+  {
+    id: "khabri-auto-escalate-signal",
+    name: "Khabri: Auto-Escalate Signal to Narrative",
+    retries: 2,
+  },
+  { event: "khabri/signal.escalate" },
+  async ({ event, step }) => {
+    const { signalId, title, escalationLevel } = event.data;
+
+    const result = await step.run("ingest-into-narrative", async () => {
+      // Fetch the full signal from DB
+      const signal = await prisma.signal.findUnique({
+        where: { id: signalId },
+      });
+
+      if (!signal) {
+        return { error: `Signal ${signalId} not found` };
+      }
+
+      // Use the ingest helper to create/merge into a NarrativeTree
+      const { ingestSignal } = await import("@/lib/yantri/ingest-helper");
+
+      const ingestResult = await ingestSignal(
+        {
+          title: signal.title,
+          content: signal.content ?? null,
+          source: signal.source,
+          signalId: signal.id,
+          urgency: escalationLevel === "BREAKING" ? "breaking" : "high",
+        },
+        "system" // createdById
+      );
+
+      return {
+        treeId: ingestResult.treeId,
+        title: ingestResult.title,
+        isNew: ingestResult.isNew,
+        merged: ingestResult.merged,
+      };
+    });
+
+    return {
+      signalId,
+      escalationLevel,
+      ...result,
     };
   }
 );

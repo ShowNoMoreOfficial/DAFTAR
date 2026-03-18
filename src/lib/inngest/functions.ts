@@ -96,10 +96,22 @@ export const processSignal = inngest.createFunction(
         escalation.level === "BREAKING" ||
         escalation.level === "CRISIS"
       ) {
+        // Also fire the in-process event for any local listeners
         daftarEvents.emitEvent("signal.ready_for_narrative", {
           signalId,
           trendId,
           escalationLevel: escalation.level,
+        });
+
+        // Fire durable Inngest event to auto-escalate to narrative pipeline
+        await inngest.send({
+          name: "khabri/signal.escalate",
+          data: {
+            signalId,
+            trendId,
+            escalationLevel: escalation.level,
+            title,
+          },
         });
       }
     });

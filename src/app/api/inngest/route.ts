@@ -6,7 +6,7 @@ import {
   publishPost,
 } from "@/lib/inngest/functions";
 import { generateDeliverableV2 } from "@/lib/inngest/yantri-workflows";
-import { khabriHourlyScan } from "@/lib/inngest/khabri-workflows";
+import { khabriHourlyScan, autoEscalateSignal } from "@/lib/inngest/khabri-workflows";
 import { ingestVrittiArticle } from "@/lib/inngest/vritti-workflows";
 // Yantri pipeline functions (merged from standalone Yantri app)
 import {
@@ -38,6 +38,7 @@ export const { GET, POST, PUT } = serve({
     generateDeliverableV2, // v2: full pipeline with engine routing + fact-checking
     publishPost,
     khabriHourlyScan,
+    autoEscalateSignal,
     ingestVrittiArticle,
     // Yantri pipeline functions
     contentPiecePipeline,

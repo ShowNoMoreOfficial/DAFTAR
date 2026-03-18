@@ -48,6 +48,15 @@ type DaftarEvents = {
   };
 
   /**
+   * Khabri: Manually trigger the hourly scan (admin action).
+   */
+  "khabri/scan.trigger": {
+    data: {
+      triggeredBy: string;
+    };
+  };
+
+  /**
    * Khabri: Hourly cron scan completed — internal event for chaining.
    */
   "khabri/scan.completed": {
@@ -56,6 +65,19 @@ type DaftarEvents = {
       saved: number;
       urgent: number;
       timestamp: string;
+    };
+  };
+
+  /**
+   * Khabri: Signal enriched and assessed as BREAKING/CRISIS —
+   * auto-escalate to narrative pipeline via ingestSignal().
+   */
+  "khabri/signal.escalate": {
+    data: {
+      signalId: string;
+      trendId: string;
+      escalationLevel: string;
+      title: string;
     };
   };
 
