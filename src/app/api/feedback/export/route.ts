@@ -1,10 +1,9 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = apiHandler(async (_req, { session }) => {
+  if (session.user.role !== "ADMIN") {
+    return Response.json({ error: "Admin access required" }, { status: 403 });
   }
 
   const feedbacks = await prisma.teamFeedback.findMany({
@@ -38,4 +37,4 @@ export async function GET() {
   return new Response(markdown, {
     headers: { "Content-Type": "text/markdown" },
   });
-}
+});

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import {
   generateSkillAwareInsights,
   type GISkillContext,
 } from "@/lib/gi-skill-engine";
 import type { Role } from "@prisma/client";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const module = searchParams.get("module") || "dashboard";
   const view = searchParams.get("view") || "main";
@@ -35,4 +32,4 @@ export async function GET(req: NextRequest) {
   } catch {
     return NextResponse.json([]);
   }
-}
+});

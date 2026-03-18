@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
 
 // GET /api/m/yantri/narrative-trees - redirects to real data
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const status = searchParams.get("status");
 
@@ -34,4 +31,4 @@ export async function GET(req: NextRequest) {
     lastUpdated: t.updatedAt.toISOString(),
     summary: t.summary,
   })));
-}
+});

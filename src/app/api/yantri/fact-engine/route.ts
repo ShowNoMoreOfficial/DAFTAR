@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/api-utils";
 import { routeToModel } from "@/lib/yantri/model-router";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
+import { apiHandler } from "@/lib/api-handler";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -150,265 +151,247 @@ function extractSources(structured: StructuredDossier, raw: string): string[] {
 
 // ─── POST — Trigger Research ────────────────────────────────────────────────
 
-export async function POST(request: NextRequest) {
+export const POST = apiHandler(async (request: NextRequest) => {
+  // Parse and validate request body
+  let body: FactEnginePostBody;
   try {
-    // Parse and validate request body
-    let body: FactEnginePostBody;
-    try {
-      body = await request.json();
-    } catch {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON in request body" },
+      { status: 400 }
+    );
+  }
+
+  const { treeId, signalId, forceRefresh } = body;
+
+  if (!treeId && !signalId) {
+    return NextResponse.json(
+      { error: "Either treeId or signalId is required" },
+      { status: 400 }
+    );
+  }
+
+  // Resolve treeId — if signalId provided, find or create a NarrativeTree
+  let resolvedTreeId = treeId;
+
+  if (signalId && !resolvedTreeId) {
+    const session = await getAuthSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const signal = await prisma.signal.findUnique({
+      where: { id: signalId },
+      include: { trend: { select: { id: true, name: true, lifecycle: true } } },
+    });
+
+    if (!signal) {
       return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
+        { error: `Signal not found: ${signalId}` },
+        { status: 404 }
       );
     }
 
-    const { treeId, signalId, forceRefresh } = body;
+    // Find existing tree for this signal or create one
+    let existingTree = await prisma.narrativeTree.findFirst({
+      where: { signalId },
+    });
 
-    if (!treeId && !signalId) {
-      return NextResponse.json(
-        { error: "Either treeId or signalId is required" },
-        { status: 400 }
-      );
-    }
-
-    // Resolve treeId — if signalId provided, find or create a NarrativeTree
-    let resolvedTreeId = treeId;
-
-    if (signalId && !resolvedTreeId) {
-      const session = await getAuthSession();
-      if (!session) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-
-      const signal = await prisma.signal.findUnique({
-        where: { id: signalId },
-        include: { trend: { select: { id: true, name: true, lifecycle: true } } },
-      });
-
-      if (!signal) {
-        return NextResponse.json(
-          { error: `Signal not found: ${signalId}` },
-          { status: 404 }
-        );
-      }
-
-      // Find existing tree for this signal or create one
-      let existingTree = await prisma.narrativeTree.findFirst({
-        where: { signalId },
-      });
-
-      if (!existingTree) {
-        existingTree = await prisma.narrativeTree.create({
-          data: {
-            title: signal.title,
-            summary: signal.content?.slice(0, 500) || null,
-            signalId: signal.id,
-            trendId: signal.trendId,
-            signalData: {
-              source: signal.source,
-              eventType: signal.eventType,
-              stakeholders: signal.stakeholders,
-              sentiment: signal.sentiment,
-            },
-            urgency: "normal",
-            status: "INCOMING",
-            createdById: session.user.id,
-            nodes: {
-              create: {
-                signalTitle: signal.title.slice(0, 150),
-                signalScore: 50,
-                signalData: {
-                  source: signal.source,
-                  content: signal.content,
-                  stakeholders: signal.stakeholders,
-                  eventMarkers: signal.eventMarkers,
-                  signalId: signal.id,
-                },
+    if (!existingTree) {
+      existingTree = await prisma.narrativeTree.create({
+        data: {
+          title: signal.title,
+          summary: signal.content?.slice(0, 500) || null,
+          signalId: signal.id,
+          trendId: signal.trendId,
+          signalData: {
+            source: signal.source,
+            eventType: signal.eventType,
+            stakeholders: signal.stakeholders,
+            sentiment: signal.sentiment,
+          },
+          urgency: "normal",
+          status: "INCOMING",
+          createdById: session.user.id,
+          nodes: {
+            create: {
+              signalTitle: signal.title.slice(0, 150),
+              signalScore: 50,
+              signalData: {
+                source: signal.source,
+                content: signal.content,
+                stakeholders: signal.stakeholders,
+                eventMarkers: signal.eventMarkers,
+                signalId: signal.id,
               },
             },
           },
-        });
-      }
-
-      resolvedTreeId = existingTree.id;
-    }
-
-    // Fetch the NarrativeTree with nodes and existing dossier
-    const tree = await prisma.narrativeTree.findUnique({
-      where: { id: resolvedTreeId! },
-      include: {
-        nodes: {
-          orderBy: { signalScore: "desc" },
         },
-        dossier: true,
-      },
-    });
-
-    if (!tree) {
-      return NextResponse.json(
-        { error: `NarrativeTree not found: ${resolvedTreeId}` },
-        { status: 404 }
-      );
-    }
-
-    // Return existing dossier if present and not forcing refresh
-    if (tree.dossier && !forceRefresh) {
-      return NextResponse.json({
-        dossier: tree.dossier,
-        tree: {
-          id: tree.id,
-          title: tree.title,
-          status: tree.status,
-          nodeCount: tree.nodes.length,
-        },
-        cached: true,
       });
     }
 
-    // ── Conduct research ────────────────────────────────────────────────
+    resolvedTreeId = existingTree.id;
+  }
 
-    if (tree.nodes.length === 0) {
-      return NextResponse.json(
-        { error: "NarrativeTree has no nodes to research" },
-        { status: 422 }
-      );
-    }
-
-    // Step 1: Web-grounded research via Gemini Search
-    const { systemPrompt, userMessage } = buildFactEnginePrompt(
-      tree.title,
-      tree.nodes.map((n) => ({
-        signalTitle: n.signalTitle,
-        signalData: n.signalData,
-      }))
-    );
-
-    const researchResult = await routeToModel("research", systemPrompt, userMessage);
-    const rawResearch = researchResult.raw;
-
-    if (!rawResearch || rawResearch.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Research returned empty results" },
-        { status: 502 }
-      );
-    }
-
-    // Step 2: Structure raw research into FactDossier format
-    const { systemPrompt: structPrompt, userMessage: structMessage } =
-      buildStructuringPrompt(rawResearch);
-
-    const structureResult = await routeToModel(
-      "strategy",
-      structPrompt,
-      structMessage,
-      { temperature: 0.1 }
-    );
-
-    const structured = (structureResult.parsed as StructuredDossier) ?? {
-      facts: [],
-      stats: [],
-      quotes: [],
-      timeline: [],
-      sources: [],
-    };
-
-    // Compile all unique source URLs
-    const allSources = extractSources(structured, rawResearch);
-
-    // Step 3: Store dossier (upsert — create or update)
-    const structuredJson = structured as unknown as Prisma.InputJsonValue;
-    const dossier = await prisma.factDossier.upsert({
-      where: { treeId: resolvedTreeId! },
-      create: {
-        treeId: resolvedTreeId!,
-        structuredData: structuredJson,
-        sources: allSources,
-        visualAssets: [],
-        rawResearch,
+  // Fetch the NarrativeTree with nodes and existing dossier
+  const tree = await prisma.narrativeTree.findUnique({
+    where: { id: resolvedTreeId! },
+    include: {
+      nodes: {
+        orderBy: { signalScore: "desc" },
       },
-      update: {
-        structuredData: structuredJson,
-        sources: allSources,
-        rawResearch,
-      },
-    });
+      dossier: true,
+    },
+  });
 
-    // Step 4: Send Inngest event for deeper async synthesis (non-blocking)
-    yantriInngest.send({
-      name: "yantri/dossier.build",
-      data: { treeId: resolvedTreeId! },
-    }).catch((err) => {
-      console.warn("[fact-engine] Inngest event send failed (non-critical):", err instanceof Error ? err.message : err);
-    });
-
+  if (!tree) {
     return NextResponse.json(
-      {
-        dossier,
-        tree: {
-          id: tree.id,
-          title: tree.title,
-          status: tree.status,
-          nodeCount: tree.nodes.length,
-        },
-        cached: false,
-      },
-      { status: 201 }
-    );
-  } catch (err) {
-    console.error("Fact Engine POST error:", err instanceof Error ? err.message : err);
-    return NextResponse.json(
-      { error: "Content generation temporarily unavailable. Please try again in a moment.",
-        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
-      { status: 503 }
+      { error: `NarrativeTree not found: ${resolvedTreeId}` },
+      { status: 404 }
     );
   }
-}
+
+  // Return existing dossier if present and not forcing refresh
+  if (tree.dossier && !forceRefresh) {
+    return NextResponse.json({
+      dossier: tree.dossier,
+      tree: {
+        id: tree.id,
+        title: tree.title,
+        status: tree.status,
+        nodeCount: tree.nodes.length,
+      },
+      cached: true,
+    });
+  }
+
+  // ── Conduct research ────────────────────────────────────────────────
+
+  if (tree.nodes.length === 0) {
+    return NextResponse.json(
+      { error: "NarrativeTree has no nodes to research" },
+      { status: 422 }
+    );
+  }
+
+  // Step 1: Web-grounded research via Gemini Search
+  const { systemPrompt, userMessage } = buildFactEnginePrompt(
+    tree.title,
+    tree.nodes.map((n) => ({
+      signalTitle: n.signalTitle,
+      signalData: n.signalData,
+    }))
+  );
+
+  const researchResult = await routeToModel("research", systemPrompt, userMessage);
+  const rawResearch = researchResult.raw;
+
+  if (!rawResearch || rawResearch.trim().length === 0) {
+    return NextResponse.json(
+      { error: "Research returned empty results" },
+      { status: 502 }
+    );
+  }
+
+  // Step 2: Structure raw research into FactDossier format
+  const { systemPrompt: structPrompt, userMessage: structMessage } =
+    buildStructuringPrompt(rawResearch);
+
+  const structureResult = await routeToModel(
+    "strategy",
+    structPrompt,
+    structMessage,
+    { temperature: 0.1 }
+  );
+
+  const structured = (structureResult.parsed as StructuredDossier) ?? {
+    facts: [],
+    stats: [],
+    quotes: [],
+    timeline: [],
+    sources: [],
+  };
+
+  // Compile all unique source URLs
+  const allSources = extractSources(structured, rawResearch);
+
+  // Step 3: Store dossier (upsert — create or update)
+  const structuredJson = structured as unknown as Prisma.InputJsonValue;
+  const dossier = await prisma.factDossier.upsert({
+    where: { treeId: resolvedTreeId! },
+    create: {
+      treeId: resolvedTreeId!,
+      structuredData: structuredJson,
+      sources: allSources,
+      visualAssets: [],
+      rawResearch,
+    },
+    update: {
+      structuredData: structuredJson,
+      sources: allSources,
+      rawResearch,
+    },
+  });
+
+  // Step 4: Send Inngest event for deeper async synthesis (non-blocking)
+  yantriInngest.send({
+    name: "yantri/dossier.build",
+    data: { treeId: resolvedTreeId! },
+  }).catch((err) => {
+    console.warn("[fact-engine] Inngest event send failed (non-critical):", err instanceof Error ? err.message : err);
+  });
+
+  return NextResponse.json(
+    {
+      dossier,
+      tree: {
+        id: tree.id,
+        title: tree.title,
+        status: tree.status,
+        nodeCount: tree.nodes.length,
+      },
+      cached: false,
+    },
+    { status: 201 }
+  );
+});
 
 // ─── GET — Fetch Existing FactDossier ───────────────────────────────────────
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const treeId = searchParams.get("treeId");
+export const GET = apiHandler(async (request: NextRequest) => {
+  const { searchParams } = new URL(request.url);
+  const treeId = searchParams.get("treeId");
 
-    if (!treeId) {
-      return NextResponse.json(
-        { error: "treeId query parameter is required" },
-        { status: 400 }
-      );
-    }
-
-    const dossier = await prisma.factDossier.findUnique({
-      where: { treeId },
-      include: {
-        tree: {
-          select: {
-            id: true,
-            title: true,
-            summary: true,
-            status: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-      },
-    });
-
-    if (!dossier) {
-      return NextResponse.json(
-        { error: `No FactDossier found for treeId: ${treeId}` },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ dossier });
-  } catch (err) {
-    console.error("Fact Engine GET error:", err instanceof Error ? err.message : err);
+  if (!treeId) {
     return NextResponse.json(
-      { error: "Failed to fetch dossier. Please try again in a moment.",
-        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
-      { status: 500 }
+      { error: "treeId query parameter is required" },
+      { status: 400 }
     );
   }
-}
+
+  const dossier = await prisma.factDossier.findUnique({
+    where: { treeId },
+    include: {
+      tree: {
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  });
+
+  if (!dossier) {
+    return NextResponse.json(
+      { error: `No FactDossier found for treeId: ${treeId}` },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json({ dossier });
+});

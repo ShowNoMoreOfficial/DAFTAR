@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-utils";
+import { notFound, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 import { executePublish } from "@/lib/relay/publish-executor";
 
 export const maxDuration = 60; // Allow time for media uploads
 
 // POST /api/relay/posts/[id]/publish — Publish or schedule a post
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session, params }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   const existing = await prisma.contentPost.findUnique({ where: { id } });
   if (!existing) return notFound("Post not found");
@@ -87,4 +82,4 @@ export async function POST(
     });
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
-}
+});

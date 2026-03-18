@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { forbidden } from "@/lib/api-utils";
 import type { Role } from "@prisma/client";
 
 /**
@@ -10,10 +11,7 @@ import type { Role } from "@prisma/client";
  * - Company Velocity: tasks completed per week over the last 8 weeks
  * - Department Capacity: percentage workload per department
  */
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   const allowedRoles: Role[] = ["ADMIN", "HEAD_HR", "DEPT_HEAD"];
   if (!allowedRoles.includes(session.user.role as Role)) {
     return forbidden();
@@ -114,4 +112,4 @@ export async function GET() {
       overloadedDepts: departmentCapacity.filter((d) => d.capacity > 85).length,
     },
   });
-}
+});

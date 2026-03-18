@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { callGemini, callGeminiResearch } from "@/lib/yantri/gemini";
 import { processSignalsToTrees } from "@/lib/yantri/ingest-helper";
+import { apiHandler } from "@/lib/api-handler";
 
 const TREND_ENGINE_PROMPT = `You are TREND_ENGINE. Your job is to identify and rank the most important trending topics right now for an Indian content creator focused on governance, geopolitics, and economic accountability.
 
@@ -46,88 +46,77 @@ JSON FORMAT:
   }
 ]`;
 
-export async function POST() {
-  const session = await getAuthSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = apiHandler(async () => {
+  // Step 1: Use Gemini with Google Search grounding to find current trends
+  const rawSignals = await callGeminiResearch(
+    "You are a news aggregator. Find the most important trending news topics in India right now. Cover: politics, economy, defence, technology, governance, culture, and social issues. For each topic, give a concise headline and brief context. List at least 20 topics.",
+    "What are the top trending news topics and events in India right now? Include topics from Reddit India, Google News India, and social media trends. Be specific with names, dates, and events."
+  );
 
-  try {
-    // Step 1: Use Gemini with Google Search grounding to find current trends
-    const rawSignals = await callGeminiResearch(
-      "You are a news aggregator. Find the most important trending news topics in India right now. Cover: politics, economy, defence, technology, governance, culture, and social issues. For each topic, give a concise headline and brief context. List at least 20 topics.",
-      "What are the top trending news topics and events in India right now? Include topics from Reddit India, Google News India, and social media trends. Be specific with names, dates, and events."
-    );
-
-    if (!rawSignals.trim()) {
-      return NextResponse.json(
-        { error: "No signals fetched from search" },
-        { status: 500 }
-      );
-    }
-
-    // Step 2: Rank the signals using Gemini JSON mode
-    const rankResult = await callGemini(
-      TREND_ENGINE_PROMPT,
-      `RAW SIGNALS:\n${rawSignals}`
-    );
-
-    const ranked = rankResult.parsed;
-
-    if (!Array.isArray(ranked) || ranked.length === 0) {
-      console.error("[trends/fetch] No trends from ranking. Raw:", rankResult.raw?.slice(0, 300));
-      return NextResponse.json(
-        { error: "No trends could be identified. Please try again." },
-        { status: 502 }
-      );
-    }
-
-    // Step 3: Import as a new batch
-    const batch = await prisma.trendBatch.create({
-      data: {
-        source: "khabri_auto",
-        trends: {
-          create: ranked.map(
-            (t: { rank: number; topic: string; score: number; reason: string; information_gap?: string }) => ({
-              rank: t.rank || 0,
-              score: t.score || 0,
-              headline: t.topic || "",
-              reason: t.reason || "",
-              informationGap: t.information_gap || null,
-            })
-          ),
-        },
-      },
-      include: { trends: true },
-    });
-
-    // Auto-sync to NarrativeTrees — cluster new signals into existing or new trees
-    const signals = ranked.map(
-      (t: { rank: number; topic: string; score: number; reason: string }) => ({
-        title: t.topic || "",
-        score: t.score || 0,
-        reason: t.reason || "",
-        source: "khabri_auto",
-        metadata: { rank: t.rank, batchId: batch.id },
-      })
-    );
-
-    const treeResult = await processSignalsToTrees(signals);
-
+  if (!rawSignals.trim()) {
     return NextResponse.json(
-      {
-        ...batch,
-        narrativeTreeSync: {
-          newTrees: treeResult.newTrees,
-          appendedTo: treeResult.appendedTo,
-          skipped: treeResult.skipped,
-        },
-      },
-      { status: 201 }
-    );
-  } catch (err) {
-    console.error("[trends/fetch] Error:", err instanceof Error ? err.message : err);
-    return NextResponse.json(
-      { error: "Trend fetching temporarily unavailable. Please try again in a moment." },
-      { status: 503 }
+      { error: "No signals fetched from search" },
+      { status: 500 }
     );
   }
-}
+
+  // Step 2: Rank the signals using Gemini JSON mode
+  const rankResult = await callGemini(
+    TREND_ENGINE_PROMPT,
+    `RAW SIGNALS:\n${rawSignals}`
+  );
+
+  const ranked = rankResult.parsed;
+
+  if (!Array.isArray(ranked) || ranked.length === 0) {
+    console.error("[trends/fetch] No trends from ranking. Raw:", rankResult.raw?.slice(0, 300));
+    return NextResponse.json(
+      { error: "No trends could be identified. Please try again." },
+      { status: 502 }
+    );
+  }
+
+  // Step 3: Import as a new batch
+  const batch = await prisma.trendBatch.create({
+    data: {
+      source: "khabri_auto",
+      trends: {
+        create: ranked.map(
+          (t: { rank: number; topic: string; score: number; reason: string; information_gap?: string }) => ({
+            rank: t.rank || 0,
+            score: t.score || 0,
+            headline: t.topic || "",
+            reason: t.reason || "",
+            informationGap: t.information_gap || null,
+          })
+        ),
+      },
+    },
+    include: { trends: true },
+  });
+
+  // Auto-sync to NarrativeTrees — cluster new signals into existing or new trees
+  const signals = ranked.map(
+    (t: { rank: number; topic: string; score: number; reason: string }) => ({
+      title: t.topic || "",
+      score: t.score || 0,
+      reason: t.reason || "",
+      source: "khabri_auto",
+      metadata: { rank: t.rank, batchId: batch.id },
+    })
+  );
+
+  const treeResult = await processSignalsToTrees(signals);
+
+  return NextResponse.json(
+    {
+      ...batch,
+      narrativeTreeSync: {
+        newTrees: treeResult.newTrees,
+        appendedTo: treeResult.appendedTo,
+        skipped: treeResult.skipped,
+      },
+    },
+    { status: 201 }
+  );
+});

@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { badRequest } from "@/lib/api-utils";
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR", "DEPT_HEAD"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
   const body = await req.json();
   const { action: userAction } = body; // "approve", "reject", "undo"
 
@@ -81,7 +76,7 @@ export async function PATCH(
   }
 
   return badRequest("Unknown action");
-}
+});
 
 // Log a TaskActivity record for GI actions
 async function logTaskActivity(

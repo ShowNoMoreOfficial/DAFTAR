@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/workflows/history — Historical learning cycle data
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const limit = parseInt(searchParams.get("limit") || "10");
   const skillPath = searchParams.get("skill");
@@ -44,4 +41,4 @@ export async function GET(req: NextRequest) {
     })),
     completedTests,
   });
-}
+});

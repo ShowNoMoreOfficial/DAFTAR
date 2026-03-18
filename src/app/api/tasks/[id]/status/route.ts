@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound, badRequest, handleApiError } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { notFound, badRequest } from "@/lib/api-utils";
 import type { TaskStatus } from "@prisma/client";
 import { notifyTaskStatusChanged, notifyDeliverableReady } from "@/lib/notifications";
 import { recordActivity, checkTaskAchievements, checkSpeedAchievements, checkQualityAchievements } from "@/lib/gamification";
@@ -16,15 +17,8 @@ const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   CANCELLED: ["CREATED"],
 };
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  try {
-  const { id } = await params;
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { id } = params;
   const { status } = await req.json();
 
   if (!status) return badRequest("Status is required");
@@ -147,7 +141,7 @@ export async function PATCH(
     const totalOnTime = score.tasksOnTime;
     const reliability = totalCompleted > 0 ? (totalOnTime / totalCompleted) * 100 : 50;
 
-    // Quality: ratio of tasks approved without revision (REVIEW→APPROVED, not REVIEW→IN_PROGRESS→REVIEW→APPROVED)
+    // Quality: ratio of tasks approved without revision (REVIEW->APPROVED, not REVIEW->IN_PROGRESS->REVIEW->APPROVED)
     const approvedDirectly = await prisma.taskActivity.count({
       where: {
         actorId: task.assigneeId,
@@ -207,7 +201,4 @@ export async function PATCH(
   }
 
   return NextResponse.json(updated);
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+});

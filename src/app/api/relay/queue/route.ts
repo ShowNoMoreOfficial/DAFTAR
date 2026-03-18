@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
@@ -9,10 +9,7 @@ import { prisma } from "@/lib/prisma";
  * Returns APPROVED deliverables that haven't been bridged to a ContentPost yet.
  * These are the items in the "ready to publish" queue.
  */
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -41,7 +38,7 @@ export async function GET() {
   }));
 
   return NextResponse.json({ data: queue, total: queue.length });
-}
+});
 
 function extractTitle(d: { copyMarkdown: string | null; scriptData: unknown; platform: string; brand: { name: string } }): string {
   if (d.platform === "YOUTUBE" && d.scriptData) {

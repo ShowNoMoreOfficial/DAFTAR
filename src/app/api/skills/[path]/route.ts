@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import {
-  getAuthSession,
-  unauthorized,
-  forbidden,
-  notFound,
-  badRequest,
-} from "@/lib/api-utils";
+import { forbidden, notFound, badRequest } from "@/lib/api-utils";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/skills/[path] — Get skill detail + learning logs + recent executions
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ path: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const GET = apiHandler(async (_req: NextRequest, { session, params }) => {
   if (!["ADMIN", "DEPT_HEAD"].includes(session.user.role)) return forbidden();
 
-  const { path: skillPath } = await params;
+  const { path: skillPath } = params;
   const decodedPath = decodeURIComponent(skillPath);
 
   const skill = await prisma.skill.findUnique({
@@ -55,18 +45,13 @@ export async function GET(
   }
 
   return NextResponse.json({ skill, fileContent });
-}
+});
 
 // PATCH /api/skills/[path]/learning-log — Add manual learning log entry
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ path: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
-  const { path: skillPath } = await params;
+  const { path: skillPath } = params;
   const decodedPath = decodeURIComponent(skillPath);
 
   const body = await req.json();
@@ -90,4 +75,4 @@ export async function PATCH(
   });
 
   return NextResponse.json(log);
-}
+});

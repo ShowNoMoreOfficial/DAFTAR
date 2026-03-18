@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/gi/config
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-  if (session.user.role !== "ADMIN") return forbidden();
+export const GET = apiHandler(async (_req, { session }) => {
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
 
   const configs = await prisma.gIConfig.findMany();
   return NextResponse.json(configs);
-}
+});

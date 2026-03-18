@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
 // ---------------------------------------------------------------------------
 // GET /api/yantri/performance/summary
@@ -21,12 +21,7 @@ import { prisma } from "@/lib/prisma";
 // }
 // ---------------------------------------------------------------------------
 
-export async function GET(request: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = apiHandler(async (request: NextRequest) => {
   const { searchParams } = request.nextUrl;
   const brandName = searchParams.get("brandName");
   const platform = searchParams.get("platform");
@@ -145,4 +140,4 @@ export async function GET(request: NextRequest) {
     byContentType,
     topPerforming,
   });
-}
+});

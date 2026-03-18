@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import type { NotificationType } from "@prisma/client";
 
 // GET /api/notifications — fetch current user's notifications with pagination & filters
-export async function GET(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req, { session }) => {
   const { searchParams } = new URL(req.url);
   const page = Math.max(parseInt(searchParams.get("page") || "1"), 1);
   const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "20"), 1), 50);
@@ -50,13 +48,10 @@ export async function GET(req: Request) {
     limit,
     totalPages: Math.ceil(total / limit),
   });
-}
+});
 
 // PATCH /api/notifications — mark notifications as read
-export async function PATCH(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const PATCH = apiHandler(async (req, { session }) => {
   const body = await req.json();
   const { ids, markAllRead } = body as {
     ids?: string[];
@@ -84,4 +79,4 @@ export async function PATCH(req: Request) {
   });
 
   return NextResponse.json({ success: true });
-}
+});

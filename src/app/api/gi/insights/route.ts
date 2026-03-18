@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import {
   getOverdueTasks,
   getOverloadedUsers,
@@ -19,10 +19,7 @@ export interface GIInsight {
   actionLabel: string;
 }
 
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   const insights: GIInsight[] = [];
 
   try {
@@ -109,4 +106,4 @@ export async function GET() {
   }
 
   return NextResponse.json({ insights });
-}
+});

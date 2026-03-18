@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { seedAchievements } from "@/lib/gamification";
 
-export async function POST() {
-  const session = await getAuthSession();
-  if (!session || session.user.role !== "ADMIN") return unauthorized();
+export const POST = apiHandler(async (_req, { session }) => {
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await seedAchievements();
   return NextResponse.json({ ok: true, message: "Achievements seeded" });
-}
+});

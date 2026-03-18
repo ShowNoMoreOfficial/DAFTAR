@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest, handleApiError } from "@/lib/api-utils";
+import { forbidden, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { role } = session.user;
   const { searchParams } = req.nextUrl;
   const status = searchParams.get("status");
@@ -55,59 +53,53 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json(paginatedResponse(invoices, total, pagination));
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (!["ADMIN", "FINANCE"].includes(session.user.role)) return forbidden();
 
-  try {
-    const body = await req.json();
-    const { number, brandId, clientId, amount, tax, totalAmount, dueDate, description, items, status } = body;
+  const body = await req.json();
+  const { number, brandId, clientId, amount, tax, totalAmount, dueDate, description, items, status } = body;
 
-    if (!amount || !dueDate) {
-      return badRequest("amount and dueDate are required");
-    }
-
-    const taxAmount = tax || 0;
-    const computedTotal = totalAmount || amount + taxAmount;
-
-    // Generate invoice number if not provided
-    let invoiceNumber = number;
-    if (!invoiceNumber) {
-      const count = await prisma.invoice.count();
-      invoiceNumber = `INV-${String(count + 1).padStart(5, "0")}`;
-    }
-
-    // Check unique number
-    const existing = await prisma.invoice.findUnique({ where: { number: invoiceNumber } });
-    if (existing) {
-      return badRequest(`Invoice number "${invoiceNumber}" already exists`);
-    }
-
-    const invoice = await prisma.invoice.create({
-      data: {
-        number: invoiceNumber,
-        brandId: brandId || null,
-        clientId: clientId || null,
-        status: status || "DRAFT",
-        amount,
-        tax: taxAmount,
-        totalAmount: computedTotal,
-        dueDate: new Date(dueDate),
-        description: description || null,
-        items: items || null,
-        createdById: session.user.id,
-      },
-      include: {
-        brand: { select: { id: true, name: true } },
-        client: { select: { id: true, name: true, company: true } },
-      },
-    });
-
-    return NextResponse.json(invoice, { status: 201 });
-  } catch (error) {
-    return handleApiError(error);
+  if (!amount || !dueDate) {
+    return badRequest("amount and dueDate are required");
   }
-}
+
+  const taxAmount = tax || 0;
+  const computedTotal = totalAmount || amount + taxAmount;
+
+  // Generate invoice number if not provided
+  let invoiceNumber = number;
+  if (!invoiceNumber) {
+    const count = await prisma.invoice.count();
+    invoiceNumber = `INV-${String(count + 1).padStart(5, "0")}`;
+  }
+
+  // Check unique number
+  const existing = await prisma.invoice.findUnique({ where: { number: invoiceNumber } });
+  if (existing) {
+    return badRequest(`Invoice number "${invoiceNumber}" already exists`);
+  }
+
+  const invoice = await prisma.invoice.create({
+    data: {
+      number: invoiceNumber,
+      brandId: brandId || null,
+      clientId: clientId || null,
+      status: status || "DRAFT",
+      amount,
+      tax: taxAmount,
+      totalAmount: computedTotal,
+      dueDate: new Date(dueDate),
+      description: description || null,
+      items: items || null,
+      createdById: session.user.id,
+    },
+    include: {
+      brand: { select: { id: true, name: true } },
+      client: { select: { id: true, name: true, company: true } },
+    },
+  });
+
+  return NextResponse.json(invoice, { status: 201 });
+});

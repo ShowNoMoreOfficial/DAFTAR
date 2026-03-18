@@ -1,12 +1,10 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { toCSV, csvResponse } from "@/lib/csv";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { role } = session.user;
   if (!["ADMIN", "FINANCE", "CLIENT"].includes(role)) return forbidden();
 
@@ -44,4 +42,4 @@ export async function GET(req: NextRequest) {
   ]);
 
   return csvResponse(csv, `invoices-${new Date().toISOString().split("T")[0]}.csv`);
-}
+});

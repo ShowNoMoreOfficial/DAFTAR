@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 interface SaaSProduct {
   id: string;
@@ -14,9 +15,7 @@ interface SaaSProduct {
 }
 
 // GET /api/saas/products — List all SaaS products with subscription counts
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const GET = apiHandler(async (_req, { session }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
   const products: SaaSProduct[] = [
@@ -114,4 +113,4 @@ export async function GET() {
   ];
 
   return NextResponse.json(products);
-}
+});

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden } from "@/lib/api-utils";
+import { badRequest, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 
 function slugify(text: string): string {
@@ -14,10 +15,7 @@ function slugify(text: string): string {
 }
 
 // GET /api/vritti/categories — List all categories with article counts
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "vritti.read.own")) {
     return forbidden();
   }
@@ -32,13 +30,10 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ data: categories });
-}
+});
 
 // POST /api/vritti/categories — Create category (ADMIN only)
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (session.user.role !== "ADMIN") {
     return forbidden();
   }
@@ -77,4 +72,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(category, { status: 201 });
-}
+});

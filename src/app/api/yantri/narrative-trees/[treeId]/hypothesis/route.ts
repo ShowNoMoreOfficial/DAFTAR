@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
-
-interface RouteContext {
-  params: Promise<{ treeId: string }>;
-}
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/yantri/narrative-trees/:treeId/hypothesis
 // Create a HYPOTHESIS node and trigger strategist planning
-export async function POST(req: NextRequest, ctx: RouteContext) {
-  const { treeId } = await ctx.params;
+export const POST = apiHandler(async (req: NextRequest, { params }) => {
+  const { treeId } = params;
   const body = await req.json();
   const { scenario } = body;
 
@@ -44,4 +41,4 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   });
 
   return NextResponse.json(node, { status: 201 });
-}
+});

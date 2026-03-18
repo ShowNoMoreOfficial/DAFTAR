@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 import { daftarEvents } from "@/lib/event-bus";
 
 // GET /api/relay/posts — List content posts with filters, role-scoped
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -73,65 +71,58 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json(paginatedResponse(posts, total, pg));
-}
+});
 
 // POST /api/relay/posts — Create a new content post
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  try {
-    const body = await req.json();
-    const { title, content, platform, brandId, scheduledAt, mediaUrls, metadata, taskId } = body;
+  const body = await req.json();
+  const { title, content, platform, brandId, scheduledAt, mediaUrls, metadata, taskId } = body;
 
-    if (!title) return badRequest("Title is required");
-    if (!platform) return badRequest("Platform is required");
-    if (!brandId) return badRequest("Brand ID is required");
+  if (!title) return badRequest("Title is required");
+  if (!platform) return badRequest("Platform is required");
+  if (!brandId) return badRequest("Brand ID is required");
 
-    const validPlatforms = ["youtube", "x", "instagram", "linkedin", "facebook"];
-    if (!validPlatforms.includes(platform)) {
-      return badRequest("Invalid platform. Must be one of: " + validPlatforms.join(", "));
-    }
-
-    // CLIENT users can only create posts for their brands
-    if (session.user.role === "CLIENT") {
-      if (!session.user.accessibleBrandIds.includes(brandId)) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-    }
-
-    const post = await prisma.contentPost.create({
-      data: {
-        title,
-        content: content || null,
-        platform,
-        brandId,
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-        mediaUrls: mediaUrls || undefined,
-        metadata: metadata || undefined,
-        taskId: taskId || null,
-        status: scheduledAt ? "SCHEDULED" : "DRAFT",
-        createdById: session.user.id,
-      },
-      include: {
-        brand: { select: { id: true, name: true } },
-      },
-    });
-
-    daftarEvents.emitEvent("post.created", {
-      postId: post.id,
-      title: post.title,
-      platform: post.platform,
-      brandId: post.brandId,
-      createdById: session.user.id,
-    });
-
-    return NextResponse.json(post, { status: 201 });
-  } catch (error) {
-    return handleApiError(error);
+  const validPlatforms = ["youtube", "x", "instagram", "linkedin", "facebook"];
+  if (!validPlatforms.includes(platform)) {
+    return badRequest("Invalid platform. Must be one of: " + validPlatforms.join(", "));
   }
-}
+
+  // CLIENT users can only create posts for their brands
+  if (session.user.role === "CLIENT") {
+    if (!session.user.accessibleBrandIds.includes(brandId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  const post = await prisma.contentPost.create({
+    data: {
+      title,
+      content: content || null,
+      platform,
+      brandId,
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+      mediaUrls: mediaUrls || undefined,
+      metadata: metadata || undefined,
+      taskId: taskId || null,
+      status: scheduledAt ? "SCHEDULED" : "DRAFT",
+      createdById: session.user.id,
+    },
+    include: {
+      brand: { select: { id: true, name: true } },
+    },
+  });
+
+  daftarEvents.emitEvent("post.created", {
+    postId: post.id,
+    title: post.title,
+    platform: post.platform,
+    brandId: post.brandId,
+    createdById: session.user.id,
+  });
+
+  return NextResponse.json(post, { status: 201 });
+});

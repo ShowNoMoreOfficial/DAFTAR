@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
 
 /**
@@ -8,10 +9,7 @@ import { yantriInngest } from "@/lib/yantri/inngest/client";
  * Khabri -> Yantri pipeline entry point.
  * Creates a NarrativeTree from an incoming signal and triggers gap analysis.
  */
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const body = await req.json();
   const { signalId, trendTitle, summary, urgency, source, category } = body;
 
@@ -31,54 +29,48 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  try {
-    const tree = await prisma.narrativeTree.create({
-      data: {
-        title: trendTitle,
-        summary: summary || null,
-        signalId: signalId || null,
-        signalData: body,
-        urgency: urgency === "breaking" ? "breaking" : urgency === "high" ? "high" : "normal",
-        status: "INCOMING",
-        createdById: session.user.id,
-        // Create an initial NarrativeNode from the signal
-        nodes: {
-          create: {
-            signalTitle: trendTitle.slice(0, 150),
-            signalScore: urgency === "breaking" ? 90 : urgency === "high" ? 70 : 50,
-            signalData: {
-              source: source || "khabri",
-              category: category || "general",
-              summary: summary || trendTitle,
-              signalId: signalId || null,
-            },
+  const tree = await prisma.narrativeTree.create({
+    data: {
+      title: trendTitle,
+      summary: summary || null,
+      signalId: signalId || null,
+      signalData: body,
+      urgency: urgency === "breaking" ? "breaking" : urgency === "high" ? "high" : "normal",
+      status: "INCOMING",
+      createdById: session.user.id,
+      // Create an initial NarrativeNode from the signal
+      nodes: {
+        create: {
+          signalTitle: trendTitle.slice(0, 150),
+          signalScore: urgency === "breaking" ? 90 : urgency === "high" ? 70 : 50,
+          signalData: {
+            source: source || "khabri",
+            category: category || "general",
+            summary: summary || trendTitle,
+            signalId: signalId || null,
           },
         },
       },
-    });
+    },
+  });
 
-    // Trigger downstream processing: dossier build + gap analysis (non-blocking)
-    yantriInngest.send([
-      {
-        name: "yantri/dossier.build",
-        data: { treeId: tree.id },
-      },
-      {
-        name: "yantri/tree.updated",
-        data: { treeId: tree.id },
-      },
-    ]).catch((err) => {
-      console.warn("[pipeline/trigger] Inngest event send failed (non-critical):", err instanceof Error ? err.message : err);
-    });
+  // Trigger downstream processing: dossier build + gap analysis (non-blocking)
+  yantriInngest.send([
+    {
+      name: "yantri/dossier.build",
+      data: { treeId: tree.id },
+    },
+    {
+      name: "yantri/tree.updated",
+      data: { treeId: tree.id },
+    },
+  ]).catch((err) => {
+    console.warn("[pipeline/trigger] Inngest event send failed (non-critical):", err instanceof Error ? err.message : err);
+  });
 
-    return NextResponse.json({
-      success: true,
-      narrativeTreeId: tree.id,
-      message: "Signal sent to Yantri. Pipeline triggered — dossier synthesis and content planning started.",
-    });
-  } catch (err) {
-    console.error("[pipeline/trigger] Error creating narrative tree:", err);
-    const message = err instanceof Error ? err.message : "Failed to create narrative tree";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+  return NextResponse.json({
+    success: true,
+    narrativeTreeId: tree.id,
+    message: "Signal sent to Yantri. Pipeline triggered — dossier synthesis and content planning started.",
+  });
+});

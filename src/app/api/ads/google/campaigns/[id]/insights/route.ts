@@ -8,12 +8,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import {
   GoogleAdsManager,
   createGoogleAdsManagerFromConnection,
 } from "@/lib/ads/google-ads";
+import { apiHandler } from "@/lib/api-handler";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -22,16 +22,8 @@ function getManager(connection: any | null): GoogleAdsManager {
   return new GoogleAdsManager();
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id: campaignId } = await params;
+export const GET = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { id: campaignId } = params;
   const brandId = req.nextUrl.searchParams.get("brandId");
   const startDate = req.nextUrl.searchParams.get("startDate") ?? undefined;
   const endDate = req.nextUrl.searchParams.get("endDate") ?? undefined;
@@ -43,26 +35,20 @@ export async function GET(
     );
   }
 
-  try {
-    const connection = await prisma.platformConnection.findFirst({
-      where: {
-        brandId,
-        platform: "google_ads",
-        isActive: true,
-      },
-    });
+  const connection = await prisma.platformConnection.findFirst({
+    where: {
+      brandId,
+      platform: "google_ads",
+      isActive: true,
+    },
+  });
 
-    const manager = getManager(connection);
-    const insights = await manager.getCampaignPerformance(
-      campaignId,
-      startDate,
-      endDate,
-    );
+  const manager = getManager(connection);
+  const insights = await manager.getCampaignPerformance(
+    campaignId,
+    startDate,
+    endDate,
+  );
 
-    return NextResponse.json({ campaignId, insights });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[Google Ads] GET insights error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
-}
+  return NextResponse.json({ campaignId, insights });
+});

@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
 import { getAnomalies } from "@/lib/khabri";
 import type { AnomalySeverity } from "@/types/khabri";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const severity = req.nextUrl.searchParams.get("severity") as AnomalySeverity | null;
 
   // Try local: detect anomalies from signal volume spikes
@@ -59,4 +56,4 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to fetch anomalies";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});

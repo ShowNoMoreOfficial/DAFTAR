@@ -1,22 +1,17 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
 // ---------------------------------------------------------------------------
 // GET /api/yantri/performance
 // List all performance records, most recent first.
 // ---------------------------------------------------------------------------
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = apiHandler(async () => {
   const data = await prisma.performanceData.findMany({
     orderBy: { recordedAt: "desc" },
   });
   return NextResponse.json(data);
-}
+});
 
 // ---------------------------------------------------------------------------
 // POST /api/yantri/performance
@@ -35,12 +30,7 @@ const VALID_CONTENT_TYPES = new Set([
   "reel",
 ]);
 
-export async function POST(request: Request) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = apiHandler(async (request) => {
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -183,4 +173,4 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(record, { status: 201 });
-}
+});

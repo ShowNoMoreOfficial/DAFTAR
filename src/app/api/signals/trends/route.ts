@@ -1,12 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
 
 // GET /api/signals/trends — List active trends with lifecycle status
-export async function GET(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
   const pageSize = Math.min(50, parseInt(searchParams.get("pageSize") ?? "20"));
@@ -41,13 +39,10 @@ export async function GET(req: Request) {
     data: trends,
     pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
   });
-}
+});
 
 // POST /api/signals/trends — Create/track a new trend
-export async function POST(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { name, description, lifecycle, velocityScore } = body;
 
@@ -63,4 +58,4 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ data: trend }, { status: 201 });
-}
+});

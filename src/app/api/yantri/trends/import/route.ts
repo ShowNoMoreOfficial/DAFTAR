@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { processSignalsToTrees } from "@/lib/yantri/ingest-helper";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function POST(request: Request) {
-  const session = await getAuthSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = apiHandler(async (request) => {
   const body = await request.json();
   const { trends, source } = body;
 
@@ -52,4 +49,4 @@ export async function POST(request: Request) {
     },
     { status: 201 }
   );
-}
+});

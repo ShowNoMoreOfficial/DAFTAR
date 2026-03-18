@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const departmentId = searchParams.get("departmentId");
 
@@ -21,12 +19,9 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(workflows);
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -53,4 +48,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(workflow, { status: 201 });
-}
+});

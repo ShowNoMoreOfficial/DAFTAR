@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 
 // GET /api/relay/connections — List platform connections for accessible brands
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -41,42 +39,31 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(connections);
-}
+});
 
 // DELETE /api/relay/connections?id=... — Disconnect a platform (ADMIN only)
-export async function DELETE(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const DELETE = apiHandler(async (req: NextRequest, { session }) => {
   if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  try {
-    const id = req.nextUrl.searchParams.get("id");
-    if (!id) return badRequest("Connection ID is required");
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return badRequest("Connection ID is required");
 
-    await prisma.platformConnection.update({
-      where: { id },
-      data: { isActive: false },
-    });
+  await prisma.platformConnection.update({
+    where: { id },
+    data: { isActive: false },
+  });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+  return NextResponse.json({ success: true });
+});
 
 // POST /api/relay/connections — Create or update a platform connection (ADMIN only)
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  try {
   const body = await req.json();
   const { brandId, platform, accountId, accountName, config } = body;
 
@@ -116,7 +103,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(connection, { status: 201 });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+});

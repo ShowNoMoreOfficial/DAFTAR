@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { setOAuthStateCookie } from "@/lib/relay/oauth-state";
 import {
   getTwitterAuthUrl,
@@ -21,20 +21,12 @@ const VALID_PLATFORMS = ["x", "youtube", "linkedin", "instagram", "facebook"];
  * Initiates the OAuth flow for a social media platform.
  * ADMIN only. Generates CSRF state, stores in cookie, redirects to provider.
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ platform: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = apiHandler(async (req: NextRequest, { session, params }) => {
   if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Only admins can connect platforms" }, { status: 403 });
   }
 
-  const { platform } = await params;
+  const { platform } = params;
   if (!VALID_PLATFORMS.includes(platform)) {
     return NextResponse.json(
       { error: `Invalid platform: ${platform}. Must be one of: ${VALID_PLATFORMS.join(", ")}` },
@@ -103,7 +95,7 @@ export async function GET(
   });
 
   return NextResponse.redirect(authUrl);
-}
+});
 
 /**
  * Check if the required env vars are set for a given platform.
@@ -138,4 +130,3 @@ function checkPlatformCredentials(platform: string): string | null {
   }
   return null;
 }
-

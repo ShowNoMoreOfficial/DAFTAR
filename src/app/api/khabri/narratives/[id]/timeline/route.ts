@@ -1,16 +1,10 @@
-import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
 import { getNarrativeTimeline } from "@/lib/khabri";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { params }) => {
+  const { id } = params;
 
   // Try local DB: build timeline from narrative nodes
   try {
@@ -61,4 +55,4 @@ export async function GET(
     const message = err instanceof Error ? err.message : "Failed to fetch narrative timeline";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 import { routeToModel } from "@/lib/yantri/model-router";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -601,14 +601,8 @@ const CONTENT_TYPE_MAP: Record<string, ContentTypeMapping> = {
 
 // ─── Main Handler ───
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getAuthSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
+export const POST = apiHandler(async (request: NextRequest, { session }) => {
+  const body = await request.json();
     const { topic, brandId, contentType, recommendationContext } = body as {
       topic: string;
       brandId: string;
@@ -975,15 +969,7 @@ Return ONLY the JSON, no other text.`;
       brandVoiceApplied: brand.name,
       seo: seoAnalysis ?? undefined,
     });
-  } catch (err) {
-    console.error("Quick-generate error:", err instanceof Error ? err.message : err);
-    return NextResponse.json(
-      { error: "Content generation temporarily unavailable. Please try again in a moment.",
-        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
-      { status: 503 }
-    );
-  }
-}
+});
 
 // ─── Voiceover Generation ───
 

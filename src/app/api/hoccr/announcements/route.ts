@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { badRequest } from "@/lib/api-utils";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const type = searchParams.get("type");
   const scope = searchParams.get("scope");
@@ -32,12 +30,6 @@ export async function GET(req: NextRequest) {
       scopeId: { in: session.user.accessibleBrandIds },
     });
   }
-
-  const where: Record<string, unknown> = {
-    OR: scopeFilters,
-    // Don't show expired announcements
-    OR2: undefined,
-  };
 
   // Filter by expiration
   const baseWhere: Record<string, unknown> = {
@@ -101,12 +93,9 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json(result);
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR", "DEPT_HEAD"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -150,4 +139,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(announcement, { status: 201 });
-}
+});

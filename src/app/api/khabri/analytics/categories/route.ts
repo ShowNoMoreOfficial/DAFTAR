@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
 import { getCategoryDistribution } from "@/lib/khabri";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const hours = Number(req.nextUrl.searchParams.get("hours")) || 24;
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
 
@@ -51,4 +48,4 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to fetch category distribution";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});

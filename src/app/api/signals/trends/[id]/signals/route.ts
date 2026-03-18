@@ -1,16 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, notFound } from "@/lib/api-utils";
+import { badRequest, notFound } from "@/lib/api-utils";
 
 // POST /api/signals/trends/:id/signals — Add signal to trend
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id: trendId } = await params;
+export const POST = apiHandler(async (req: NextRequest, { params }) => {
+  const { id: trendId } = params;
 
   // Verify trend exists
   const trend = await prisma.trend.findUnique({ where: { id: trendId } });
@@ -59,4 +54,4 @@ export async function POST(
   });
 
   return NextResponse.json({ data: signal }, { status: 201 });
-}
+});

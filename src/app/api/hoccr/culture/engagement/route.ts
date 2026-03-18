@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 function getCurrentPeriod(): string {
   const now = new Date();
@@ -9,10 +9,7 @@ function getCurrentPeriod(): string {
   return `${year}-${month}`;
 }
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR", "DEPT_HEAD"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -104,12 +101,9 @@ export async function GET(req: NextRequest) {
       user: userMap[m.userId] || { id: m.userId, name: "Unknown" },
     })),
   });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (_req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -210,4 +204,4 @@ export async function POST(req: NextRequest) {
     computed: results.length,
     message: `Engagement metrics computed for ${results.length} users.`,
   });
-}
+});

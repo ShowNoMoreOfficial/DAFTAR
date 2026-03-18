@@ -17,12 +17,20 @@ interface ConversationMessage {
 }
 
 export async function POST(req: NextRequest) {
+  try {
   const session = await getAuthSession();
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  const { message, context } = await req.json();
+  let body: { message?: string; context?: Record<string, string> };
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
+  }
+
+  const { message, context } = body;
   if (!message?.trim()) {
     return new Response(JSON.stringify({ error: "Message is required" }), { status: 400 });
   }
@@ -206,4 +214,11 @@ export async function POST(req: NextRequest) {
       Connection: "keep-alive",
     },
   });
+  } catch (err) {
+    console.error("[GI Chat] Unexpected error:", err);
+    return new Response(
+      JSON.stringify({ error: "An internal error occurred" }),
+      { status: 500 },
+    );
+  }
 }

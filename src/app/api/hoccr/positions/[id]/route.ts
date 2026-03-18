@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { notFound } from "@/lib/api-utils";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { session, params }) => {
+  const { id } = params;
 
   const position = await prisma.hiringPosition.findUnique({
     where: { id },
@@ -23,16 +18,10 @@ export async function GET(
 
   if (!position) return notFound("Position not found");
   return NextResponse.json(position);
-}
+});
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { id } = params;
   const body = await req.json();
 
   const position = await prisma.hiringPosition.update({
@@ -42,4 +31,4 @@ export async function PATCH(
   });
 
   return NextResponse.json(position);
-}
+});

@@ -1,12 +1,9 @@
-import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
 import { getTrendingAnomalies } from "@/lib/khabri";
 
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest) => {
   // Try local: detect trending anomalies from trends with velocity spikes
   try {
     const trends = await prisma.trend.findMany({
@@ -45,4 +42,4 @@ export async function GET() {
     const message = err instanceof Error ? err.message : "Failed to fetch trending anomalies";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});

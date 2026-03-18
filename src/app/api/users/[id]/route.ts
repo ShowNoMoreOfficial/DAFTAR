@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, notFound, handleApiError } from "@/lib/api-utils";
+import { forbidden, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/users/:id
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req, { session, params }) => {
+  const { id } = params;
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
@@ -22,56 +17,38 @@ export async function GET(
 
   if (!user) return notFound("User not found");
   return NextResponse.json(user);
-}
+});
 
 // PATCH /api/users/:id — Update user (Admin only)
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const PATCH = apiHandler(async (req, { session, params }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
-  try {
-    const { id } = await params;
-    const body = await req.json();
-    const { name, role, primaryDeptId, isActive } = body;
+  const { id } = params;
+  const body = await req.json();
+  const { name, role, primaryDeptId, isActive } = body;
 
-    const user = await prisma.user.update({
-      where: { id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(role !== undefined && { role }),
-        ...(primaryDeptId !== undefined && { primaryDeptId }),
-        ...(isActive !== undefined && { isActive }),
-      },
-    });
+  const user = await prisma.user.update({
+    where: { id },
+    data: {
+      ...(name !== undefined && { name }),
+      ...(role !== undefined && { role }),
+      ...(primaryDeptId !== undefined && { primaryDeptId }),
+      ...(isActive !== undefined && { isActive }),
+    },
+  });
 
-    return NextResponse.json(user);
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+  return NextResponse.json(user);
+});
 
 // DELETE /api/users/:id — Deactivate user (Admin only)
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const DELETE = apiHandler(async (_req, { session, params }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
-  try {
-    const { id } = await params;
-    const user = await prisma.user.update({
-      where: { id },
-      data: { isActive: false },
-    });
+  const { id } = params;
+  const user = await prisma.user.update({
+    where: { id },
+    data: { isActive: false },
+  });
 
-    return NextResponse.json(user);
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+  return NextResponse.json(user);
+});

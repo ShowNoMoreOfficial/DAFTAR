@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/yantri/narratives — List all narrative trees with counts
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const status = searchParams.get("status");
   const limit = parseInt(searchParams.get("limit") || "50");
@@ -38,13 +35,10 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(trees);
-}
+});
 
 // POST /api/yantri/narratives — Create a narrative tree from a signal
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const body = await req.json();
   const { title, summary, signalId, signalData, urgency } = body;
 
@@ -65,4 +59,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(tree, { status: 201 });
-}
+});

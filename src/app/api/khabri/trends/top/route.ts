@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
 import { getTopTrends } from "@/lib/khabri";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const limit = Number(req.nextUrl.searchParams.get("limit")) || 10;
 
   // Try local DB first
@@ -47,4 +44,4 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to fetch top trends";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});

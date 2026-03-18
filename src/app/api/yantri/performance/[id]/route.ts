@@ -1,20 +1,13 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-
-type RouteContext = { params: Promise<{ id: string }> };
+import { apiHandler } from "@/lib/api-handler";
 
 // ---------------------------------------------------------------------------
 // GET /api/yantri/performance/[id]
 // Fetch a single performance record by ID.
 // ---------------------------------------------------------------------------
-export async function GET(_request: Request, { params }: RouteContext) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
+export const GET = apiHandler(async (_request, { params }) => {
+  const { id } = params;
 
   const record = await prisma.performanceData.findUnique({ where: { id } });
   if (!record) {
@@ -25,7 +18,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
   }
 
   return NextResponse.json(record);
-}
+});
 
 // ---------------------------------------------------------------------------
 // PUT /api/yantri/performance/[id]
@@ -40,13 +33,8 @@ const VALID_CONTENT_TYPES = new Set([
   "reel",
 ]);
 
-export async function PUT(request: Request, { params }: RouteContext) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
+export const PUT = apiHandler(async (request, { params }) => {
+  const { id } = params;
 
   const existing = await prisma.performanceData.findUnique({ where: { id } });
   if (!existing) {
@@ -172,19 +160,14 @@ export async function PUT(request: Request, { params }: RouteContext) {
   });
 
   return NextResponse.json(updated);
-}
+});
 
 // ---------------------------------------------------------------------------
 // DELETE /api/yantri/performance/[id]
 // Delete a performance record by ID.
 // ---------------------------------------------------------------------------
-export async function DELETE(_request: Request, { params }: RouteContext) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
+export const DELETE = apiHandler(async (_request, { params }) => {
+  const { id } = params;
 
   const existing = await prisma.performanceData.findUnique({ where: { id } });
   if (!existing) {
@@ -197,4 +180,4 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   await prisma.performanceData.delete({ where: { id } });
 
   return NextResponse.json({ ok: true });
-}
+});

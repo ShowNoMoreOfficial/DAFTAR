@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { badRequest } from "@/lib/api-utils";
 
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   const rewards = await prisma.variableReward.findMany({
     where: {
       userId: session.user.id,
@@ -20,13 +18,9 @@ export async function GET() {
   });
 
   return NextResponse.json(rewards);
-}
+});
 
-export async function PATCH(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  try {
+export const PATCH = apiHandler(async (req: NextRequest, { session }) => {
   const { rewardId } = await req.json();
   if (!rewardId) return badRequest("rewardId is required");
 
@@ -64,7 +58,4 @@ export async function PATCH(req: NextRequest) {
   }
 
   return NextResponse.json(updated);
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+});

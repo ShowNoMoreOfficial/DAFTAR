@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { callGeminiResearch } from "@/lib/yantri/gemini";
 import { buildResearchPrompt } from "@/lib/yantri/prompts";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function POST(request: Request) {
-  const session = await getAuthSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = apiHandler(async (request) => {
   const { narrativeId } = await request.json();
 
   const narrative = await prisma.editorialNarrative.findUnique({
@@ -96,4 +93,4 @@ export async function POST(request: Request) {
       Connection: "keep-alive",
     },
   });
-}
+});

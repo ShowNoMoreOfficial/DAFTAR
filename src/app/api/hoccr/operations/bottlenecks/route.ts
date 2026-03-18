@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -28,12 +25,9 @@ export async function GET(req: NextRequest) {
   bottlenecks.sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9));
 
   return NextResponse.json(bottlenecks);
-}
+});
 
-export async function POST() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (_req, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -217,4 +211,4 @@ export async function POST() {
   allActive.sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9));
 
   return NextResponse.json({ newlyDetected: detected.length, bottlenecks: allActive });
-}
+});

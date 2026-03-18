@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ContentPlatform, ContentPipelineStatus } from "@prisma/client";
+import { apiHandler } from "@/lib/api-handler";
 
 const VALID_PLATFORMS = new Set<string>(Object.values(ContentPlatform));
 const VALID_STATUSES = new Set<string>(Object.values(ContentPipelineStatus));
@@ -10,7 +11,7 @@ const VALID_STATUSES = new Set<string>(Object.values(ContentPipelineStatus));
 // List content pieces with optional filters and pagination.
 // Query params: status, platform, brandId, treeId, limit
 // ---------------------------------------------------------------------------
-export async function GET(request: Request) {
+export const GET = apiHandler(async (request) => {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const platform = searchParams.get("platform");
@@ -58,14 +59,14 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json(contentPieces);
-}
+});
 
 // ---------------------------------------------------------------------------
 // POST /api/yantri/content-pieces
 // Create a new content piece. Default status: PLANNED.
 // Body: { brandId, platform, bodyText, treeId?, postingPlan?, visualPrompts? }
 // ---------------------------------------------------------------------------
-export async function POST(request: Request) {
+export const POST = apiHandler(async (request) => {
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -121,4 +122,4 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(contentPiece, { status: 201 });
-}
+});

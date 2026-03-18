@@ -1,11 +1,10 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function PATCH(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+export const PATCH = apiHandler(async (req: NextRequest, { session }) => {
+  if (session.user.role !== "ADMIN") {
+    return Response.json({ error: "Admin access required" }, { status: 403 });
   }
 
   const body = await req.json();
@@ -20,14 +19,9 @@ export async function PATCH(req: NextRequest) {
   });
 
   return Response.json(updated);
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const body = await req.json();
 
   const feedback = await prisma.teamFeedback.create({
@@ -47,12 +41,11 @@ export async function POST(req: NextRequest) {
   });
 
   return Response.json({ id: feedback.id, status: "received" });
-}
+});
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = apiHandler(async (_req, { session }) => {
+  if (session.user.role !== "ADMIN") {
+    return Response.json({ error: "Admin access required" }, { status: 403 });
   }
 
   const feedbacks = await prisma.teamFeedback.findMany({
@@ -62,4 +55,4 @@ export async function GET() {
   });
 
   return Response.json(feedbacks);
-}
+});

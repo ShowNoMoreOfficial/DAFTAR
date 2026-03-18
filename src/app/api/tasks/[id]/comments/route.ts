@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, handleApiError } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { badRequest } from "@/lib/api-utils";
 import { notifyTaskComment } from "@/lib/notifications";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  try {
-  const { id } = await params;
+export const POST = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { id } = params;
   const { content } = await req.json();
 
   if (!content?.trim()) return badRequest("Comment content is required");
@@ -52,7 +46,4 @@ export async function POST(
   }
 
   return NextResponse.json(comment, { status: 201 });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+});

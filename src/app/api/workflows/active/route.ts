@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/workflows/active — List active strategy tests and recent executions
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async () => {
   const [activeTests, recentExecutions] = await Promise.all([
     prisma.strategyTest.findMany({
       where: { status: "active" },
@@ -32,4 +29,4 @@ export async function GET() {
       executedAt: e.executedAt,
     })),
   });
-}
+});

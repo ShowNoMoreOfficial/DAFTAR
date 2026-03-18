@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { NarrativeStatus } from "@prisma/client";
+import { apiHandler } from "@/lib/api-handler";
 
 const VALID_STATUSES = new Set<string>(Object.values(NarrativeStatus));
 
@@ -8,11 +9,8 @@ const VALID_STATUSES = new Set<string>(Object.values(NarrativeStatus));
 // GET /api/yantri/narrative-trees/[treeId]
 // Return a single tree with all nodes, dossier, and linked content pieces.
 // ---------------------------------------------------------------------------
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ treeId: string }> },
-) {
-  const { treeId } = await params;
+export const GET = apiHandler(async (_request, { params }) => {
+  const { treeId } = params;
 
   const tree = await prisma.narrativeTree.findUnique({
     where: { id: treeId },
@@ -34,18 +32,15 @@ export async function GET(
   });
 
   return NextResponse.json({ ...tree, contentPieces });
-}
+});
 
 // ---------------------------------------------------------------------------
 // PUT /api/yantri/narrative-trees/[treeId]
 // Update tree status and/or summary.
 // Body: { status?, summary? }
 // ---------------------------------------------------------------------------
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ treeId: string }> },
-) {
-  const { treeId } = await params;
+export const PUT = apiHandler(async (request, { params }) => {
+  const { treeId } = params;
 
   let body: Record<string, unknown>;
   try {
@@ -86,17 +81,14 @@ export async function PUT(
   });
 
   return NextResponse.json(updated);
-}
+});
 
 // ---------------------------------------------------------------------------
 // DELETE /api/yantri/narrative-trees/[treeId]
 // Delete tree and cascading nodes/dossier (handled by Prisma onDelete: Cascade).
 // ---------------------------------------------------------------------------
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ treeId: string }> },
-) {
-  const { treeId } = await params;
+export const DELETE = apiHandler(async (_request, { params }) => {
+  const { treeId } = params;
 
   const existing = await prisma.narrativeTree.findUnique({ where: { id: treeId } });
   if (!existing) {
@@ -112,4 +104,4 @@ export async function DELETE(
   await prisma.narrativeTree.delete({ where: { id: treeId } });
 
   return NextResponse.json({ ok: true });
-}
+});

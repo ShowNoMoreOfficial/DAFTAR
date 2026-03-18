@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
 import { getSignalVolume } from "@/lib/khabri";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const hours = Number(searchParams.get("hours")) || 24;
   const interval = (searchParams.get("interval") || "hour") as "hour" | "day";
@@ -57,4 +54,4 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to fetch signal volume";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});

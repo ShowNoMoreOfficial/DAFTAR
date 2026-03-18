@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getAuthSession,
-  unauthorized,
-  forbidden,
-  badRequest,
-} from "@/lib/api-utils";
+import { forbidden, badRequest } from "@/lib/api-utils";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/skills/execute — Execute a skill or skill chain (for testing)
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
   const body = await req.json();
@@ -42,4 +36,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(result);
-}
+});

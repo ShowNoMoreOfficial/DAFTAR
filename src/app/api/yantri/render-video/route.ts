@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import {
   generateEditorialVideoSpecs,
@@ -10,6 +9,7 @@ import {
   generateBreakingBannerSpec,
   type VideoProjectSpec,
 } from "@/lib/video-generator";
+import { apiHandler } from "@/lib/api-handler";
 
 /**
  * POST /api/yantri/render-video
@@ -21,132 +21,119 @@ import {
  * Returns a VideoProjectSpec with Remotion render commands the team can execute locally.
  * Remotion rendering is CPU-intensive; this API generates the project spec, not the video.
  */
-export async function POST(request: Request) {
-  try {
-    const session = await getAuthSession();
-    if (!session)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = apiHandler(async (request) => {
+  const body = await request.json();
 
-    const body = await request.json();
+  // ─── Mode 1: Generate from deliverable ───
+  if (body.deliverableId) {
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: body.deliverableId },
+      include: { brand: true, assets: true },
+    });
 
-    // ─── Mode 1: Generate from deliverable ───
-    if (body.deliverableId) {
-      const deliverable = await prisma.deliverable.findUnique({
-        where: { id: body.deliverableId },
-        include: { brand: true, assets: true },
-      });
+    if (!deliverable) {
+      return NextResponse.json(
+        { error: "Deliverable not found" },
+        { status: 404 },
+      );
+    }
 
-      if (!deliverable) {
-        return NextResponse.json(
-          { error: "Deliverable not found" },
-          { status: 404 },
-        );
-      }
+    // Parse structured data
+    const scriptData =
+      typeof deliverable.scriptData === "string"
+        ? JSON.parse(deliverable.scriptData)
+        : deliverable.scriptData;
+    const postingPlan =
+      typeof deliverable.postingPlan === "string"
+        ? JSON.parse(deliverable.postingPlan)
+        : deliverable.postingPlan;
 
-      // Parse structured data
-      const scriptData =
-        typeof deliverable.scriptData === "string"
-          ? JSON.parse(deliverable.scriptData)
-          : deliverable.scriptData;
-      const postingPlan =
-        typeof deliverable.postingPlan === "string"
-          ? JSON.parse(deliverable.postingPlan)
-          : deliverable.postingPlan;
+    const spec = generateEditorialVideoSpecs({
+      deliverableId: deliverable.id,
+      brandName: deliverable.brand.name,
+      platform: deliverable.platform,
+      visualAnchors: postingPlan?.visualAnchors,
+      keyStakeholders: postingPlan?.keyStakeholders,
+      eventMarkers: postingPlan?.eventMarkers,
+      animationBriefs: postingPlan?.animationBriefs,
+      scriptSections:
+        scriptData?.script?.sections ?? scriptData?.sections,
+    });
 
-      const spec = generateEditorialVideoSpecs({
+    // Store the video spec as a VIDEO_CLIP asset on the deliverable
+    await prisma.asset.create({
+      data: {
         deliverableId: deliverable.id,
-        brandName: deliverable.brand.name,
-        platform: deliverable.platform,
-        visualAnchors: postingPlan?.visualAnchors,
-        keyStakeholders: postingPlan?.keyStakeholders,
-        eventMarkers: postingPlan?.eventMarkers,
-        animationBriefs: postingPlan?.animationBriefs,
-        scriptSections:
-          scriptData?.script?.sections ?? scriptData?.sections,
-      });
-
-      // Store the video spec as a VIDEO_CLIP asset on the deliverable
-      await prisma.asset.create({
-        data: {
-          deliverableId: deliverable.id,
-          type: "VIDEO_CLIP",
-          url: "",
-          metadata: {
-            type: "remotion-project-spec",
-            compositionCount: spec.compositions.length,
-            compositions: spec.compositions.map((c) => ({
-              id: c.compositionId,
-              output: c.outputFilename,
-              duration: c.durationInFrames / c.fps,
-            })),
-            renderAllCommand: spec.renderAllCommand,
-          },
+        type: "VIDEO_CLIP",
+        url: "",
+        metadata: {
+          type: "remotion-project-spec",
+          compositionCount: spec.compositions.length,
+          compositions: spec.compositions.map((c) => ({
+            id: c.compositionId,
+            output: c.outputFilename,
+            duration: c.durationInFrames / c.fps,
+          })),
+          renderAllCommand: spec.renderAllCommand,
         },
-      });
-
-      return NextResponse.json({
-        success: true,
-        spec,
-        message: `Generated ${spec.compositions.length} Remotion composition specs. Use the render commands to generate videos locally.`,
-      });
-    }
-
-    // ─── Mode 2: Single composition spec ───
-    if (body.compositionId && body.inputProps) {
-      const { compositionId, inputProps } = body;
-      let spec: VideoProjectSpec;
-
-      const compositionMap: Record<
-        string,
-        () => ReturnType<typeof generateDataCardSpec>
-      > = {
-        DataCard: () => generateDataCardSpec(inputProps, 0, false),
-        "DataCard-Vertical": () => generateDataCardSpec(inputProps, 0, true),
-        StakeholderCard: () => generateStakeholderCardSpec(inputProps, 0),
-        TimelineAnimation: () => generateTimelineSpec(inputProps),
-        InfographicSlide: () => generateInfographicSpec(inputProps, 0),
-        BreakingBanner: () => generateBreakingBannerSpec(inputProps, false),
-        "BreakingBanner-Vertical": () =>
-          generateBreakingBannerSpec(inputProps, true),
-      };
-
-      const builder = compositionMap[compositionId];
-      if (!builder) {
-        return NextResponse.json(
-          {
-            error: `Unknown composition: ${compositionId}`,
-            available: Object.keys(compositionMap),
-          },
-          { status: 400 },
-        );
-      }
-
-      const composition = builder();
-      spec = {
-        deliverableId: body.deliverableId ?? "standalone",
-        brandName: body.brandName ?? "DAFTAR",
-        platform: body.platform ?? "YOUTUBE",
-        compositions: [composition],
-        renderAllCommand: composition.renderCommand,
-        createdAt: new Date().toISOString(),
-      };
-
-      return NextResponse.json({ success: true, spec });
-    }
-
-    return NextResponse.json(
-      {
-        error:
-          "Provide either { deliverableId } or { compositionId, inputProps }",
       },
-      { status: 400 },
-    );
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[render-video] Error:", message);
-    return NextResponse.json(
-      { error: `Video spec generation failed: ${message}` },
-      { status: 500 },
-    );
+    });
+
+    return NextResponse.json({
+      success: true,
+      spec,
+      message: `Generated ${spec.compositions.length} Remotion composition specs. Use the render commands to generate videos locally.`,
+    });
   }
-}
+
+  // ─── Mode 2: Single composition spec ───
+  if (body.compositionId && body.inputProps) {
+    const { compositionId, inputProps } = body;
+    let spec: VideoProjectSpec;
+
+    const compositionMap: Record<
+      string,
+      () => ReturnType<typeof generateDataCardSpec>
+    > = {
+      DataCard: () => generateDataCardSpec(inputProps, 0, false),
+      "DataCard-Vertical": () => generateDataCardSpec(inputProps, 0, true),
+      StakeholderCard: () => generateStakeholderCardSpec(inputProps, 0),
+      TimelineAnimation: () => generateTimelineSpec(inputProps),
+      InfographicSlide: () => generateInfographicSpec(inputProps, 0),
+      BreakingBanner: () => generateBreakingBannerSpec(inputProps, false),
+      "BreakingBanner-Vertical": () =>
+        generateBreakingBannerSpec(inputProps, true),
+    };
+
+    const builder = compositionMap[compositionId];
+    if (!builder) {
+      return NextResponse.json(
+        {
+          error: `Unknown composition: ${compositionId}`,
+          available: Object.keys(compositionMap),
+        },
+        { status: 400 },
+      );
+    }
+
+    const composition = builder();
+    spec = {
+      deliverableId: body.deliverableId ?? "standalone",
+      brandName: body.brandName ?? "DAFTAR",
+      platform: body.platform ?? "YOUTUBE",
+      compositions: [composition],
+      renderAllCommand: composition.renderCommand,
+      createdAt: new Date().toISOString(),
+    };
+
+    return NextResponse.json({ success: true, spec });
+  }
+
+  return NextResponse.json(
+    {
+      error:
+        "Provide either { deliverableId } or { compositionId, inputProps }",
+    },
+    { status: 400 },
+  );
+});

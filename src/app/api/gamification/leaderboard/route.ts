@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { getLeaderboard } from "@/lib/gamification";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const departmentId = searchParams.get("departmentId");
 
@@ -41,4 +38,4 @@ export async function GET(req: NextRequest) {
 
   const leaderboard = await getLeaderboard(20);
   return NextResponse.json(leaderboard);
-}
+});

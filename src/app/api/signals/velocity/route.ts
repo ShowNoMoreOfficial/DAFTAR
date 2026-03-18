@@ -1,12 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
 
 // GET /api/signals/velocity — Real-time velocity rankings
-export async function GET(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const hours = Math.min(72, parseInt(searchParams.get("hours") ?? "24"));
   const limit = Math.min(50, parseInt(searchParams.get("limit") ?? "20"));
@@ -83,4 +80,4 @@ export async function GET(req: Request) {
     data: velocityRankings,
     meta: { hours, since: since.toISOString(), measuredAt: new Date().toISOString() },
   });
-}
+});

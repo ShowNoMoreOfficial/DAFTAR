@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { forbidden } from "@/lib/api-utils";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/skills/performance — Skill performance leaderboard
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   if (!["ADMIN", "DEPT_HEAD"].includes(session.user.role)) return forbidden();
 
   const { searchParams } = new URL(req.url);
@@ -20,4 +19,4 @@ export async function GET(req: NextRequest) {
     performance,
     total: performance.length,
   });
-}
+});

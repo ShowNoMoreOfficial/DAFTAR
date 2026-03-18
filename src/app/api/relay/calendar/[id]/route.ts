@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound } from "@/lib/api-utils";
+import { notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 
 // PATCH /api/relay/calendar/[id] — Update a calendar entry
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   const existing = await prisma.contentCalendarEntry.findUnique({ where: { id } });
   if (!existing) return notFound("Calendar entry not found");
@@ -45,21 +40,15 @@ export async function PATCH(
   });
 
   return NextResponse.json(entry);
-}
+});
 
 // DELETE /api/relay/calendar/[id] — Delete a calendar entry
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const DELETE = apiHandler(async (_req: NextRequest, { session, params }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   const existing = await prisma.contentCalendarEntry.findUnique({ where: { id } });
   if (!existing) return notFound("Calendar entry not found");
@@ -72,4 +61,4 @@ export async function DELETE(
   await prisma.contentCalendarEntry.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
-}
+});

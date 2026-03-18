@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
 import { getPresignedUploadUrl } from "@/lib/storage/s3-client";
+import { apiHandler } from "@/lib/api-handler";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -23,10 +24,7 @@ const ALLOWED_TYPES = new Set([
  * Body: { filename: string, contentType: string, size: number, folder?: string }
  * Returns: { key, url, publicUrl }
  */
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { filename, contentType, size, folder } = body;
 
@@ -49,4 +47,4 @@ export async function POST(req: NextRequest) {
   );
 
   return NextResponse.json(result);
-}
+});

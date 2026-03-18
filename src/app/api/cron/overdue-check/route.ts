@@ -1,17 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { checkOverdueTasks } from "@/lib/notifications";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/cron/overdue-check
 // Call via external cron service (e.g., Vercel Cron, GitHub Actions)
-// Protect with a shared secret in production
-export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = apiHandler(async () => {
   const result = await checkOverdueTasks();
 
   return NextResponse.json({
@@ -19,4 +12,4 @@ export async function GET(req: NextRequest) {
     ...result,
     timestamp: new Date().toISOString(),
   });
-}
+}, { requireCronSecret: true });

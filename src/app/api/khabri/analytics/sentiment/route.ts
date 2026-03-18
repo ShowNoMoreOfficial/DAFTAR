@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
 import { getSentimentAnalysis } from "@/lib/khabri";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const hours = Number(searchParams.get("hours")) || 24;
   const interval = (searchParams.get("interval") || "hour") as "hour" | "day";
@@ -43,13 +41,10 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to fetch sentiment analysis";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});
 
 // PATCH — Update sentiment for a specific signal (editorial override)
-export async function PATCH(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const PATCH = apiHandler(async (req: NextRequest) => {
   const { signalId, sentiment } = await req.json();
   if (!signalId) return badRequest("signalId is required");
   if (!sentiment || !["positive", "negative", "neutral", "mixed"].includes(sentiment)) {
@@ -63,4 +58,4 @@ export async function PATCH(req: NextRequest) {
   });
 
   return NextResponse.json(updated);
-}
+});

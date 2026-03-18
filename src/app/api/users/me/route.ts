@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/users/me — Current user profile
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
@@ -17,13 +14,10 @@ export async function GET() {
   });
 
   return NextResponse.json(user);
-}
+});
 
 // PATCH /api/users/me — Update current user profile
-export async function PATCH(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const PATCH = apiHandler(async (req, { session }) => {
   const body = await req.json();
   const { name } = body as { name?: string };
 
@@ -40,4 +34,4 @@ export async function PATCH(req: Request) {
   });
 
   return NextResponse.json(user);
-}
+});

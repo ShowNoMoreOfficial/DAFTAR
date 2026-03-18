@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, notFound } from "@/lib/api-utils";
+import { forbidden, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/communication/announcements/[id] — single announcement with full details
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { session, params }) => {
+  const { id } = params;
 
   const announcement = await prisma.announcement.findUnique({
     where: { id },
@@ -33,17 +28,11 @@ export async function GET(
     _count: undefined,
     readBy: undefined,
   });
-}
+});
 
 // PATCH /api/communication/announcements/[id] — update announcement (author or ADMIN only)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { id } = params;
 
   const announcement = await prisma.announcement.findUnique({
     where: { id },
@@ -71,17 +60,11 @@ export async function PATCH(
   });
 
   return NextResponse.json(updated);
-}
+});
 
 // DELETE /api/communication/announcements/[id] — delete announcement (author or ADMIN only)
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const DELETE = apiHandler(async (_req: NextRequest, { session, params }) => {
+  const { id } = params;
 
   const announcement = await prisma.announcement.findUnique({
     where: { id },
@@ -96,4 +79,4 @@ export async function DELETE(
   await prisma.announcement.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
-}
+});

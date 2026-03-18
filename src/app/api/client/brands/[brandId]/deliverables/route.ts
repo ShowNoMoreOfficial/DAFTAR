@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, notFound, badRequest } from "@/lib/api-utils";
+import { forbidden, notFound, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/client/brands/[brandId]/deliverables
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ brandId: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { brandId } = await params;
+export const GET = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { brandId } = params;
 
   // Verify brand ownership
   const brand = await prisma.brand.findUnique({
@@ -41,22 +36,16 @@ export async function GET(
   });
 
   return NextResponse.json(deliverables);
-}
+});
 
 // POST /api/client/brands/[brandId]/deliverables
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ brandId: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session, params }) => {
   // Only ADMIN or internal team roles can push deliverables to clients
   if (!["ADMIN", "DEPT_HEAD", "MEMBER"].includes(session.user.role)) {
     return forbidden();
   }
 
-  const { brandId } = await params;
+  const { brandId } = params;
 
   const brand = await prisma.brand.findUnique({
     where: { id: brandId },
@@ -88,4 +77,4 @@ export async function POST(
   });
 
   return NextResponse.json(deliverable, { status: 201 });
-}
+});

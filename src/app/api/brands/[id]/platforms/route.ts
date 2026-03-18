@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest, notFound } from "@/lib/api-utils";
+import { forbidden, badRequest, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/brands/:id/platforms — Add platform to brand
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const POST = apiHandler(async (req: NextRequest, { session, params }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
-  const { id } = await params;
+  const { id } = params;
   const body = await req.json();
   const { platform, config } = body;
 
@@ -42,4 +38,4 @@ export async function POST(
   });
 
   return NextResponse.json(brandPlatform, { status: 201 });
-}
+});

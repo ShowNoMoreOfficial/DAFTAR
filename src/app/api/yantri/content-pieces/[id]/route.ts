@@ -1,19 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ContentPlatform, ContentPipelineStatus } from "@prisma/client";
+import { apiHandler } from "@/lib/api-handler";
 
 const VALID_PLATFORMS = new Set<string>(Object.values(ContentPlatform));
 const VALID_STATUSES = new Set<string>(Object.values(ContentPipelineStatus));
 const DELETABLE_STATUSES = new Set<string>(["PLANNED", "KILLED"]);
 
-type RouteContext = { params: Promise<{ id: string }> };
-
 // ---------------------------------------------------------------------------
 // GET /api/yantri/content-pieces/[id]
 // Fetch a single content piece with its brand relation.
 // ---------------------------------------------------------------------------
-export async function GET(_request: Request, { params }: RouteContext) {
-  const { id } = await params;
+export const GET = apiHandler(async (_request, { params }) => {
+  const { id } = params;
 
   const contentPiece = await prisma.contentPiece.findUnique({
     where: { id },
@@ -25,7 +24,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
   }
 
   return NextResponse.json(contentPiece);
-}
+});
 
 // ---------------------------------------------------------------------------
 // PUT /api/yantri/content-pieces/[id]
@@ -34,8 +33,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
 //   - PUBLISHED -> sets publishedAt
 //   - Any status change -> creates an EditorialLog entry
 // ---------------------------------------------------------------------------
-export async function PUT(request: Request, { params }: RouteContext) {
-  const { id } = await params;
+export const PUT = apiHandler(async (request, { params }) => {
+  const { id } = params;
 
   // Verify the content piece exists (and grab current state for comparison)
   const existing = await prisma.contentPiece.findUnique({
@@ -143,14 +142,14 @@ export async function PUT(request: Request, { params }: RouteContext) {
   }
 
   return NextResponse.json(updated);
-}
+});
 
 // ---------------------------------------------------------------------------
 // DELETE /api/yantri/content-pieces/[id]
 // Delete a content piece. Only allowed when status is PLANNED or KILLED.
 // ---------------------------------------------------------------------------
-export async function DELETE(_request: Request, { params }: RouteContext) {
-  const { id } = await params;
+export const DELETE = apiHandler(async (_request, { params }) => {
+  const { id } = params;
 
   const existing = await prisma.contentPiece.findUnique({ where: { id } });
   if (!existing) {
@@ -169,4 +168,4 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   await prisma.contentPiece.delete({ where: { id } });
 
   return NextResponse.json({ ok: true });
-}
+});

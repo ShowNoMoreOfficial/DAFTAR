@@ -1,15 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
 import { daftarEvents } from "@/lib/event-bus";
 
 // POST /api/signals/ingest — Ingest a signal from Khabri external API or manual input
 // This stores the signal locally in Daftar's DB and runs skill-based enrichment
-export async function POST(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const body = await req.json();
   const { title, content, source, trendId, trendName, eventType, geoRelevance } = body;
 
@@ -106,4 +104,4 @@ export async function POST(req: Request) {
       },
     },
   }, { status: 201 });
-}
+});

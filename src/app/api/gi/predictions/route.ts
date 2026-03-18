@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { generateInsights } from "@/lib/gi-engine";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR", "DEPT_HEAD"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -67,50 +64,42 @@ export async function GET(req: NextRequest) {
     })(),
     predictionTypes: [...new Set(predictions.map((p) => p.type))],
     methodology: {
-      deadline_risk: "Compares estimated hours (historical pace × difficulty weight) against remaining time before deadline.",
+      deadline_risk: "Compares estimated hours (historical pace x difficulty weight) against remaining time before deadline.",
       capacity_crunch: "Counts tasks due next week vs. 4-week average throughput; alerts when upcoming load exceeds 150% of average.",
       burnout_risk: "Flags team members with 10+ active tasks, sentiment below 2.5, and declining quality scores.",
     },
   };
 
   return NextResponse.json({ predictions, stats });
-}
+});
 
 // POST /api/gi/predictions — Trigger fresh prediction generation
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR", "DEPT_HEAD"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  try {
-    const insights = await generateInsights(session.user.id, {
-      module: "dashboard",
-      view: "predictions",
-      entityId: null,
-      userRole: session.user.role,
-    });
+  const insights = await generateInsights(session.user.id, {
+    module: "dashboard",
+    view: "predictions",
+    entityId: null,
+    userRole: session.user.role,
+  });
 
-    // Count new predictions generated in this run
-    const recentPredictions = await prisma.gIPrediction.findMany({
-      where: {
-        isActive: true,
-        createdAt: { gte: new Date(Date.now() - 60 * 1000) }, // last 60 seconds
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  // Count new predictions generated in this run
+  const recentPredictions = await prisma.gIPrediction.findMany({
+    where: {
+      isActive: true,
+      createdAt: { gte: new Date(Date.now() - 60 * 1000) }, // last 60 seconds
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-    return NextResponse.json({
-      generated: true,
-      insightsCount: insights.length,
-      newPredictions: recentPredictions.length,
-      predictions: recentPredictions,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to generate predictions";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+  return NextResponse.json({
+    generated: true,
+    insightsCount: insights.length,
+    newPredictions: recentPredictions.length,
+    predictions: recentPredictions,
+  });
+});

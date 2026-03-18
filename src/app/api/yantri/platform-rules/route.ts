@@ -1,25 +1,15 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = apiHandler(async () => {
   const rules = await prisma.platformRule.findMany({
     orderBy: { narrativeType: "asc" },
   });
   return NextResponse.json(rules);
-}
+});
 
-export async function POST(request: Request) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = apiHandler(async (request) => {
   const body = await request.json();
   const rule = await prisma.platformRule.create({
     data: {
@@ -33,4 +23,4 @@ export async function POST(request: Request) {
     },
   });
   return NextResponse.json(rule, { status: 201 });
-}
+});

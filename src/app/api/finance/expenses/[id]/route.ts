@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, notFound } from "@/lib/api-utils";
+import { forbidden, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest, { session, params }) => {
   const { role, primaryDepartmentId } = session.user;
   if (!["ADMIN", "FINANCE", "DEPT_HEAD"].includes(role)) return forbidden();
 
-  const { id } = await params;
+  const { id } = params;
 
   const expense = await prisma.expense.findUnique({
     where: { id },
@@ -29,17 +24,12 @@ export async function GET(
   }
 
   return NextResponse.json(expense);
-}
+});
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
   if (!["ADMIN", "FINANCE", "DEPT_HEAD"].includes(session.user.role)) return forbidden();
 
-  const { id } = await params;
+  const { id } = params;
   const existing = await prisma.expense.findUnique({ where: { id } });
   if (!existing) return notFound("Expense not found");
 
@@ -79,20 +69,15 @@ export async function PATCH(
   });
 
   return NextResponse.json(expense);
-}
+});
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const DELETE = apiHandler(async (_req: NextRequest, { session, params }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
-  const { id } = await params;
+  const { id } = params;
   const expense = await prisma.expense.findUnique({ where: { id } });
   if (!expense) return notFound("Expense not found");
 
   await prisma.expense.delete({ where: { id } });
   return NextResponse.json({ success: true });
-}
+});

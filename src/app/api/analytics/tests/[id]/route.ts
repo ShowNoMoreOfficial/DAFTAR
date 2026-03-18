@@ -1,31 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound } from "@/lib/api-utils";
+import { notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/analytics/tests/:id — Get test detail
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { params }) => {
+  const { id } = params;
   const test = await prisma.strategyTest.findUnique({ where: { id } });
   if (!test) return notFound("Strategy test not found");
 
   return NextResponse.json(test);
-}
+});
 
 // PATCH /api/analytics/tests/:id — Update test (results, conclusion, status)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const PATCH = apiHandler(async (req: NextRequest, { params }) => {
+  const { id } = params;
   const body = await req.json();
 
   const test = await prisma.strategyTest.findUnique({ where: { id } });
@@ -42,4 +31,4 @@ export async function PATCH(
   });
 
   return NextResponse.json(updated);
-}
+});

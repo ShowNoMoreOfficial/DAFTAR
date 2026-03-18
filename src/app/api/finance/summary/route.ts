@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   if (!["ADMIN", "FINANCE"].includes(session.user.role)) return forbidden();
 
   const { searchParams } = req.nextUrl;
@@ -63,4 +62,4 @@ export async function GET(req: NextRequest) {
     monthlyTrend,
     period: { days, since: since.toISOString() },
   });
-}
+});

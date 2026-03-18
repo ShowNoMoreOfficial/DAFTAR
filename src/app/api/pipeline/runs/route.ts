@@ -1,11 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
 
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest) => {
   const trees = await prisma.narrativeTree.findMany({
     where: { status: { in: ["INCOMING", "EVALUATING", "APPROVED", "IN_PRODUCTION"] } },
     include: {
@@ -28,4 +25,4 @@ export async function GET() {
     deliverables: t.narratives.length,
     platforms: [...new Set(t.narratives.map((n) => n.platform))],
   })));
-}
+});

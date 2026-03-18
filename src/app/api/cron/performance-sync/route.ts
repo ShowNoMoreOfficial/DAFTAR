@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fetchPlatformMetrics } from "@/lib/relay/analytics-fetchers";
 import {
@@ -7,6 +7,7 @@ import {
 } from "@/lib/learning/evaluator";
 import { updateSkillLearningLogs } from "@/lib/learning/performance-feedback";
 import { daftarEvents } from "@/lib/event-bus";
+import { apiHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/cron/performance-sync
@@ -14,7 +15,7 @@ import { daftarEvents } from "@/lib/event-bus";
  * Runs every 6 hours. For each published post with a platformPostId:
  *  1. Fetch live metrics from the platform API
  *  2. Update PostAnalytics with fresh data
- *  3. After 7 days, calculate final score → ContentPerformance
+ *  3. After 7 days, calculate final score -> ContentPerformance
  *  4. Trigger skill learning log updates for high/low performers
  *
  * Protected by CRON_SECRET bearer token.
@@ -23,15 +24,7 @@ import { daftarEvents } from "@/lib/event-bus";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-export async function GET(req: NextRequest) {
-  // ── Auth ─────────────────────────────────────────────
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = apiHandler(async () => {
   const now = new Date();
   const stats = {
     synced: 0,
@@ -41,153 +34,140 @@ export async function GET(req: NextRequest) {
     skipped: 0,
   };
 
-  try {
-    // ── 1. Find published posts needing sync ────────────
-    // Sync posts published in the last 30 days that have a real platformPostId
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+  // -- 1. Find published posts needing sync --
+  // Sync posts published in the last 30 days that have a real platformPostId
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
 
-    const posts = await prisma.contentPost.findMany({
-      where: {
-        status: "PUBLISHED",
-        publishedAt: { gte: thirtyDaysAgo },
-        platformPostId: { not: null },
-      },
-      include: {
-        analytics: true,
-        brand: { select: { id: true, name: true } },
-      },
-      orderBy: { publishedAt: "asc" },
-      take: 100,
-    });
+  const posts = await prisma.contentPost.findMany({
+    where: {
+      status: "PUBLISHED",
+      publishedAt: { gte: thirtyDaysAgo },
+      platformPostId: { not: null },
+    },
+    include: {
+      analytics: true,
+      brand: { select: { id: true, name: true } },
+    },
+    orderBy: { publishedAt: "asc" },
+    take: 100,
+  });
 
-    if (posts.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: "No published posts to sync",
-        ...stats,
-        timestamp: now.toISOString(),
-      });
-    }
-
-    // ── 2. Fetch metrics for each post ──────────────────
-    for (const post of posts) {
-      // Skip simulated posts
-      if (post.platformPostId?.startsWith("sim_")) {
-        stats.skipped++;
-        continue;
-      }
-
-      // Skip if synced within last 4 hours (avoid redundant API calls)
-      if (
-        post.analytics?.lastSyncedAt &&
-        now.getTime() - post.analytics.lastSyncedAt.getTime() < 4 * 3600000
-      ) {
-        stats.skipped++;
-        continue;
-      }
-
-      // Find platform connection
-      const connection = await prisma.platformConnection.findUnique({
-        where: {
-          brandId_platform: {
-            brandId: post.brandId,
-            platform: post.platform,
-          },
-        },
-      });
-
-      if (!connection?.id) {
-        stats.skipped++;
-        continue;
-      }
-
-      // Fetch real metrics
-      const metrics = await fetchPlatformMetrics(
-        post.platform,
-        connection.id,
-        post.platformPostId!
-      );
-
-      if (!metrics) {
-        stats.failed++;
-        continue;
-      }
-
-      // ── 3. Update PostAnalytics ─────────────────────
-      await prisma.postAnalytics.upsert({
-        where: { postId: post.id },
-        create: {
-          postId: post.id,
-          views: metrics.views,
-          likes: metrics.likes,
-          comments: metrics.comments,
-          shares: metrics.shares,
-          clicks: metrics.clicks,
-          reach: metrics.reach,
-          impressions: metrics.impressions,
-          engagementRate: metrics.engagementRate,
-          rawData: metrics.rawData as object,
-          lastSyncedAt: now,
-        },
-        update: {
-          views: metrics.views,
-          likes: metrics.likes,
-          comments: metrics.comments,
-          shares: metrics.shares,
-          clicks: metrics.clicks,
-          reach: metrics.reach,
-          impressions: metrics.impressions,
-          engagementRate: metrics.engagementRate,
-          rawData: metrics.rawData as object,
-          lastSyncedAt: now,
-        },
-      });
-
-      stats.synced++;
-
-      // ── 4. After 7 days → finalize to ContentPerformance ──
-      const daysSincePublish = post.publishedAt
-        ? (now.getTime() - post.publishedAt.getTime()) / 86400000
-        : 0;
-
-      if (daysSincePublish >= 7) {
-        await finalizeContentPerformance(post, metrics);
-        stats.finalized++;
-      }
-    }
-
-    // ── 5. Run skill learning on finalized content ──────
-    if (stats.finalized > 0) {
-      const learningUpdates = await runPerformanceLearning();
-      stats.learningUpdates = learningUpdates;
-    }
-
-    // ── 6. Emit event ───────────────────────────────────
-    daftarEvents.emitEvent("performance.synced", {
-      ...stats,
-      timestamp: now.toISOString(),
-    });
-
+  if (posts.length === 0) {
     return NextResponse.json({
       success: true,
+      message: "No published posts to sync",
       ...stats,
       timestamp: now.toISOString(),
     });
-  } catch (error) {
-    console.error("[performance-sync] Failed:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-        ...stats,
-        timestamp: now.toISOString(),
-      },
-      { status: 500 }
-    );
   }
-}
 
-// ─── Finalize performance record ──────────────────────────
+  // -- 2. Fetch metrics for each post --
+  for (const post of posts) {
+    // Skip simulated posts
+    if (post.platformPostId?.startsWith("sim_")) {
+      stats.skipped++;
+      continue;
+    }
+
+    // Skip if synced within last 4 hours (avoid redundant API calls)
+    if (
+      post.analytics?.lastSyncedAt &&
+      now.getTime() - post.analytics.lastSyncedAt.getTime() < 4 * 3600000
+    ) {
+      stats.skipped++;
+      continue;
+    }
+
+    // Find platform connection
+    const connection = await prisma.platformConnection.findUnique({
+      where: {
+        brandId_platform: {
+          brandId: post.brandId,
+          platform: post.platform,
+        },
+      },
+    });
+
+    if (!connection?.id) {
+      stats.skipped++;
+      continue;
+    }
+
+    // Fetch real metrics
+    const metrics = await fetchPlatformMetrics(
+      post.platform,
+      connection.id,
+      post.platformPostId!
+    );
+
+    if (!metrics) {
+      stats.failed++;
+      continue;
+    }
+
+    // -- 3. Update PostAnalytics --
+    await prisma.postAnalytics.upsert({
+      where: { postId: post.id },
+      create: {
+        postId: post.id,
+        views: metrics.views,
+        likes: metrics.likes,
+        comments: metrics.comments,
+        shares: metrics.shares,
+        clicks: metrics.clicks,
+        reach: metrics.reach,
+        impressions: metrics.impressions,
+        engagementRate: metrics.engagementRate,
+        rawData: metrics.rawData as object,
+        lastSyncedAt: now,
+      },
+      update: {
+        views: metrics.views,
+        likes: metrics.likes,
+        comments: metrics.comments,
+        shares: metrics.shares,
+        clicks: metrics.clicks,
+        reach: metrics.reach,
+        impressions: metrics.impressions,
+        engagementRate: metrics.engagementRate,
+        rawData: metrics.rawData as object,
+        lastSyncedAt: now,
+      },
+    });
+
+    stats.synced++;
+
+    // -- 4. After 7 days -> finalize to ContentPerformance --
+    const daysSincePublish = post.publishedAt
+      ? (now.getTime() - post.publishedAt.getTime()) / 86400000
+      : 0;
+
+    if (daysSincePublish >= 7) {
+      await finalizeContentPerformance(post, metrics);
+      stats.finalized++;
+    }
+  }
+
+  // -- 5. Run skill learning on finalized content --
+  if (stats.finalized > 0) {
+    const learningUpdates = await runPerformanceLearning();
+    stats.learningUpdates = learningUpdates;
+  }
+
+  // -- 6. Emit event --
+  daftarEvents.emitEvent("performance.synced", {
+    ...stats,
+    timestamp: now.toISOString(),
+  });
+
+  return NextResponse.json({
+    success: true,
+    ...stats,
+    timestamp: now.toISOString(),
+  });
+}, { requireCronSecret: true });
+
+// --- Finalize performance record ---
 
 async function finalizeContentPerformance(
   post: {
@@ -273,7 +253,7 @@ async function finalizeContentPerformance(
   });
 }
 
-// ─── Trigger learning from recent performance ─────────────
+// --- Trigger learning from recent performance ---
 
 async function runPerformanceLearning(): Promise<number> {
   // Get recently finalized ContentPerformance records (last 24h)

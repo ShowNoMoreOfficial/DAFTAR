@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 
-// ─── Mock Trend Time-Series Data ────────────────────────
+// --- Mock Trend Time-Series Data ---
 
 function generateTimeSeries(keyword: string, spikeHour: number, baseVolume: number, spikeMultiplier: number) {
   const now = new Date("2026-03-10T12:00:00Z");
@@ -80,13 +80,10 @@ const MOCK_ANOMALIES = [
 ];
 
 // GET /api/m/khabri/trends — Return mocked time-series trend data + anomalies
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest) => {
   return NextResponse.json({
     trends: MOCK_TRENDS,
     anomalies: MOCK_ANOMALIES.filter((a) => a.spikePercent >= 500),
     allAnomalies: MOCK_ANOMALIES,
   });
-}
+});

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
+import { badRequest } from "@/lib/api-utils";
 import { searchSignals } from "@/lib/khabri";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const query = searchParams.get("q");
   if (!query) return badRequest("Missing search query parameter 'q'");
@@ -71,4 +69,4 @@ export async function GET(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Failed to search signals";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});

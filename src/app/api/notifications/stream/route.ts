@@ -107,6 +107,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {
+  try {
   const session = await auth();
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
@@ -169,4 +170,11 @@ export async function GET() {
       "X-Accel-Buffering": "no", // Disable Nginx buffering
     },
   });
+  } catch (err) {
+    console.error("[Notifications Stream] Error:", err);
+    return new Response(
+      JSON.stringify({ error: "An internal error occurred" }),
+      { status: 500 },
+    );
+  }
 }

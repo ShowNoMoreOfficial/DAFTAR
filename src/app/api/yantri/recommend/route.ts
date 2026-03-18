@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { getAuthSession, badRequest, unauthorized, handleApiError } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { callGemini, callGeminiResearch } from "@/lib/yantri/gemini";
 import { SkillOrchestrator, type SkillFile } from "@/lib/skill-orchestrator";
 import { loadSkillsForContentType, getSkillPathsForContentType } from "@/lib/yantri/load-content-skills";
 import { runSEOAnalysis, type SEOAnalysis } from "@/lib/yantri/seo-engine";
+import { apiHandler } from "@/lib/api-handler";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -94,170 +95,166 @@ export const maxDuration = 60;
 
 // ─── POST /api/yantri/recommend ───────────────────────────
 
-export async function POST(request: Request) {
+export const POST = apiHandler(async (request, { session }) => {
+  console.log("[recommend] Step 0 PASS: user =", session.user.id, "role =", session.user.role);
+
+  // ── Step 1: Parse input ──
+  let body: Record<string, unknown>;
   try {
-    // ── Step 0: Auth ──
-    const session = await getAuthSession();
-    if (!session) return unauthorized();
-    console.log("[recommend] Step 0 PASS: user =", session.user.id, "role =", session.user.role);
+    body = await request.json();
+  } catch {
+    return badRequest("Invalid request body");
+  }
+  const topic = body?.topic;
+  if (!topic || typeof topic !== "string" || topic.trim().length < 3) {
+    return badRequest("topic is required (min 3 chars)");
+  }
+  const trimmedTopic = topic.trim();
+  console.log("[recommend] Step 1 PASS: topic =", trimmedTopic.slice(0, 80));
 
-    // ── Step 1: Parse input ──
-    let body: Record<string, unknown>;
-    try {
-      body = await request.json();
-    } catch {
-      return badRequest("Invalid request body");
-    }
-    const topic = body?.topic;
-    if (!topic || typeof topic !== "string" || topic.trim().length < 3) {
-      return badRequest("topic is required (min 3 chars)");
-    }
-    const trimmedTopic = topic.trim();
-    console.log("[recommend] Step 1 PASS: topic =", trimmedTopic.slice(0, 80));
+  const signalMetadata = body?.signalMetadata as {
+    signalId?: string;
+    content?: string;
+    source?: string;
+    sourceCredibility?: number;
+    eventType?: string;
+    stakeholders?: unknown;
+    sentiment?: string;
+    trendName?: string;
+    trendLifecycle?: string;
+    trendVelocity?: number;
+  } | undefined;
 
-    const signalMetadata = body?.signalMetadata as {
-      signalId?: string;
-      content?: string;
-      source?: string;
-      sourceCredibility?: number;
-      eventType?: string;
-      stakeholders?: unknown;
-      sentiment?: string;
-      trendName?: string;
-      trendLifecycle?: string;
-      trendVelocity?: number;
-    } | undefined;
+  const userId = session.user.id;
+  const userRole = session.user.role;
+  const accessibleBrandIds: string[] = session.user.accessibleBrandIds ?? [];
 
-    const userId = session.user.id;
-    const userRole = session.user.role;
-    const accessibleBrandIds: string[] = session.user.accessibleBrandIds ?? [];
+  // ── Step 2+3: Research + Skills + DB queries IN PARALLEL ──
+  // This is the key optimization: run Gemini, skill loading, and DB queries concurrently
+  const orchestrator = new SkillOrchestrator();
 
-    // ── Step 2+3: Research + Skills + DB queries IN PARALLEL ──
-    // This is the key optimization: run Gemini, skill loading, and DB queries concurrently
-    const orchestrator = new SkillOrchestrator();
+  const brandWhere = userRole === "ADMIN" ? {} : { id: { in: accessibleBrandIds } };
 
-    const brandWhere = userRole === "ADMIN" ? {} : { id: { in: accessibleBrandIds } };
-
-    const [
-      researchResult,
-      skillResults,
-      brands,
-      performanceData,
-      performanceAggregates,
-      skillLearningLogs,
-      recentSignals,
-      activeTrends,
-      seoAnalysis,
-    ] = await Promise.all([
-      // Gemini research (with timeout race)
-      Promise.race([
-        callGeminiResearch(
-          "You are a thorough research analyst. Provide factual, well-sourced research.",
-          `Research this topic thoroughly: "${trimmedTopic}"
+  const [
+    researchResult,
+    skillResults,
+    brands,
+    performanceData,
+    performanceAggregates,
+    skillLearningLogs,
+    recentSignals,
+    activeTrends,
+    seoAnalysis,
+  ] = await Promise.all([
+    // Gemini research (with timeout race)
+    Promise.race([
+      callGeminiResearch(
+        "You are a thorough research analyst. Provide factual, well-sourced research.",
+        `Research this topic thoroughly: "${trimmedTopic}"
 Provide: key facts, timeline, stakeholders, statistics, different perspectives, India implications.
 Be concise but comprehensive. Max 2000 words.`
-        ).catch((e) => {
-          console.error("[recommend] Gemini research failed:", e?.message || e);
-          return `Topic: ${trimmedTopic} (research unavailable)`;
-        }),
-        new Promise<string>((resolve) =>
-          setTimeout(() => resolve(`Topic: ${trimmedTopic} (research timed out)`), 20000)
-        ),
-      ]),
-      // Load 7 editorial skills via centralized helper (_editorial mapping)
-      loadSkillsForContentType("_editorial").catch(() => ""),
-      // Brands
-      prisma.brand.findMany({
-        where: brandWhere,
-        include: { platforms: true },
-      }).catch((e) => {
-        console.error("[recommend] Brand query failed:", e?.message);
-        return [] as Awaited<ReturnType<typeof prisma.brand.findMany>>;
+      ).catch((e) => {
+        console.error("[recommend] Gemini research failed:", e?.message || e);
+        return `Topic: ${trimmedTopic} (research unavailable)`;
       }),
-      // Performance (light query)
-      prisma.contentPerformance.findMany({
-        where: {},
-        orderBy: { lastUpdated: "desc" },
-        take: 10,
-      }).catch(() => [] as Awaited<ReturnType<typeof prisma.contentPerformance.findMany>>),
-      // Performance aggregates by platform (avg score per platform+contentType)
-      prisma.$queryRaw<Array<{ platform: string; avg_score: number; count: number }>>`
-        SELECT platform,
-               AVG(CASE
-                 WHEN "performanceTier" = 'top' THEN 9
-                 WHEN "performanceTier" = 'above_avg' THEN 7
-                 WHEN "performanceTier" = 'average' THEN 5
-                 WHEN "performanceTier" = 'below_avg' THEN 3
-                 ELSE 1
-               END) as avg_score,
-               COUNT(*)::int as count
-        FROM content_performances
-        WHERE "performanceTier" IS NOT NULL
-        GROUP BY platform
-        ORDER BY avg_score DESC
-      `.catch(() => [] as Array<{ platform: string; avg_score: number; count: number }>),
-      // Learning logs
-      prisma.skillLearningLog.findMany({
-        where: { source: "auto", periodEnd: { gte: new Date(Date.now() - 30 * 86400000) } },
-        orderBy: { periodEnd: "desc" },
-        take: 10,
-      }).catch(() => [] as Awaited<ReturnType<typeof prisma.skillLearningLog.findMany>>),
-      // Signals
-      prisma.signal.findMany({
-        orderBy: { detectedAt: "desc" },
-        take: 5,
-      }).catch(() => [] as Awaited<ReturnType<typeof prisma.signal.findMany>>),
-      // Trends
-      prisma.trend.findMany({
-        where: { lifecycle: "emerging" },
-        take: 5,
-      }).catch(() => [] as Awaited<ReturnType<typeof prisma.trend.findMany>>),
-      // SEO keyword analysis
-      runSEOAnalysis(trimmedTopic).catch((e) => {
-        console.error("[recommend] SEO analysis failed:", e?.message || e);
-        return null as SEOAnalysis | null;
-      }),
-    ]);
-
-    const researchSummary = researchResult;
-    const editorialSkillContext = skillResults;
-
-    console.log("[recommend] Step 2+3 PASS: research =", researchSummary?.length,
-      "editorialSkills =", editorialSkillContext.length, "chars",
-      "brands =", brands.length,
-      "perf =", performanceData.length,
-      "perfAgg =", performanceAggregates.length,
-      "learningLogs =", skillLearningLogs.length,
-      "seo =", seoAnalysis ? "yes" : "no");
-
-    if (brands.length === 0) {
-      console.log("[recommend] No brands for role", userRole, "ids", accessibleBrandIds);
-      return NextResponse.json({ error: "No brands accessible" }, { status: 403 });
-    }
-
-    const brandIds = brands.map((b) => b.id);
-
-    // Load brand identity + past deliverables in parallel
-    const [brandIdentitySkills, pastDeliverables] = await Promise.all([
-      Promise.all(
-        brands.map(async (b) => ({
-          brandId: b.id,
-          skill: await loadSkillSafe(orchestrator, `brand/identity/${b.slug}/identity.md`),
-        }))
+      new Promise<string>((resolve) =>
+        setTimeout(() => resolve(`Topic: ${trimmedTopic} (research timed out)`), 20000)
       ),
-      prisma.deliverable.findMany({
-        where: { brandId: { in: brandIds } },
-        select: { platform: true, pipelineType: true, status: true, copyMarkdown: true, tree: { select: { title: true } } },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }).catch(() => []),
-    ]);
+    ]),
+    // Load 7 editorial skills via centralized helper (_editorial mapping)
+    loadSkillsForContentType("_editorial").catch(() => ""),
+    // Brands
+    prisma.brand.findMany({
+      where: brandWhere,
+      include: { platforms: true },
+    }).catch((e) => {
+      console.error("[recommend] Brand query failed:", e?.message);
+      return [] as Awaited<ReturnType<typeof prisma.brand.findMany>>;
+    }),
+    // Performance (light query)
+    prisma.contentPerformance.findMany({
+      where: {},
+      orderBy: { lastUpdated: "desc" },
+      take: 10,
+    }).catch(() => [] as Awaited<ReturnType<typeof prisma.contentPerformance.findMany>>),
+    // Performance aggregates by platform (avg score per platform+contentType)
+    prisma.$queryRaw<Array<{ platform: string; avg_score: number; count: number }>>`
+      SELECT platform,
+             AVG(CASE
+               WHEN "performanceTier" = 'top' THEN 9
+               WHEN "performanceTier" = 'above_avg' THEN 7
+               WHEN "performanceTier" = 'average' THEN 5
+               WHEN "performanceTier" = 'below_avg' THEN 3
+               ELSE 1
+             END) as avg_score,
+             COUNT(*)::int as count
+      FROM content_performances
+      WHERE "performanceTier" IS NOT NULL
+      GROUP BY platform
+      ORDER BY avg_score DESC
+    `.catch(() => [] as Array<{ platform: string; avg_score: number; count: number }>),
+    // Learning logs
+    prisma.skillLearningLog.findMany({
+      where: { source: "auto", periodEnd: { gte: new Date(Date.now() - 30 * 86400000) } },
+      orderBy: { periodEnd: "desc" },
+      take: 10,
+    }).catch(() => [] as Awaited<ReturnType<typeof prisma.skillLearningLog.findMany>>),
+    // Signals
+    prisma.signal.findMany({
+      orderBy: { detectedAt: "desc" },
+      take: 5,
+    }).catch(() => [] as Awaited<ReturnType<typeof prisma.signal.findMany>>),
+    // Trends
+    prisma.trend.findMany({
+      where: { lifecycle: "emerging" },
+      take: 5,
+    }).catch(() => [] as Awaited<ReturnType<typeof prisma.trend.findMany>>),
+    // SEO keyword analysis
+    runSEOAnalysis(trimmedTopic).catch((e) => {
+      console.error("[recommend] SEO analysis failed:", e?.message || e);
+      return null as SEOAnalysis | null;
+    }),
+  ]);
 
-    const brandIdentityMap = new Map(brandIdentitySkills.map((b) => [b.brandId, b.skill]));
+  const researchSummary = researchResult;
+  const editorialSkillContext = skillResults;
 
-    // ── Step 7: Build LEAN prompt ──
+  console.log("[recommend] Step 2+3 PASS: research =", researchSummary?.length,
+    "editorialSkills =", editorialSkillContext.length, "chars",
+    "brands =", brands.length,
+    "perf =", performanceData.length,
+    "perfAgg =", performanceAggregates.length,
+    "learningLogs =", skillLearningLogs.length,
+    "seo =", seoAnalysis ? "yes" : "no");
 
-    const systemPrompt = `You are Daftar's editorial intelligence engine for a media agency.
+  if (brands.length === 0) {
+    console.log("[recommend] No brands for role", userRole, "ids", accessibleBrandIds);
+    return NextResponse.json({ error: "No brands accessible" }, { status: 403 });
+  }
+
+  const brandIds = brands.map((b) => b.id);
+
+  // Load brand identity + past deliverables in parallel
+  const [brandIdentitySkills, pastDeliverables] = await Promise.all([
+    Promise.all(
+      brands.map(async (b) => ({
+        brandId: b.id,
+        skill: await loadSkillSafe(orchestrator, `brand/identity/${b.slug}/identity.md`),
+      }))
+    ),
+    prisma.deliverable.findMany({
+      where: { brandId: { in: brandIds } },
+      select: { platform: true, pipelineType: true, status: true, copyMarkdown: true, tree: { select: { title: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }).catch(() => []),
+  ]);
+
+  const brandIdentityMap = new Map(brandIdentitySkills.map((b) => [b.brandId, b.skill]));
+
+  // ── Step 7: Build LEAN prompt ──
+
+  const systemPrompt = `You are Daftar's editorial intelligence engine for a media agency.
 
 ## EDITORIAL INTELLIGENCE
 ${editorialSkillContext}
@@ -334,11 +331,11 @@ Instagram Hashtags: ${seoAnalysis.instagramHashtags.slice(0, 8).map((h) => `#${h
 
 USE THIS SEO DATA: Include primary keyword in suggested titles. Use platform-specific hashtags/keywords in recommendations. Factor search trend and competition into priority ranking.` : ""}`;
 
-    const signalContext = signalMetadata
-      ? `\nSIGNAL: ${signalMetadata.source || "?"} (credibility: ${signalMetadata.sourceCredibility ?? "?"}, type: ${signalMetadata.eventType || "?"}, sentiment: ${signalMetadata.sentiment || "?"})\nContext: ${signalMetadata.content?.slice(0, 500) || "N/A"}\n`
-      : "";
+  const signalContext = signalMetadata
+    ? `\nSIGNAL: ${signalMetadata.source || "?"} (credibility: ${signalMetadata.sourceCredibility ?? "?"}, type: ${signalMetadata.eventType || "?"}, sentiment: ${signalMetadata.sentiment || "?"})\nContext: ${signalMetadata.content?.slice(0, 500) || "N/A"}\n`
+    : "";
 
-    const userPrompt = `Topic: "${trimmedTopic}"
+  const userPrompt = `Topic: "${trimmedTopic}"
 ${signalContext}
 Research:
 ${researchSummary.slice(0, 4000)}
@@ -373,93 +370,89 @@ Return JSON with 3-5 ranked content recommendations:
 
 Use ACTUAL brand IDs. Each brand gets a DIFFERENT angle. Return ONLY valid JSON.`;
 
-    console.log("[recommend] Step 7 PASS: system =", systemPrompt.length, "user =", userPrompt.length);
+  console.log("[recommend] Step 7 PASS: system =", systemPrompt.length, "user =", userPrompt.length);
 
-    // ── Step 8: Call Gemini ──
-    let result: { parsed: unknown; raw: string };
-    try {
-      result = await callGemini(systemPrompt, userPrompt, {
-        maxOutputTokens: 4096,
-        temperature: 0.4,
-      });
-      console.log("[recommend] Step 8 PASS: raw =", result.raw?.length);
-    } catch (geminiErr) {
-      const msg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr);
-      console.error("[recommend] Step 8 FAIL:", msg);
-      return NextResponse.json(
-        { error: "Content recommendation engine is temporarily unavailable. Please try again in a moment." },
-        { status: 503 }
-      );
-    }
-
-    // ── Step 9: Parse response ──
-    const parsed = result.parsed as RecommendResponse | null;
-
-    if (!parsed?.recommendations) {
-      console.error("[recommend] Step 9 FAIL: parse. Raw:", result.raw?.slice(0, 300));
-      return NextResponse.json(
-        { error: "Failed to parse recommendations. Please try again." },
-        { status: 502 }
-      );
-    }
-    console.log("[recommend] Step 9 PASS:", parsed.recommendations.length, "recs");
-
-    // ── Step 9b: Cross-platform short-form variants ──
-    const crossPlatformVariants: ContentRecommendation[] = [];
-    for (const rec of parsed.recommendations) {
-      if (rec.contentType === "youtube_short") {
-        crossPlatformVariants.push({
-          ...rec,
-          rank: rec.rank + 0.5,
-          platform: "INSTAGRAM",
-          contentType: "instagram_reel",
-          reasoning: `Cross-platform adaptation of the YouTube Short. Instagram Reels algorithm favors similar vertical content but needs platform-specific hashtags and caption style.`,
-          priority: "medium",
-        });
-      }
-      if (rec.contentType === "instagram_reel") {
-        crossPlatformVariants.push({
-          ...rec,
-          rank: rec.rank + 0.5,
-          platform: "YOUTUBE",
-          contentType: "youtube_short",
-          reasoning: `Cross-platform adaptation of the Instagram Reel. YouTube Shorts algorithm rewards high retention and fast hooks — adapt the first 1.5 seconds.`,
-          priority: "medium",
-        });
-      }
-    }
-    if (crossPlatformVariants.length > 0) {
-      parsed.recommendations.push(...crossPlatformVariants);
-      // Re-sort by rank
-      parsed.recommendations.sort((a, b) => a.rank - b.rank);
-      console.log("[recommend] Added", crossPlatformVariants.length, "cross-platform variants");
-    }
-
-    // Fire-and-forget skill execution logging (all 7 editorial skills)
-    const editorialSkillPaths = getSkillPathsForContentType("_editorial");
-
-    Promise.all(
-      editorialSkillPaths.map((skillPath) =>
-        orchestrator
-          .executeSkill({
-            skillPath,
-            context: { topic: trimmedTopic, action: "recommend" },
-            executedById: userId,
-            skipLlm: true,
-          })
-          .catch(() => {})
-      )
-    ).catch(() => {});
-
-    console.log("[recommend] DONE:", parsed.recommendations.length, "recommendations", seoAnalysis ? "(with SEO)" : "");
-    return NextResponse.json({
-      recommendations: parsed.recommendations,
-      topicAssessment: parsed.topicAssessment ?? null,
-      researchSummary,
-      seo: seoAnalysis ?? undefined,
+  // ── Step 8: Call Gemini ──
+  let result: { parsed: unknown; raw: string };
+  try {
+    result = await callGemini(systemPrompt, userPrompt, {
+      maxOutputTokens: 4096,
+      temperature: 0.4,
     });
-  } catch (error) {
-    console.error("[recommend] UNHANDLED ERROR:", error);
-    return handleApiError(error);
+    console.log("[recommend] Step 8 PASS: raw =", result.raw?.length);
+  } catch (geminiErr) {
+    const msg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr);
+    console.error("[recommend] Step 8 FAIL:", msg);
+    return NextResponse.json(
+      { error: "Content recommendation engine is temporarily unavailable. Please try again in a moment." },
+      { status: 503 }
+    );
   }
-}
+
+  // ── Step 9: Parse response ──
+  const parsed = result.parsed as RecommendResponse | null;
+
+  if (!parsed?.recommendations) {
+    console.error("[recommend] Step 9 FAIL: parse. Raw:", result.raw?.slice(0, 300));
+    return NextResponse.json(
+      { error: "Failed to parse recommendations. Please try again." },
+      { status: 502 }
+    );
+  }
+  console.log("[recommend] Step 9 PASS:", parsed.recommendations.length, "recs");
+
+  // ── Step 9b: Cross-platform short-form variants ──
+  const crossPlatformVariants: ContentRecommendation[] = [];
+  for (const rec of parsed.recommendations) {
+    if (rec.contentType === "youtube_short") {
+      crossPlatformVariants.push({
+        ...rec,
+        rank: rec.rank + 0.5,
+        platform: "INSTAGRAM",
+        contentType: "instagram_reel",
+        reasoning: `Cross-platform adaptation of the YouTube Short. Instagram Reels algorithm favors similar vertical content but needs platform-specific hashtags and caption style.`,
+        priority: "medium",
+      });
+    }
+    if (rec.contentType === "instagram_reel") {
+      crossPlatformVariants.push({
+        ...rec,
+        rank: rec.rank + 0.5,
+        platform: "YOUTUBE",
+        contentType: "youtube_short",
+        reasoning: `Cross-platform adaptation of the Instagram Reel. YouTube Shorts algorithm rewards high retention and fast hooks — adapt the first 1.5 seconds.`,
+        priority: "medium",
+      });
+    }
+  }
+  if (crossPlatformVariants.length > 0) {
+    parsed.recommendations.push(...crossPlatformVariants);
+    // Re-sort by rank
+    parsed.recommendations.sort((a, b) => a.rank - b.rank);
+    console.log("[recommend] Added", crossPlatformVariants.length, "cross-platform variants");
+  }
+
+  // Fire-and-forget skill execution logging (all 7 editorial skills)
+  const editorialSkillPaths = getSkillPathsForContentType("_editorial");
+
+  Promise.all(
+    editorialSkillPaths.map((skillPath) =>
+      orchestrator
+        .executeSkill({
+          skillPath,
+          context: { topic: trimmedTopic, action: "recommend" },
+          executedById: userId,
+          skipLlm: true,
+        })
+        .catch(() => {})
+    )
+  ).catch(() => {});
+
+  console.log("[recommend] DONE:", parsed.recommendations.length, "recommendations", seoAnalysis ? "(with SEO)" : "");
+  return NextResponse.json({
+    recommendations: parsed.recommendations,
+    topicAssessment: parsed.topicAssessment ?? null,
+    researchSummary,
+    seo: seoAnalysis ?? undefined,
+  });
+});

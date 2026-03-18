@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/yantri/prompt-templates/:id
-export async function GET(_req: NextRequest, ctx: RouteContext) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await ctx.params;
+export const GET = apiHandler(async (_req: NextRequest, { params }) => {
+  const { id } = params;
   const template = await prisma.promptTemplate.findUnique({ where: { id } });
 
   if (!template) {
@@ -21,16 +12,11 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
   }
 
   return NextResponse.json(template);
-}
+});
 
 // PUT /api/yantri/prompt-templates/:id
-export async function PUT(req: NextRequest, ctx: RouteContext) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await ctx.params;
+export const PUT = apiHandler(async (req: NextRequest, { params }) => {
+  const { id } = params;
   const body = await req.json();
   const { platform, name, systemPrompt, userFormat, isActive } = body;
 
@@ -57,16 +43,11 @@ export async function PUT(req: NextRequest, ctx: RouteContext) {
   });
 
   return NextResponse.json(updated);
-}
+});
 
 // DELETE /api/yantri/prompt-templates/:id
-export async function DELETE(_req: NextRequest, ctx: RouteContext) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await ctx.params;
+export const DELETE = apiHandler(async (_req: NextRequest, { params }) => {
+  const { id } = params;
   await prisma.promptTemplate.delete({ where: { id } });
   return NextResponse.json({ success: true });
-}
+});

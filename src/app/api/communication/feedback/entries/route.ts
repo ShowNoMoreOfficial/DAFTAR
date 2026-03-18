@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, notFound } from "@/lib/api-utils";
+import { badRequest, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 
 // GET /api/communication/feedback/entries — list feedback entries
 // ADMIN/HEAD_HR see all, others see only their own
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const channelId = searchParams.get("channelId");
   const status = searchParams.get("status");
@@ -39,13 +37,10 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json(paginatedResponse(entries, total, { page, limit, skip }));
-}
+});
 
 // POST /api/communication/feedback/entries — submit feedback entry
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const { channelId, content } = await req.json();
 
   if (!channelId || !content) {
@@ -74,4 +69,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(entry, { status: 201 });
-}
+});

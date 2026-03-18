@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(request: Request) {
-  const session = await getAuthSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const GET = apiHandler(async (request) => {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const brandId = searchParams.get("brandId");
@@ -35,4 +32,4 @@ export async function GET(request: Request) {
   }));
 
   return NextResponse.json(results);
-}
+});

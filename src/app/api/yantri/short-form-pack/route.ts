@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 /**
  * POST /api/yantri/short-form-pack
@@ -25,137 +25,123 @@ interface PackItem {
   error?: string;
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getAuthSession();
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const POST = apiHandler(async (request: NextRequest) => {
+  const body = await request.json();
+  const { topic, brandId, recommendationContext } = body as {
+    topic: string;
+    brandId: string;
+    recommendationContext?: Record<string, unknown>;
+  };
 
-    const body = await request.json();
-    const { topic, brandId, recommendationContext } = body as {
-      topic: string;
-      brandId: string;
-      recommendationContext?: Record<string, unknown>;
-    };
+  if (!topic || !brandId) {
+    return NextResponse.json(
+      { error: "topic and brandId are required" },
+      { status: 400 }
+    );
+  }
 
-    if (!topic || !brandId) {
-      return NextResponse.json(
-        { error: "topic and brandId are required" },
-        { status: 400 }
-      );
-    }
+  // Define the 4 pack items
+  const packTypes = [
+    { contentType: "youtube_short", label: "YouTube Short" },
+    { contentType: "instagram_reel", label: "Instagram Reel" },
+    { contentType: "x_single", label: "X Post" },
+    { contentType: "instagram_carousel", label: "Instagram Story" },
+  ];
 
-    // Define the 4 pack items
-    const packTypes = [
-      { contentType: "youtube_short", label: "YouTube Short" },
-      { contentType: "instagram_reel", label: "Instagram Reel" },
-      { contentType: "x_single", label: "X Post" },
-      { contentType: "instagram_carousel", label: "Instagram Story" },
-    ];
+  // Build the base URL for internal calls
+  const origin = request.nextUrl.origin;
 
-    // Build the base URL for internal calls
-    const origin = request.nextUrl.origin;
-
-    // Generate all 4 in parallel via internal quick-generate calls
-    const results = await Promise.allSettled(
-      packTypes.map(async ({ contentType, label }): Promise<PackItem> => {
-        try {
-          const res = await fetch(`${origin}/api/yantri/quick-generate`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              cookie: request.headers.get("cookie") || "",
-            },
-            body: JSON.stringify({
-              topic,
-              brandId,
-              contentType,
-              recommendationContext: recommendationContext
-                ? {
-                    ...recommendationContext,
-                    angle:
-                      recommendationContext.angle ||
-                      `Short-form pack: ${label} adaptation`,
-                  }
-                : {
-                    angle: `Short-form pack: ${label} adaptation`,
-                    reasoning: `Part of short-form content pack for cross-platform distribution`,
-                    priority: "high",
-                    urgency: "within_24h",
-                    assetsRequired: {
-                      images: [],
-                      video: ["vertical 9:16"],
-                      graphics: ["text overlays"],
-                      other: [],
-                    },
-                    keyDataPoints: [],
-                    stakeholders: [],
-                    sensitivityLevel: "green",
-                    suggestedTitle: topic,
-                  },
-            }),
-          });
-
-          const data = await res.json();
-
-          if (!res.ok) {
-            return {
-              contentType,
-              label,
-              status: "error",
-              error:
-                typeof data.error === "string"
-                  ? data.error
-                  : "Generation failed",
-            };
-          }
-
-          return {
+  // Generate all 4 in parallel via internal quick-generate calls
+  const results = await Promise.allSettled(
+    packTypes.map(async ({ contentType, label }): Promise<PackItem> => {
+      try {
+        const res = await fetch(`${origin}/api/yantri/quick-generate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: request.headers.get("cookie") || "",
+          },
+          body: JSON.stringify({
+            topic,
+            brandId,
             contentType,
-            label,
-            status: "done",
-            deliverableId: data.deliverableId,
-          };
-        } catch (err) {
+            recommendationContext: recommendationContext
+              ? {
+                  ...recommendationContext,
+                  angle:
+                    recommendationContext.angle ||
+                    `Short-form pack: ${label} adaptation`,
+                }
+              : {
+                  angle: `Short-form pack: ${label} adaptation`,
+                  reasoning: `Part of short-form content pack for cross-platform distribution`,
+                  priority: "high",
+                  urgency: "within_24h",
+                  assetsRequired: {
+                    images: [],
+                    video: ["vertical 9:16"],
+                    graphics: ["text overlays"],
+                    other: [],
+                  },
+                  keyDataPoints: [],
+                  stakeholders: [],
+                  sensitivityLevel: "green",
+                  suggestedTitle: topic,
+                },
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
           return {
             contentType,
             label,
             status: "error",
-            error: err instanceof Error ? err.message : "Unknown error",
+            error:
+              typeof data.error === "string"
+                ? data.error
+                : "Generation failed",
           };
         }
-      })
-    );
 
-    const items: PackItem[] = results.map((r) =>
-      r.status === "fulfilled"
-        ? r.value
-        : {
-            contentType: "unknown",
-            label: "Unknown",
-            status: "error" as const,
-            error: r.reason?.message || "Failed",
-          }
-    );
+        return {
+          contentType,
+          label,
+          status: "done",
+          deliverableId: data.deliverableId,
+        };
+      } catch (err) {
+        return {
+          contentType,
+          label,
+          status: "error",
+          error: err instanceof Error ? err.message : "Unknown error",
+        };
+      }
+    })
+  );
 
-    const succeeded = items.filter((i) => i.status === "done").length;
-    const failed = items.filter((i) => i.status === "error").length;
+  const items: PackItem[] = results.map((r) =>
+    r.status === "fulfilled"
+      ? r.value
+      : {
+          contentType: "unknown",
+          label: "Unknown",
+          status: "error" as const,
+          error: r.reason?.message || "Failed",
+        }
+  );
 
-    return NextResponse.json({
-      pack: items,
-      summary: {
-        total: packTypes.length,
-        succeeded,
-        failed,
-      },
-    });
-  } catch (err) {
-    console.error("[short-form-pack] Error:", err instanceof Error ? err.message : err);
-    return NextResponse.json(
-      { error: "Content generation temporarily unavailable. Please try again in a moment.",
-        details: process.env.NODE_ENV === "development" ? (err instanceof Error ? err.message : String(err)) : undefined },
-      { status: 503 }
-    );
-  }
-}
+  const succeeded = items.filter((i) => i.status === "done").length;
+  const failed = items.filter((i) => i.status === "error").length;
+
+  return NextResponse.json({
+    pack: items,
+    summary: {
+      total: packTypes.length,
+      succeeded,
+      failed,
+    },
+  });
+});

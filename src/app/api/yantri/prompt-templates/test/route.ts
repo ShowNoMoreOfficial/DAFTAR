@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { routeToModel } from "@/lib/yantri/model-router";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/yantri/prompt-templates/test — test a prompt template against a mock context
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { systemPrompt, userMessage } = body;
 
@@ -19,22 +14,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  try {
-    const result = await routeToModel("drafting", systemPrompt, userMessage, {
-      temperature: 0.5,
-    });
+  const result = await routeToModel("drafting", systemPrompt, userMessage, {
+    temperature: 0.5,
+  });
 
-    return NextResponse.json({
-      raw: result.raw,
-      parsed: result.parsed,
-      model: result.model,
-    });
-  } catch (error) {
-    console.error("[prompt-test] Error:", error instanceof Error ? error.message : error);
-    return NextResponse.json(
-      { error: "Content generation temporarily unavailable. Please try again in a moment.",
-        details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.message : String(error)) : undefined },
-      { status: 503 }
-    );
-  }
-}
+  return NextResponse.json({
+    raw: result.raw,
+    parsed: result.parsed,
+    model: result.model,
+  });
+});

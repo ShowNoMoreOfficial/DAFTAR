@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden, notFound } from "@/lib/api-utils";
+import { badRequest, forbidden, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/vritti/articles/[id] — Get single article with related data
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { session, params }) => {
+  const { id } = params;
 
   const article = await prisma.article.findUnique({
     where: { id },
@@ -54,17 +49,11 @@ export async function GET(
   }
 
   return NextResponse.json(article);
-}
+});
 
 // PATCH /api/vritti/articles/[id] — Update article
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { id } = params;
 
   const article = await prisma.article.findUnique({ where: { id } });
   if (!article) return notFound("Article not found");
@@ -152,17 +141,11 @@ export async function PATCH(
   });
 
   return NextResponse.json(updated);
-}
+});
 
 // DELETE /api/vritti/articles/[id] — Delete article (ADMIN or author, only IDEA/ARCHIVED)
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const DELETE = apiHandler(async (_req: NextRequest, { session, params }) => {
+  const { id } = params;
 
   const article = await prisma.article.findUnique({ where: { id } });
   if (!article) return notFound("Article not found");
@@ -181,4 +164,4 @@ export async function DELETE(
   await prisma.article.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
-}
+});

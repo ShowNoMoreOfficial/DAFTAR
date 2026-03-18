@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { badRequest } from "@/lib/api-utils";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const departmentId = searchParams.get("departmentId");
   const type = searchParams.get("type");
@@ -24,12 +22,9 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(reports);
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const { title, type, description, config, departmentId } = await req.json();
   if (!title || !type) return badRequest("Title and type are required");
 
@@ -119,4 +114,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(report, { status: 201 });
-}
+});

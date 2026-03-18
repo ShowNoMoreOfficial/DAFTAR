@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { badRequest } from "@/lib/api-utils";
 import { checkCollaborationAchievements } from "@/lib/gamification";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const limit = parseInt(searchParams.get("limit") || "30", 10);
 
@@ -75,12 +73,9 @@ export async function GET(req: NextRequest) {
       count: t._count.id,
     })),
   });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const { toUserId, category, message, isPublic } = await req.json();
 
   if (!toUserId || !category || !message) {
@@ -127,4 +122,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json(recognition, { status: 201 });
-}
+});

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { runLearningCycle } from "@/lib/learning-loop";
 
 // POST /api/analytics/learning-report — Trigger learning cycle and get report
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (session.user.role !== "ADMIN" && session.user.role !== "DEPT_HEAD") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -31,4 +29,4 @@ export async function POST(req: NextRequest) {
     success: true,
     report: result,
   });
-}
+});

@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, notFound } from "@/lib/api-utils";
+import { badRequest, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/vritti/articles/[id]/comments — List editorial comments for an article
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { params }) => {
+  const { id } = params;
 
   const article = await prisma.article.findUnique({ where: { id } });
   if (!article) return notFound("Article not found");
@@ -24,17 +19,11 @@ export async function GET(
   });
 
   return NextResponse.json({ data: comments });
-}
+});
 
 // POST /api/vritti/articles/[id]/comments — Add editorial comment
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const POST = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { id } = params;
 
   const article = await prisma.article.findUnique({ where: { id } });
   if (!article) return notFound("Article not found");
@@ -62,4 +51,4 @@ export async function POST(
   });
 
   return NextResponse.json(comment, { status: 201 });
-}
+});

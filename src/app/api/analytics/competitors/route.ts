@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
 
 // GET /api/analytics/competitors — Competitive benchmarking
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const brandId = searchParams.get("brandId");
   const platform = searchParams.get("platform");
@@ -59,4 +56,4 @@ export async function GET(req: NextRequest) {
     benchmarking: result.success ? result.output : null,
     ourContentCount: ourPerformance.length,
   });
-}
+});

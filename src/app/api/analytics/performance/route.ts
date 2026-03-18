@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/analytics/performance — List content performance records
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const platform = searchParams.get("platform");
   const tier = searchParams.get("tier");
@@ -28,13 +26,10 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json({ records, total, page, limit });
-}
+});
 
 // POST /api/analytics/performance — Record content performance
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { deliverableId, brandId, platform, metrics, skillsUsed } = body;
 
@@ -59,4 +54,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(record, { status: 201 });
-}
+});

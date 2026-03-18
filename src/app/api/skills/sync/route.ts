@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { forbidden } from "@/lib/api-utils";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/skills/sync — Scan /skills/ directory and sync all skill files to DB
-export async function POST() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const POST = apiHandler(async (_req, { session }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
   const result = await skillOrchestrator.syncSkillsToDb();
@@ -15,4 +14,4 @@ export async function POST() {
     synced: result.synced,
     errors: result.errors,
   });
-}
+});

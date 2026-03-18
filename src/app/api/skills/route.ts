@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/skills — List all skills with optional filtering
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   if (!["ADMIN", "DEPT_HEAD"].includes(session.user.role)) return forbidden();
 
   const { searchParams } = new URL(req.url);
@@ -45,4 +44,4 @@ export async function GET(req: NextRequest) {
     total: skills.length,
     domains,
   });
-}
+});

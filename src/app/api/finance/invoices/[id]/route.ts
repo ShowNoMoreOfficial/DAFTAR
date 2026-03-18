@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, notFound, badRequest } from "@/lib/api-utils";
+import { forbidden, notFound, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { notifyInvoiceSent, notifyInvoicePaid } from "@/lib/notifications";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest, { session, params }) => {
   const { role } = session.user;
   if (!["ADMIN", "FINANCE", "CLIENT"].includes(role)) return forbidden();
 
-  const { id } = await params;
+  const { id } = params;
 
   const invoice = await prisma.invoice.findUnique({
     where: { id },
@@ -31,17 +26,12 @@ export async function GET(
   }
 
   return NextResponse.json(invoice);
-}
+});
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
   if (!["ADMIN", "FINANCE"].includes(session.user.role)) return forbidden();
 
-  const { id } = await params;
+  const { id } = params;
   const existing = await prisma.invoice.findUnique({ where: { id } });
   if (!existing) return notFound("Invoice not found");
 
@@ -97,17 +87,12 @@ export async function PATCH(
   }
 
   return NextResponse.json(invoice);
-}
+});
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const DELETE = apiHandler(async (_req: NextRequest, { session, params }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
-  const { id } = await params;
+  const { id } = params;
   const invoice = await prisma.invoice.findUnique({ where: { id } });
   if (!invoice) return notFound("Invoice not found");
 
@@ -117,4 +102,4 @@ export async function DELETE(
 
   await prisma.invoice.delete({ where: { id } });
   return NextResponse.json({ success: true });
-}
+});

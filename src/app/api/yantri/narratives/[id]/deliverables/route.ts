@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-utils";
+import { badRequest, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/yantri/narratives/:id/deliverables
 // Creates deliverables (Task + ContentPost + Narrative records) for selected brands/platforms
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const POST = apiHandler(async (req: NextRequest, { session, params }) => {
+  const { id } = params;
   const body = await req.json();
 
   // body.deliverables: [{ brandId, platform, angle, formatNotes }]
@@ -107,4 +102,4 @@ export async function POST(
   });
 
   return NextResponse.json({ success: true, created }, { status: 201 });
-}
+});

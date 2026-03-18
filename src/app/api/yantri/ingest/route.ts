@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processSignalsToTrees, type SimpleSignal } from "@/lib/yantri/ingest-helper";
+import { apiHandler } from "@/lib/api-handler";
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 
@@ -45,66 +46,57 @@ function validateSignal(
 
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
-export async function POST(request: Request) {
+export const POST = apiHandler(async (request) => {
+  // Parse request body
+  let body: { signals: unknown[] };
   try {
-    // Parse request body
-    let body: { signals: unknown[] };
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON in request body" },
-        { status: 400 }
-      );
-    }
-
-    // Validate top-level structure
-    if (!body.signals || !Array.isArray(body.signals)) {
-      return NextResponse.json(
-        { error: "Request body must contain a `signals` array" },
-        { status: 400 }
-      );
-    }
-
-    if (body.signals.length === 0) {
-      return NextResponse.json(
-        { error: "Signals array must not be empty" },
-        { status: 400 }
-      );
-    }
-
-    // Validate each signal
-    const validatedSignals: SimpleSignal[] = [];
-    const validationErrors: string[] = [];
-
-    for (let i = 0; i < body.signals.length; i++) {
-      const result = validateSignal(body.signals[i], i);
-      if (result.valid) {
-        validatedSignals.push(result.data);
-      } else {
-        validationErrors.push(result.error);
-      }
-    }
-
-    if (validationErrors.length > 0) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validationErrors },
-        { status: 400 }
-      );
-    }
-
-    // Process signals into NarrativeTrees using shared helper
-    const response = await processSignalsToTrees(validatedSignals);
-
-    return NextResponse.json(response, {
-      status: response.skipped.length === validatedSignals.length ? 500 : 201,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Ingest error:", message);
+    body = await request.json();
+  } catch {
     return NextResponse.json(
-      { error: `Ingest failed: ${message}` },
-      { status: 500 }
+      { error: "Invalid JSON in request body" },
+      { status: 400 }
     );
   }
-}
+
+  // Validate top-level structure
+  if (!body.signals || !Array.isArray(body.signals)) {
+    return NextResponse.json(
+      { error: "Request body must contain a `signals` array" },
+      { status: 400 }
+    );
+  }
+
+  if (body.signals.length === 0) {
+    return NextResponse.json(
+      { error: "Signals array must not be empty" },
+      { status: 400 }
+    );
+  }
+
+  // Validate each signal
+  const validatedSignals: SimpleSignal[] = [];
+  const validationErrors: string[] = [];
+
+  for (let i = 0; i < body.signals.length; i++) {
+    const result = validateSignal(body.signals[i], i);
+    if (result.valid) {
+      validatedSignals.push(result.data);
+    } else {
+      validationErrors.push(result.error);
+    }
+  }
+
+  if (validationErrors.length > 0) {
+    return NextResponse.json(
+      { error: "Validation failed", details: validationErrors },
+      { status: 400 }
+    );
+  }
+
+  // Process signals into NarrativeTrees using shared helper
+  const response = await processSignalsToTrees(validatedSignals);
+
+  return NextResponse.json(response, {
+    status: response.skipped.length === validatedSignals.length ? 500 : 201,
+  });
+});

@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden } from "@/lib/api-utils";
+import { badRequest, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 
 // GET /api/vritti/media — List media files with pagination and filters
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "vritti.read.own")) {
     return forbidden();
   }
@@ -41,13 +39,10 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json(paginatedResponse(media, total, pg));
-}
+});
 
 // POST /api/vritti/media — Create media record
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "vritti.read.own")) {
     return forbidden();
   }
@@ -83,4 +78,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(media, { status: 201 });
-}
+});

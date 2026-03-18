@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/analytics/tests — List strategy tests
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const status = searchParams.get("status");
   const brandId = searchParams.get("brandId");
@@ -21,13 +19,10 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({ tests });
-}
+});
 
 // POST /api/analytics/tests — Create a strategy test
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { name, hypothesis, skillPath, brandId, platform, variant } = body;
 
@@ -50,4 +45,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(test, { status: 201 });
-}
+});

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/client/dashboard — Aggregated client dashboard data
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const GET = apiHandler(async (_req, { session }) => {
   if (session.user.role !== "CLIENT" && session.user.role !== "ADMIN") {
     return forbidden();
   }
@@ -67,7 +66,7 @@ export async function GET() {
     clientName: client.name,
     platforms: b.platforms,
   })));
-}
+});
 
 async function buildDashboardResponse(
   brandIds: string[],

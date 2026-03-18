@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
 import { processAutoAdvance, processEscalations } from "@/lib/workflow-engine";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/workflows/process — Run workflow engine (auto-advance + escalations)
 // Can be called by cron job or admin manually
-export async function POST() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (_req, { session }) => {
   if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -23,4 +20,4 @@ export async function POST() {
     escalationCount,
     processedAt: new Date().toISOString(),
   });
-}
+});

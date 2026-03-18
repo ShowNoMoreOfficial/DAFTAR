@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/notifications/preferences — get current user's notification preferences
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   let prefs = await prisma.notificationPreference.findUnique({
     where: { userId: session.user.id },
   });
@@ -32,13 +30,10 @@ export async function GET() {
   }
 
   return NextResponse.json(prefs);
-}
+});
 
 // PUT /api/notifications/preferences — update notification preferences
-export async function PUT(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const PUT = apiHandler(async (req, { session }) => {
   const body = await req.json();
   const { preferences, quietHoursStart, quietHoursEnd } = body as {
     preferences?: Record<string, { enabled: boolean; channels: string[] }>;
@@ -76,4 +71,4 @@ export async function PUT(req: Request) {
   });
 
   return NextResponse.json(prefs);
-}
+});

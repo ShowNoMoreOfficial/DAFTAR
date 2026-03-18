@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const departmentId = searchParams.get("departmentId") || session.user.primaryDepartmentId;
   const days = parseInt(searchParams.get("days") || "30");
@@ -65,4 +62,4 @@ export async function GET(req: NextRequest) {
     tasksByStatus: tasksByStatus.map((s) => ({ status: s.status, count: s._count })),
     tasksByPriority: tasksByPriority.map((p) => ({ priority: p.priority, count: p._count })),
   });
-}
+});

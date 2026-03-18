@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden, notFound } from "@/lib/api-utils";
+import { badRequest, forbidden, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // PATCH /api/vritti/categories/[id] — Update category (ADMIN only)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
   if (session.user.role !== "ADMIN") {
     return forbidden();
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   const category = await prisma.articleCategory.findUnique({ where: { id } });
   if (!category) return notFound("Category not found");
@@ -47,21 +42,15 @@ export async function PATCH(
   });
 
   return NextResponse.json(updated);
-}
+});
 
 // DELETE /api/vritti/categories/[id] — Delete category (ADMIN only, fails if has articles)
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const DELETE = apiHandler(async (_req: NextRequest, { session, params }) => {
   if (session.user.role !== "ADMIN") {
     return forbidden();
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   const category = await prisma.articleCategory.findUnique({
     where: { id },
@@ -77,4 +66,4 @@ export async function DELETE(
   await prisma.articleCategory.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
-}
+});

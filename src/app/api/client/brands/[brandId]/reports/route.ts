@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, notFound } from "@/lib/api-utils";
+import { forbidden, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/client/brands/[brandId]/reports
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ brandId: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { brandId } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { session, params }) => {
+  const { brandId } = params;
 
   // Verify brand ownership
   const brand = await prisma.brand.findUnique({
@@ -32,4 +27,4 @@ export async function GET(
   });
 
   return NextResponse.json(reports);
-}
+});

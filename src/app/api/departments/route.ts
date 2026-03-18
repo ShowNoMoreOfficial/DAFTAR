@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest } from "@/lib/api-utils";
+import { forbidden, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/departments
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   const departments = await prisma.department.findMany({
     include: {
       _count: { select: { members: true, primaryUsers: true } },
@@ -15,12 +13,10 @@ export async function GET() {
   });
 
   return NextResponse.json(departments);
-}
+});
 
 // POST /api/departments — Create department (Admin only)
-export async function POST(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const POST = apiHandler(async (req, { session }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
   const body = await req.json();
@@ -33,4 +29,4 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json(department, { status: 201 });
-}
+});

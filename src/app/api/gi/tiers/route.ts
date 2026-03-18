@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/gi/tiers
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-  if (session.user.role !== "ADMIN") return forbidden();
+export const GET = apiHandler(async (_req, { session }) => {
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
 
   const tiers = await prisma.gITierAssignment.findMany();
   return NextResponse.json(tiers);
-}
+});
 
 // PATCH /api/gi/tiers — Update tier for an action type
-export async function PATCH(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-  if (session.user.role !== "ADMIN") return forbidden();
+export const PATCH = apiHandler(async (req: NextRequest, { session }) => {
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
 
   const body = await req.json();
   const { id, tier } = body as { id: string; tier: number };
@@ -34,4 +34,4 @@ export async function PATCH(req: NextRequest) {
   });
 
   return NextResponse.json(updated);
-}
+});

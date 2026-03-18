@@ -1,14 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, notFound } from "@/lib/api-utils";
+import { badRequest, notFound } from "@/lib/api-utils";
 import { daftarEvents } from "@/lib/event-bus";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
 
-// POST /api/signals/promote — Promote a trend to the narrative pipeline (Khabri → Yantri handoff)
-export async function POST(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+// POST /api/signals/promote — Promote a trend to the narrative pipeline (Khabri -> Yantri handoff)
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const body = await req.json();
   const { trendId, brandIds, urgency, notes } = body;
 
@@ -116,4 +114,4 @@ export async function POST(req: Request) {
       escalation: escalationResult?.success ? "assessed" : "skipped",
     },
   });
-}
+});

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden, handleApiError } from "@/lib/api-utils";
-import { hasPermission } from "@/lib/permissions";
+import { badRequest, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 
 // GET /api/communication/announcements — list announcements (org-wide + user's department)
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const departmentId = searchParams.get("departmentId");
   const pinned = searchParams.get("pinned");
@@ -90,19 +87,15 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json(paginatedResponse(data, total, { page, limit, skip }));
-}
+});
 
 // POST /api/communication/announcements — create announcement (ADMIN, HEAD_HR, DEPT_HEAD only)
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const allowedRoles = ["ADMIN", "HEAD_HR", "DEPT_HEAD"];
   if (!allowedRoles.includes(session.user.role)) {
     return forbidden();
   }
 
-  try {
   const { title, content, priority, departmentId, isPinned, expiresAt } = await req.json();
 
   if (!title || !content) {
@@ -122,7 +115,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(announcement, { status: 201 });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+});

@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 30);
 
@@ -31,4 +28,4 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(activities);
-}
+});

@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
-import { getAuthSession } from "@/lib/api-utils";
 import { daftarEvents } from "@/lib/event-bus";
 import { generateVisualPrompts } from "@/lib/yantri/engines/nanoBanana";
 import { getBrandColorMood } from "@/lib/yantri/brand-voice";
 import { generateImage } from "@/lib/image-generator";
+import { apiHandler } from "@/lib/api-handler";
 
 // ─── GET /api/yantri/deliverables/[id] ─────────────────────────────────────────────
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export const GET = apiHandler(async (_request: NextRequest, { params }) => {
+  const { id } = params;
 
   const deliverable = await prisma.deliverable.findUnique({
     where: { id },
@@ -29,7 +26,7 @@ export async function GET(
   }
 
   return NextResponse.json(deliverable);
-}
+});
 
 // ─── PATCH /api/yantri/deliverables/[id] ───────────────────────────────────────────
 // Update status, content, or trigger pipeline re-run
@@ -41,11 +38,8 @@ export async function GET(
 //   action?: "approve" | "kill" | "retrigger"
 // }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export const PATCH = apiHandler(async (request: NextRequest, { session, params }) => {
+  const { id } = params;
 
   let body: Record<string, unknown>;
   try {
@@ -75,7 +69,6 @@ export async function PATCH(
     });
 
     // Auto-create PMS task for approved deliverable
-    const session = await getAuthSession();
     const creatorId = session?.user?.id;
     if (creatorId) {
       const task = await prisma.task.create({
@@ -208,7 +201,7 @@ export async function PATCH(
   }
 
   return NextResponse.json(updated);
-}
+});
 
 // ─── Auto-generate Story on approval ────────────────────────────────────────────
 
@@ -314,11 +307,8 @@ Brand: ${brandName}. Make it scroll-stopping.`;
 
 // ─── DELETE /api/yantri/deliverables/[id] ──────────────────────────────────────────
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export const DELETE = apiHandler(async (_request: NextRequest, { params }) => {
+  const { id } = params;
 
   const deliverable = await prisma.deliverable.findUnique({ where: { id } });
   if (!deliverable) {
@@ -330,4 +320,4 @@ export async function DELETE(
   await prisma.deliverable.delete({ where: { id } });
 
   return NextResponse.json({ deleted: true, id });
-}
+});

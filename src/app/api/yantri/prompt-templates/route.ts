@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/yantri/prompt-templates — list all templates, optionally filter by platform
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const platform = req.nextUrl.searchParams.get("platform");
 
   const where: Record<string, unknown> = {};
@@ -20,15 +15,10 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(templates);
-}
+});
 
 // POST /api/yantri/prompt-templates — create a new template
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { platform, name, systemPrompt, userFormat, isActive } = body;
 
@@ -52,4 +42,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(template, { status: 201 });
-}
+});

@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = apiHandler(async (_req, { session }) => {
   const userId = session.user.id;
 
   // Get credibility score
@@ -93,4 +88,4 @@ export async function GET() {
       : { currentStreak: 0, longestStreak: 0, totalXp: 0, level: 1 },
     recentDeliveries,
   });
-}
+});

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { badRequest } from "@/lib/api-utils";
 import { hasPermission } from "@/lib/permissions";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "hoccr.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -29,12 +27,9 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(positions);
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "hoccr.write.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -48,4 +43,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(position, { status: 201 });
-}
+});

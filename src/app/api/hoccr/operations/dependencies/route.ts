@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { badRequest } from "@/lib/api-utils";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR", "DEPT_HEAD"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -71,12 +69,9 @@ export async function GET(req: NextRequest) {
     })),
     stats,
   });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR", "DEPT_HEAD"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -101,4 +96,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(dependency, { status: 201 });
-}
+});

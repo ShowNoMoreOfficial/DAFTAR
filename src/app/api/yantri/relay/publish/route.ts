@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
 // ---------------------------------------------------------------------------
 // GET /api/yantri/relay/publish
@@ -18,72 +18,59 @@ const URGENCY_ORDER: Record<string, number> = {
   "1_week": 5,
 };
 
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = apiHandler(async () => {
+  // Legacy narratives ready for relay
+  const narratives = await prisma.editorialNarrative.findMany({
+    where: { status: "published" },
+    orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
+  });
 
-  try {
-    // Legacy narratives ready for relay
-    const narratives = await prisma.editorialNarrative.findMany({
-      where: { status: "published" },
-      orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
-    });
+  // Fetch related brands and trends for all narratives
+  const brandIds = [...new Set(narratives.map((n) => n.brandId))];
+  const trendIds = [...new Set(narratives.map((n) => n.trendId))];
+  const [brands, trends] = await Promise.all([
+    prisma.brand.findMany({ where: { id: { in: brandIds } } }),
+    prisma.importedTrend.findMany({ where: { id: { in: trendIds } } }),
+  ]);
+  const brandMap = new Map(brands.map((b) => [b.id, b]));
+  const trendMap = new Map(trends.map((t) => [t.id, t]));
 
-    // Fetch related brands and trends for all narratives
-    const brandIds = [...new Set(narratives.map((n) => n.brandId))];
-    const trendIds = [...new Set(narratives.map((n) => n.trendId))];
-    const [brands, trends] = await Promise.all([
-      prisma.brand.findMany({ where: { id: { in: brandIds } } }),
-      prisma.importedTrend.findMany({ where: { id: { in: trendIds } } }),
-    ]);
-    const brandMap = new Map(brands.map((b) => [b.id, b]));
-    const trendMap = new Map(trends.map((t) => [t.id, t]));
+  // Sort by urgency (not natively sortable in Prisma string field)
+  const sortedNarratives = narratives.sort((a, b) => {
+    const urgA = URGENCY_ORDER[a.urgency] ?? 99;
+    const urgB = URGENCY_ORDER[b.urgency] ?? 99;
+    if (urgA !== urgB) return urgA - urgB;
+    return b.priority - a.priority;
+  });
 
-    // Sort by urgency (not natively sortable in Prisma string field)
-    const sortedNarratives = narratives.sort((a, b) => {
-      const urgA = URGENCY_ORDER[a.urgency] ?? 99;
-      const urgB = URGENCY_ORDER[b.urgency] ?? 99;
-      if (urgA !== urgB) return urgA - urgB;
-      return b.priority - a.priority;
-    });
+  // V3 ContentPieces ready for relay (APPROVED status)
+  const contentPieces = await prisma.contentPiece.findMany({
+    where: { status: "APPROVED" },
+    include: { brand: true },
+    orderBy: [{ createdAt: "asc" }],
+  });
 
-    // V3 ContentPieces ready for relay (APPROVED status)
-    const contentPieces = await prisma.contentPiece.findMany({
-      where: { status: "APPROVED" },
-      include: { brand: true },
-      orderBy: [{ createdAt: "asc" }],
-    });
-
-    return NextResponse.json({
-      narratives: sortedNarratives.map((n) => ({
-        id: n.id,
-        angle: n.angle,
-        platform: n.platform,
-        urgency: n.urgency,
-        priority: n.priority,
-        brandName: brandMap.get(n.brandId)?.name ?? "Unknown",
-        trendHeadline: trendMap.get(n.trendId)?.headline ?? "",
-        hasFinalContent: !!n.finalContent,
-        createdAt: n.createdAt,
-      })),
-      contentPieces: contentPieces.map((cp) => ({
-        id: cp.id,
-        platform: cp.platform,
-        brandName: cp.brand.name,
-        hasBody: !!cp.bodyText,
-        createdAt: cp.createdAt,
-      })),
-    });
-  } catch (error) {
-    console.error("[relay/publish] GET error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch publishable items" },
-      { status: 500 },
-    );
-  }
-}
+  return NextResponse.json({
+    narratives: sortedNarratives.map((n) => ({
+      id: n.id,
+      angle: n.angle,
+      platform: n.platform,
+      urgency: n.urgency,
+      priority: n.priority,
+      brandName: brandMap.get(n.brandId)?.name ?? "Unknown",
+      trendHeadline: trendMap.get(n.trendId)?.headline ?? "",
+      hasFinalContent: !!n.finalContent,
+      createdAt: n.createdAt,
+    })),
+    contentPieces: contentPieces.map((cp) => ({
+      id: cp.id,
+      platform: cp.platform,
+      brandName: cp.brand.name,
+      hasBody: !!cp.bodyText,
+      createdAt: cp.createdAt,
+    })),
+  });
+});
 
 // ---------------------------------------------------------------------------
 // POST /api/yantri/relay/publish
@@ -95,42 +82,29 @@ export async function GET() {
 // creates an EditorialLog entry with action "relayed".
 // ---------------------------------------------------------------------------
 
-export async function POST(request: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const POST = apiHandler(async (request: NextRequest) => {
+  const body = await request.json();
+  const { narrativeId, targetPlatform, contentPieceId } = body as {
+    narrativeId?: string;
+    targetPlatform?: string;
+    contentPieceId?: string;
+  };
 
-  try {
-    const body = await request.json();
-    const { narrativeId, targetPlatform, contentPieceId } = body as {
-      narrativeId?: string;
-      targetPlatform?: string;
-      contentPieceId?: string;
-    };
-
-    if (!narrativeId && !contentPieceId) {
-      return NextResponse.json(
-        { error: "Either narrativeId or contentPieceId is required" },
-        { status: 400 },
-      );
-    }
-
-    // ── V3 ContentPiece path ──────────────────────────────────────────────
-    if (contentPieceId) {
-      return await handleContentPieceRelay(contentPieceId);
-    }
-
-    // ── Legacy EditorialNarrative path ─────────────────────────────────────
-    return await handleNarrativeRelay(narrativeId!, targetPlatform);
-  } catch (error) {
-    console.error("[relay/publish] POST error:", error);
+  if (!narrativeId && !contentPieceId) {
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
+      { error: "Either narrativeId or contentPieceId is required" },
+      { status: 400 },
     );
   }
-}
+
+  // ── V3 ContentPiece path ──────────────────────────────────────────────
+  if (contentPieceId) {
+    return await handleContentPieceRelay(contentPieceId);
+  }
+
+  // ── Legacy EditorialNarrative path ─────────────────────────────────────
+  return await handleNarrativeRelay(narrativeId!, targetPlatform);
+});
 
 // ---------------------------------------------------------------------------
 // Handlers

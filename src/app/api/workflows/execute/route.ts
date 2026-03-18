@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
 import { runLearningCycle } from "@/lib/learning-loop";
 import { daftarEvents } from "@/lib/event-bus";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/workflows/execute — Execute a named workflow
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -74,4 +72,4 @@ export async function POST(req: NextRequest) {
     durationMs: duration,
     result,
   });
-}
+});

@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
 // ─── GET /api/yantri/deliverables/[id]/assets ──────────────────────────────────────
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export const GET = apiHandler(async (_request: NextRequest, { params }) => {
+  const { id } = params;
 
   const deliverable = await prisma.deliverable.findUnique({ where: { id } });
   if (!deliverable) {
@@ -20,7 +18,7 @@ export async function GET(
   });
 
   return NextResponse.json(assets);
-}
+});
 
 // ─── POST /api/yantri/deliverables/[id]/assets ─────────────────────────────────────
 // Add an asset to a deliverable (e.g., after image generation completes)
@@ -33,11 +31,8 @@ export async function GET(
 //   metadata?: object
 // }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export const POST = apiHandler(async (request: NextRequest, { params }) => {
+  const { id } = params;
 
   let body: Record<string, unknown>;
   try {
@@ -86,4 +81,4 @@ export async function POST(
   });
 
   return NextResponse.json(asset, { status: 201 });
-}
+});

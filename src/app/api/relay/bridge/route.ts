@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized, badRequest } from "@/lib/api-utils";
+import { badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 import { bridgeDeliverableToPost } from "@/lib/relay/deliverable-bridge";
 
@@ -9,10 +10,7 @@ import { bridgeDeliverableToPost } from "@/lib/relay/deliverable-bridge";
  * Bridge an approved Deliverable into a ContentPost for publishing.
  * Body: { deliverableId: string, scheduledAt?: string }
  */
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "relay.read.own")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -40,4 +38,4 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 400 });
   }
-}
+});

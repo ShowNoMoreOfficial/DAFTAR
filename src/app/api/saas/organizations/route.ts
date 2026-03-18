@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest } from "@/lib/api-utils";
+import { forbidden, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/saas/organizations — List all organizations (ADMIN only)
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const GET = apiHandler(async (_req, { session }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
   try {
@@ -107,16 +106,14 @@ export async function GET() {
     ];
     return NextResponse.json(mockOrgs);
   }
-}
+});
 
 // POST /api/saas/organizations — Create new organization
-export async function POST(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const POST = apiHandler(async (req, { session }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
   const body = await req.json();
-  const { name, slug, domain, plan, maxUsers, departments, invites } = body;
+  const { name, slug, domain, plan, maxUsers } = body;
 
   if (!name) return badRequest("name is required");
   if (!slug) return badRequest("slug is required");
@@ -162,4 +159,4 @@ export async function POST(req: Request) {
     };
     return NextResponse.json(mockOrg, { status: 201 });
   }
-}
+});

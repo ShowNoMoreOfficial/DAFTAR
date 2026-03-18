@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound, badRequest } from "@/lib/api-utils";
+import { notFound, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // PATCH /api/notifications/[id] — mark single notification as read/unread
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const PATCH = apiHandler(async (req, { session, params }) => {
+  const { id } = params;
 
   const body = await req.json();
   const { isRead } = body as { isRead?: boolean };
@@ -31,17 +26,11 @@ export async function PATCH(
   });
 
   return NextResponse.json(updated);
-}
+});
 
 // DELETE /api/notifications/[id] — delete a notification
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const DELETE = apiHandler(async (_req, { session, params }) => {
+  const { id } = params;
 
   const notification = await prisma.notification.findFirst({
     where: { id, userId: session.user.id },
@@ -52,4 +41,4 @@ export async function DELETE(
   await prisma.notification.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
-}
+});

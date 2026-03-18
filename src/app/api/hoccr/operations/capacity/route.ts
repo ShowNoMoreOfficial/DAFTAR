@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { computeCapacity } from "@/lib/hoccr/capacity-engine";
 import type { TaskPriority } from "@prisma/client";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const role = session.user.role;
   if (!["ADMIN", "HEAD_HR", "DEPT_HEAD"].includes(role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -77,4 +74,4 @@ export async function GET(req: NextRequest) {
       overloaded: capacityData.filter((u) => u.status === "overloaded").length,
     },
   });
-}
+});

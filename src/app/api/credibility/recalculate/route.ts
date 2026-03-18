@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, handleApiError } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 /**
  * POST /api/credibility/recalculate
  * Recalculate credibility scores for all active users.
- * Admin-only or call from cron.
+ * Admin-only.
  */
-export async function POST() {
-  const session = await getAuthSession();
-  if (!session || session.user.role !== "ADMIN") return unauthorized();
-
-  try {
+export const POST = apiHandler(async () => {
   const users = await prisma.user.findMany({
     where: { isActive: true, role: { notIn: ["CLIENT"] } },
     select: { id: true },
@@ -89,7 +85,4 @@ export async function POST() {
   }
 
   return NextResponse.json({ ok: true, usersUpdated: updated });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+}, { requireAdmin: true });

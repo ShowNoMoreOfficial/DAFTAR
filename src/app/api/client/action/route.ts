@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/client/action — Token-based deliverable approval/revision (public, no auth)
-export async function POST(req: NextRequest) {
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { token, action, feedback } = body as {
     token?: string;
@@ -51,4 +52,4 @@ export async function POST(req: NextRequest) {
       reviewedAt: new Date().toISOString(),
     },
   });
-}
+}, { requireAuth: false });

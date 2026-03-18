@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/yantri/narrative-trees/merge — merge sourceTree into targetTree
-export async function POST(req: NextRequest) {
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { sourceTreeId, targetTreeId } = body;
 
@@ -69,4 +70,4 @@ export async function POST(req: NextRequest) {
     targetTreeId,
     message: "Trees merged. Dossier rebuild triggered.",
   });
-}
+});

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden } from "@/lib/api-utils";
+import { badRequest, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { hasPermission } from "@/lib/permissions";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 import type { ArticleStatus } from "@prisma/client";
@@ -21,10 +22,7 @@ function calculateReadTime(body: string): number {
 }
 
 // GET /api/vritti/articles — List articles with pagination and filters
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   if (!hasPermission(session.user.role, session.user.permissions, "vritti.read.own")) {
     return forbidden();
   }
@@ -95,13 +93,10 @@ export async function GET(req: NextRequest) {
   ]);
 
   return NextResponse.json(paginatedResponse(articles, total, pg));
-}
+});
 
 // POST /api/vritti/articles — Create a new article
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const allowedRoles = ["ADMIN", "DEPT_HEAD", "MEMBER"];
   if (!allowedRoles.includes(session.user.role)) {
     return forbidden();
@@ -162,4 +157,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(article, { status: 201 });
-}
+});

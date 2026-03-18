@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 interface ScriptSection {
   type: string;
@@ -247,13 +247,8 @@ function buildBRollHtml(deliverable: {
   return html;
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthSession();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
+export const GET = apiHandler(async (req: NextRequest, { params }) => {
+  const { id } = params;
   const exportType = req.nextUrl.searchParams.get("type") ?? "script";
 
   const deliverable = await prisma.deliverable.findUnique({
@@ -291,4 +286,4 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       "Content-Disposition": `attachment; filename="${safeTitle}-script.html"`,
     },
   });
-}
+});

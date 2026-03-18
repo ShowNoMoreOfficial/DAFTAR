@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/analytics/performance/:brandId — Brand-specific performance
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ brandId: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { brandId } = await params;
+export const GET = apiHandler(async (req: NextRequest, { params }) => {
+  const { brandId } = params;
   const { searchParams } = req.nextUrl;
   const platform = searchParams.get("platform");
   const days = parseInt(searchParams.get("days") || "30");
@@ -54,4 +48,4 @@ export async function GET(
     platformBreakdown,
     records,
   });
-}
+});

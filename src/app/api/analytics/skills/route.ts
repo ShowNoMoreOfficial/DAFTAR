@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { skillOrchestrator } from "@/lib/skill-orchestrator";
 
 // GET /api/analytics/skills — Skill performance dashboard
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const skillPath = searchParams.get("skill");
   const days = parseInt(searchParams.get("days") || "30");
@@ -71,4 +68,4 @@ export async function GET(req: NextRequest) {
   );
 
   return NextResponse.json({ skills: skillStats, period: { days } });
-}
+});

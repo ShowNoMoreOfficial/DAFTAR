@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { routeToModel } from "@/lib/yantri/model-router";
+import { apiHandler } from "@/lib/api-handler";
 
 // POST /api/yantri/rewrite-segment — micro-regenerate a selected text segment
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
   const { originalText, userInstruction, context } = body;
 
@@ -31,32 +28,23 @@ ${context ? `CONTEXT (for reference only — do NOT rewrite this):\n${typeof con
 
   const userMessage = `ORIGINAL TEXT TO REWRITE:\n"${originalText}"\n\nINSTRUCTION: ${userInstruction}`;
 
-  try {
-    const result = await routeToModel("drafting", systemPrompt, userMessage, {
-      temperature: 0.4,
-    });
+  const result = await routeToModel("drafting", systemPrompt, userMessage, {
+    temperature: 0.4,
+  });
 
-    // The result might be JSON-wrapped or plain text
-    let rewrittenText = result.raw;
-    if (result.parsed && typeof result.parsed === "string") {
-      rewrittenText = result.parsed;
-    } else if (result.parsed && typeof result.parsed === "object") {
-      const parsed = result.parsed as Record<string, unknown>;
-      if (typeof parsed.text === "string") rewrittenText = parsed.text;
-      if (typeof parsed.rewritten === "string") rewrittenText = parsed.rewritten;
-    }
-
-    return NextResponse.json({
-      originalText,
-      rewrittenText: rewrittenText.trim(),
-      model: result.model,
-    });
-  } catch (error) {
-    console.error("[rewrite-segment] Error:", error instanceof Error ? error.message : error);
-    return NextResponse.json(
-      { error: "Content generation temporarily unavailable. Please try again in a moment.",
-        details: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.message : String(error)) : undefined },
-      { status: 503 }
-    );
+  // The result might be JSON-wrapped or plain text
+  let rewrittenText = result.raw;
+  if (result.parsed && typeof result.parsed === "string") {
+    rewrittenText = result.parsed;
+  } else if (result.parsed && typeof result.parsed === "object") {
+    const parsed = result.parsed as Record<string, unknown>;
+    if (typeof parsed.text === "string") rewrittenText = parsed.text;
+    if (typeof parsed.rewritten === "string") rewrittenText = parsed.rewritten;
   }
-}
+
+  return NextResponse.json({
+    originalText,
+    rewrittenText: rewrittenText.trim(),
+    model: result.model,
+  });
+});

@@ -1,15 +1,9 @@
-import { NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { getCountryIntel } from "@/lib/khabri";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ countryCode: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { countryCode } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { params }) => {
+  const { countryCode } = params;
 
   try {
     const result = await getCountryIntel(countryCode);
@@ -18,4 +12,4 @@ export async function GET(
     const message = err instanceof Error ? err.message : "Failed to fetch country intelligence";
     return NextResponse.json({ error: message }, { status: 502 });
   }
-}
+});

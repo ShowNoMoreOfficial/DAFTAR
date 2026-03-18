@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest, handleApiError } from "@/lib/api-utils";
+import { forbidden, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/brands — List brands (filtered by user access)
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   const where =
     session.user.role === "ADMIN"
       ? {}
@@ -26,27 +24,21 @@ export async function GET() {
   });
 
   return NextResponse.json(brands);
-}
+});
 
 // POST /api/brands
-export async function POST(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const POST = apiHandler(async (req, { session }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
-  try {
-    const body = await req.json();
-    const { name, slug, clientId } = body;
-    if (!name || !slug || !clientId) {
-      return badRequest("name, slug, and clientId are required");
-    }
-
-    const brand = await prisma.brand.create({
-      data: { name, slug, clientId },
-    });
-
-    return NextResponse.json(brand, { status: 201 });
-  } catch (error) {
-    return handleApiError(error);
+  const body = await req.json();
+  const { name, slug, clientId } = body;
+  if (!name || !slug || !clientId) {
+    return badRequest("name, slug, and clientId are required");
   }
-}
+
+  const brand = await prisma.brand.create({
+    data: { name, slug, clientId },
+  });
+
+  return NextResponse.json(brand, { status: 201 });
+});

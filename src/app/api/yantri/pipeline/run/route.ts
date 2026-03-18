@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { yantriInngest } from "@/lib/yantri/inngest/client";
+import { apiHandler } from "@/lib/api-handler";
 
 // ---------------------------------------------------------------------------
 // POST /api/yantri/pipeline/run
@@ -15,12 +15,7 @@ import { yantriInngest } from "@/lib/yantri/inngest/client";
 // Inngest events. Returns 202 with { triggered, ids }.
 // ---------------------------------------------------------------------------
 
-export async function POST(request: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = apiHandler(async (request: NextRequest) => {
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -93,4 +88,4 @@ export async function POST(request: NextRequest) {
     { triggered: ids.length, ids },
     { status: 202 }
   );
-}
+});

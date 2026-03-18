@@ -1,12 +1,10 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
+import { forbidden } from "@/lib/api-utils";
 import { toCSV, csvResponse } from "@/lib/csv";
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { role, primaryDepartmentId } = session.user;
   const { searchParams } = req.nextUrl;
   const status = searchParams.get("status");
@@ -50,4 +48,4 @@ export async function GET(req: NextRequest) {
   ]);
 
   return csvResponse(csv, `tasks-${new Date().toISOString().split("T")[0]}.csv`);
-}
+});

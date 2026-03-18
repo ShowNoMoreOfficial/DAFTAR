@@ -59,20 +59,28 @@ export async function generateEmbedding(
   const client = getEmbeddingClient();
   if (!client) return null;
 
-  // Truncate to ~8000 tokens (rough estimate: 4 chars per token)
-  const truncated = text.slice(0, 32000);
+  try {
+    // Truncate to ~8000 tokens (rough estimate: 4 chars per token)
+    const truncated = text.slice(0, 32000);
 
-  const model = client.getGenerativeModel({ model: EMBEDDING_MODEL });
-  const result = await model.embedContent(truncated);
-  const embedding = result.embedding.values;
+    const model = client.getGenerativeModel({ model: EMBEDDING_MODEL });
+    const result = await model.embedContent(truncated);
+    const embedding = result.embedding.values;
 
-  if (embedding.length !== EMBEDDING_DIMENSIONS) {
+    if (embedding.length !== EMBEDDING_DIMENSIONS) {
+      console.warn(
+        `[VectorStore] Expected ${EMBEDDING_DIMENSIONS} dimensions, got ${embedding.length}`
+      );
+    }
+
+    return embedding;
+  } catch (err) {
     console.warn(
-      `[VectorStore] Expected ${EMBEDDING_DIMENSIONS} dimensions, got ${embedding.length}`
+      "[VectorStore] Embedding generation failed, inserting without vector:",
+      (err as Error).message?.slice(0, 100)
     );
+    return null;
   }
-
-  return embedding;
 }
 
 // ─── Insert Signal with Vector ───────────────────────────

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import type { TaskStatus } from "@prisma/client";
 
 const BOARD_COLUMNS: TaskStatus[] = [
@@ -12,10 +12,7 @@ const BOARD_COLUMNS: TaskStatus[] = [
   "DONE",
 ];
 
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest, { session }) => {
   const { searchParams } = req.nextUrl;
   const departmentId = searchParams.get("departmentId");
 
@@ -50,4 +47,4 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json(columns);
-}
+});

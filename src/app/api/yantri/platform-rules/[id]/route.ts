@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
+export const PUT = apiHandler(async (request, { params }) => {
+  const { id } = params;
   const body = await request.json();
   const rule = await prisma.platformRule.update({
     where: { id },
@@ -23,15 +18,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     },
   });
   return NextResponse.json(rule);
-}
+});
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
+export const DELETE = apiHandler(async (_request, { params }) => {
+  const { id } = params;
   await prisma.platformRule.delete({ where: { id } });
   return NextResponse.json({ ok: true });
-}
+});

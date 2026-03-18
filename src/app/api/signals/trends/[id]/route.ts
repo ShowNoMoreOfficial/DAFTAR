@@ -1,16 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound } from "@/lib/api-utils";
+import { notFound } from "@/lib/api-utils";
 
 // GET /api/signals/trends/:id — Trend detail with all signals
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { params }) => {
+  const { id } = params;
 
   const trend = await prisma.trend.findUnique({
     where: { id },
@@ -48,17 +43,11 @@ export async function GET(
   if (!trend) return notFound("Trend not found");
 
   return NextResponse.json({ data: trend });
-}
+});
 
 // PATCH /api/signals/trends/:id — Update trend
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const PATCH = apiHandler(async (req: NextRequest, { params }) => {
+  const { id } = params;
   const body = await req.json();
   const { name, description, lifecycle, velocityScore } = body;
 
@@ -73,4 +62,4 @@ export async function PATCH(
   });
 
   return NextResponse.json({ data: trend });
-}
+});

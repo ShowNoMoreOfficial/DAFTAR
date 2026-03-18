@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id: trendId } = await params;
+export const GET = apiHandler(async (req: NextRequest, { params }) => {
+  const { id: trendId } = params;
   const limit = Number(req.nextUrl.searchParams.get("limit")) || 10;
 
   const signals = await prisma.signal.findMany({
@@ -30,4 +24,4 @@ export async function GET(
     })),
     meta: { total: signals.length, trendId },
   });
-}
+});

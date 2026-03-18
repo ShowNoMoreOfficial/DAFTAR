@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, badRequest, forbidden, handleApiError } from "@/lib/api-utils";
+import { badRequest, forbidden } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/communication/feedback/channels — list active feedback channels
-export async function GET(_req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest, _ctx) => {
   const channels = await prisma.feedbackChannel.findMany({
     where: { isActive: true },
     include: {
@@ -16,19 +14,15 @@ export async function GET(_req: NextRequest) {
   });
 
   return NextResponse.json(channels);
-}
+});
 
 // POST /api/communication/feedback/channels — create channel (ADMIN, HEAD_HR only)
-export async function POST(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const POST = apiHandler(async (req: NextRequest, { session }) => {
   const allowedRoles = ["ADMIN", "HEAD_HR"];
   if (!allowedRoles.includes(session.user.role)) {
     return forbidden();
   }
 
-  try {
   const { name, description, type, isAnonymous } = await req.json();
 
   if (!name) {
@@ -45,7 +39,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(channel, { status: 201 });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
+});

@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { id } = await params;
+export const GET = apiHandler(async (_request, { params }) => {
+  const { id } = params;
   const narrative = await prisma.editorialNarrative.findUnique({
     where: { id },
     include: { trend: true },
@@ -16,13 +13,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const brand = await prisma.brand.findUnique({ where: { id: narrative.brandId } });
 
   return NextResponse.json({ ...narrative, brand });
-}
+});
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getAuthSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { id } = await params;
+export const PUT = apiHandler(async (request, { params }) => {
+  const { id } = params;
   const body = await request.json();
 
   const data: Record<string, unknown> = {};
@@ -57,4 +51,4 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   return NextResponse.json({ ...narrative, brand });
-}
+});

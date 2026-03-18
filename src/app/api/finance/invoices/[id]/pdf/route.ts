@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, notFound } from "@/lib/api-utils";
+import { forbidden, notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 /**
  * GET /api/finance/invoices/[id]/pdf
@@ -8,17 +9,11 @@ import { getAuthSession, unauthorized, forbidden, notFound } from "@/lib/api-uti
  * Generates a simple HTML-based PDF-printable invoice.
  * Browsers can print this to PDF natively via Ctrl+P.
  */
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest, { session, params }) => {
   const { role } = session.user;
   if (!["ADMIN", "FINANCE", "CLIENT"].includes(role)) return forbidden();
 
-  const { id } = await params;
+  const { id } = params;
 
   const invoice = await prisma.invoice.findUnique({
     where: { id },
@@ -146,4 +141,4 @@ export async function GET(
       "Content-Disposition": `inline; filename="${invoice.number}.html"`,
     },
   });
-}
+});

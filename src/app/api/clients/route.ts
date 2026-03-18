@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, forbidden, badRequest } from "@/lib/api-utils";
+import { forbidden, badRequest } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/clients
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const GET = apiHandler(async (_req, { session }) => {
   if (!["ADMIN", "FINANCE"].includes(session.user.role)) return forbidden();
 
   const clients = await prisma.client.findMany({
@@ -14,12 +13,10 @@ export async function GET() {
   });
 
   return NextResponse.json(clients);
-}
+});
 
 // POST /api/clients
-export async function POST(req: Request) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
+export const POST = apiHandler(async (req, { session }) => {
   if (session.user.role !== "ADMIN") return forbidden();
 
   const body = await req.json();
@@ -31,4 +28,4 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json(client, { status: 201 });
-}
+});

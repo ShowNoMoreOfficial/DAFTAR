@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req, { session }) => {
   const userId = session.user.id;
 
   const [all, unlocked] = await Promise.all([
@@ -21,4 +18,4 @@ export async function GET() {
       unlocked: unlockedIds.has(a.id),
     }))
   );
-}
+});

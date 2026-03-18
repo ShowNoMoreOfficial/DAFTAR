@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound } from "@/lib/api-utils";
+import { notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/yantri/narratives/:id — Get narrative tree detail
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (req: NextRequest, { params }) => {
+  const { id } = params;
 
   const tree = await prisma.narrativeTree.findUnique({
     where: { id },
@@ -28,17 +23,11 @@ export async function GET(
   if (!tree) return notFound("Narrative tree not found");
 
   return NextResponse.json(tree);
-}
+});
 
 // PATCH /api/yantri/narratives/:id — Update status, summary, etc.
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const PATCH = apiHandler(async (req: NextRequest, { params }) => {
+  const { id } = params;
   const body = await req.json();
 
   const { status, summary, title } = body;
@@ -53,19 +42,13 @@ export async function PATCH(
   });
 
   return NextResponse.json(tree);
-}
+});
 
 // DELETE /api/yantri/narratives/:id
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const DELETE = apiHandler(async (req: NextRequest, { params }) => {
+  const { id } = params;
 
   await prisma.narrativeTree.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
-}
+});

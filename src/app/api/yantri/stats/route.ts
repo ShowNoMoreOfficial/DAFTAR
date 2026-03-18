@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
 // GET /api/yantri/stats — Dashboard stats
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async () => {
   const [
     totalTrees,
     incomingTrees,
@@ -54,4 +51,4 @@ export async function GET() {
       createdAt: t.createdAt.toISOString(),
     })),
   });
-}
+});

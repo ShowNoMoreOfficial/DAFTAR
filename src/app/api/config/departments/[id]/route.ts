@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized, notFound } from "@/lib/api-utils";
+import { notFound } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
-  const { id } = await params;
+export const GET = apiHandler(async (_req: NextRequest, { params }) => {
+  const { id } = params;
 
   const department = await prisma.department.findUnique({
     where: { id },
@@ -26,20 +21,14 @@ export async function GET(
 
   if (!department) return notFound("Department not found");
   return NextResponse.json(department);
-}
+});
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const PATCH = apiHandler(async (req: NextRequest, { session, params }) => {
   if (session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
   const existing = await prisma.department.findUnique({ where: { id } });
   if (!existing) return notFound("Department not found");
 
@@ -58,4 +47,4 @@ export async function PATCH(
   });
 
   return NextResponse.json(department);
-}
+});

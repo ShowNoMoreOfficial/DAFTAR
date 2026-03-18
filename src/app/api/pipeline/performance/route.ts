@@ -1,11 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { apiHandler } from "@/lib/api-handler";
 import { prisma } from "@/lib/prisma";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
 
-export async function GET() {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (_req: NextRequest) => {
   const [total, incoming, inProd, completed, skipped, narrativeCount] = await Promise.all([
     prisma.narrativeTree.count(),
     prisma.narrativeTree.count({ where: { status: "INCOMING" } }),
@@ -24,4 +21,4 @@ export async function GET() {
     totalDeliverables: narrativeCount,
     approvalRate: total > 0 ? Math.round(((completed + inProd) / total) * 100) : 0,
   });
-}
+});

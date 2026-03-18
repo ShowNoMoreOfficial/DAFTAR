@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession, unauthorized } from "@/lib/api-utils";
+import { apiHandler } from "@/lib/api-handler";
 
-// ─── Mock Signal Data ───────────────────────────────────
+// --- Mock Signal Data ---
 
 const MOCK_SIGNALS = [
   {
@@ -151,10 +151,7 @@ const MOCK_SIGNALS = [
 ];
 
 // GET /api/m/khabri/signals — Return mocked signals with optional filters
-export async function GET(req: NextRequest) {
-  const session = await getAuthSession();
-  if (!session) return unauthorized();
-
+export const GET = apiHandler(async (req: NextRequest) => {
   const { searchParams } = req.nextUrl;
   const search = searchParams.get("search")?.toLowerCase() || "";
   const source = searchParams.get("source") || "";
@@ -189,4 +186,4 @@ export async function GET(req: NextRequest) {
     },
     sources: [...new Set(MOCK_SIGNALS.map((s) => s.source))],
   });
-}
+});
