@@ -34,40 +34,38 @@ interface BrandData {
 
 // ─── Constants ──────────────────────────────────────────
 
-const PLATFORM_CONFIG: Record<string, { label: string; color: string; bgColor: string; description: string }> = {
+const PLATFORM_CONFIG: Record<
+  string,
+  { label: string; color: string; bgColor: string }
+> = {
   youtube: {
     label: "YouTube",
     color: "#FF0000",
     bgColor: "bg-[rgba(239,68,68,0.1)]",
-    description: "Upload videos, shorts, and manage your channel",
   },
   x: {
     label: "X (Twitter)",
     color: "#000000",
     bgColor: "bg-[var(--bg-elevated)]",
-    description: "Post tweets, threads, and engage with followers",
   },
   instagram: {
     label: "Instagram",
     color: "#E4405F",
     bgColor: "bg-[rgba(236,72,153,0.1)]",
-    description: "Share photos, reels, stories, and carousels",
-  },
-  linkedin: {
-    label: "LinkedIn",
-    color: "#0A66C2",
-    bgColor: "bg-[rgba(59,130,246,0.1)]",
-    description: "Publish professional content and articles",
   },
   facebook: {
     label: "Facebook",
     color: "#1877F2",
     bgColor: "bg-[rgba(59,130,246,0.1)]",
-    description: "Manage page posts, stories, and engagement",
+  },
+  linkedin: {
+    label: "LinkedIn",
+    color: "#0A66C2",
+    bgColor: "bg-[rgba(59,130,246,0.1)]",
   },
 };
 
-const PLATFORMS = ["youtube", "x", "instagram", "linkedin", "facebook"];
+const PLATFORMS = ["youtube", "x", "instagram", "facebook", "linkedin"];
 
 // ─── Component ──────────────────────────────────────────
 
@@ -75,11 +73,11 @@ export default function ConnectionsPage() {
   const [connections, setConnections] = useState<PlatformConnectionData[]>([]);
   const [brands, setBrands] = useState<BrandData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogPlatform, setDialogPlatform] = useState("");
-  const [selectedBrandId, setSelectedBrandId] = useState("");
-  const [connecting, setConnecting] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [connecting, setConnecting] = useState<string | null>(null); // "brandId-platform"
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const fetchConnections = useCallback(async () => {
     setLoading(true);
@@ -121,9 +119,11 @@ export default function ConnectionsPage() {
 
     if (connected) {
       const label = PLATFORM_CONFIG[connected]?.label || connected;
-      setToast({ type: "success", message: `${label} connected successfully!` });
+      setToast({
+        type: "success",
+        message: `${label} connected successfully!`,
+      });
       fetchConnections();
-      // Clean URL
       window.history.replaceState({}, "", window.location.pathname);
     } else if (error) {
       setToast({ type: "error", message: error });
@@ -139,21 +139,15 @@ export default function ConnectionsPage() {
     }
   }, [toast]);
 
-  const getConnectionsForPlatform = (platform: string) => {
-    return connections.filter((c) => c.platform === platform && c.isActive);
+  const getConnection = (brandId: string, platform: string) => {
+    return connections.find(
+      (c) => c.brandId === brandId && c.platform === platform && c.isActive
+    );
   };
 
-  const openConnectDialog = (platform: string) => {
-    setDialogPlatform(platform);
-    setSelectedBrandId(brands.length === 1 ? brands[0].id : "");
-    setDialogOpen(true);
-  };
-
-  const handleConnect = () => {
-    if (!selectedBrandId || !dialogPlatform) return;
-    setConnecting(true);
-    // Redirect to OAuth initiation endpoint
-    window.location.href = `/api/relay/oauth/${dialogPlatform}?brandId=${selectedBrandId}`;
+  const handleConnect = (brandId: string, platform: string) => {
+    setConnecting(`${brandId}-${platform}`);
+    window.location.href = `/api/relay/oauth/${platform}?brandId=${brandId}`;
   };
 
   const handleDisconnect = async (connectionId: string) => {
@@ -173,6 +167,11 @@ export default function ConnectionsPage() {
   const isTokenExpired = (expiresAt: string | null) => {
     if (!expiresAt) return false;
     return new Date(expiresAt) < new Date();
+  };
+
+  const getBrandConnectionCount = (brandId: string) => {
+    return connections.filter((c) => c.brandId === brandId && c.isActive)
+      .length;
   };
 
   if (loading) {
@@ -201,7 +200,10 @@ export default function ConnectionsPage() {
             <XCircle className="h-4 w-4 text-red-600" />
           )}
           {toast.message}
-          <button onClick={() => setToast(null)} className="ml-2 opacity-50 hover:opacity-100">
+          <button
+            onClick={() => setToast(null)}
+            className="ml-2 opacity-50 hover:opacity-100"
+          >
             <X className="h-3 w-3" />
           </button>
         </div>
@@ -209,189 +211,188 @@ export default function ConnectionsPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Platform Connections</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+          Platform Connections
+        </h2>
         <p className="text-sm text-[var(--text-muted)]">
-          Connect your social media accounts to enable content distribution
+          Connect social media accounts for each brand to enable content
+          distribution
         </p>
       </div>
 
-      {/* Platform cards grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {PLATFORMS.map((platform) => {
-          const config = PLATFORM_CONFIG[platform];
-          const platformConnections = getConnectionsForPlatform(platform);
-          const isConnected = platformConnections.length > 0;
-
+      {/* Brand sections */}
+      <div className="space-y-8">
+        {brands.map((brand) => {
+          const connectedCount = getBrandConnectionCount(brand.id);
           return (
-            <div
-              key={platform}
-              className={cn(
-                "rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 transition-shadow hover:shadow-sm"
-              )}
-            >
-              {/* Platform header */}
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn("flex h-10 w-10 items-center justify-center rounded-lg", config.bgColor)}
-                  >
-                    <div
-                      className="h-5 w-5 rounded"
-                      style={{ backgroundColor: config.color }}
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">{config.label}</h3>
-                    <p className="text-[10px] text-[var(--text-muted)]">{config.description}</p>
-                  </div>
+            <div key={brand.id}>
+              {/* Brand header */}
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-primary)] text-xs font-bold text-white">
+                  {brand.name
+                    .split(" ")
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
                 </div>
-                {isConnected ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                ) : (
-                  <XCircle className="h-5 w-5 text-[var(--text-muted)]" />
-                )}
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                    {brand.name}
+                  </h3>
+                  <p className="text-[10px] text-[var(--text-muted)]">
+                    {connectedCount}/{PLATFORMS.length} platforms connected
+                  </p>
+                </div>
               </div>
 
-              {/* Connected accounts */}
-              {isConnected ? (
-                <div className="mb-3 space-y-2">
-                  {platformConnections.map((conn) => {
-                    const expired = isTokenExpired(conn.tokenExpiresAt);
-                    return (
-                      <div
-                        key={conn.id}
-                        className="flex items-center justify-between rounded-lg bg-[#F8FBF9] px-3 py-2"
-                      >
-                        <div>
-                          <p className="text-xs font-medium text-[var(--text-primary)]">
+              {/* Platform rows for this brand */}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {PLATFORMS.map((platform) => {
+                  const config = PLATFORM_CONFIG[platform];
+                  const conn = getConnection(brand.id, platform);
+                  const expired = conn
+                    ? isTokenExpired(conn.tokenExpiresAt)
+                    : false;
+                  const isConnecting =
+                    connecting === `${brand.id}-${platform}`;
+
+                  return (
+                    <div
+                      key={platform}
+                      className={cn(
+                        "rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 transition-shadow hover:shadow-sm",
+                        conn && !expired && "border-emerald-200"
+                      )}
+                    >
+                      {/* Platform icon + name */}
+                      <div className="mb-3 flex items-center gap-2.5">
+                        <div
+                          className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded-lg",
+                            config.bgColor
+                          )}
+                        >
+                          <div
+                            className="h-4 w-4 rounded"
+                            style={{ backgroundColor: config.color }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-[var(--text-primary)]">
+                            {config.label}
+                          </p>
+                        </div>
+                        {conn && !expired && (
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                        )}
+                        {conn && expired && (
+                          <XCircle className="h-4 w-4 shrink-0 text-amber-500" />
+                        )}
+                      </div>
+
+                      {/* Connection status */}
+                      {conn ? (
+                        <div className="mb-3">
+                          <p className="truncate text-[11px] font-medium text-[var(--text-primary)]">
                             {conn.accountName || conn.accountId || "Connected"}
                           </p>
                           <p className="text-[10px] text-[var(--text-muted)]">
-                            {conn.brand.name} &middot; Connected {new Date(conn.connectedAt).toLocaleDateString("en-IN", {
-                              day: "numeric", month: "short", year: "numeric",
-                            })}
+                            {expired ? (
+                              <span className="text-amber-600">
+                                Token expired
+                              </span>
+                            ) : (
+                              <>
+                                Connected{" "}
+                                {new Date(conn.connectedAt).toLocaleDateString(
+                                  "en-IN",
+                                  {
+                                    day: "numeric",
+                                    month: "short",
+                                  }
+                                )}
+                              </>
+                            )}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {expired ? (
-                            <span className="rounded-full bg-[rgba(239,68,68,0.15)] px-2 py-0.5 text-[9px] font-medium text-red-700">
-                              Expired
-                            </span>
-                          ) : (
-                            <span className="rounded-full bg-[rgba(16,185,129,0.15)] px-2 py-0.5 text-[9px] font-medium text-emerald-700">
-                              Connected
-                            </span>
-                          )}
+                      ) : (
+                        <div className="mb-3 flex items-center gap-1.5 py-1">
+                          <Link2 className="h-3 w-3 text-[var(--text-muted)]" />
+                          <p className="text-[10px] text-[var(--text-muted)]">
+                            Not connected
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      {conn ? (
+                        <div className="flex gap-1.5">
                           <Button
-                            variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-[10px] text-red-500 hover:bg-[rgba(239,68,68,0.1)] hover:text-red-600"
+                            variant="outline"
+                            className="flex-1 text-[10px] h-7"
+                            disabled={isConnecting}
+                            onClick={() =>
+                              handleConnect(brand.id, platform)
+                            }
+                          >
+                            {isConnecting ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <RefreshCw className="mr-1 h-2.5 w-2.5" />
+                                Reconnect
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-[10px] text-red-500 hover:bg-[rgba(239,68,68,0.1)] hover:text-red-600"
                             onClick={() => handleDisconnect(conn.id)}
                           >
-                            Disconnect
+                            <X className="h-3 w-3" />
                           </Button>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="mb-3 rounded-lg border border-dashed border-[var(--border-subtle)] p-3 text-center">
-                  <Link2 className="mx-auto h-5 w-5 text-[var(--text-muted)]" />
-                  <p className="mt-1 text-[10px] text-[var(--text-muted)]">No accounts connected</p>
-                </div>
-              )}
-
-              {/* Action */}
-              <Button
-                size="sm"
-                variant={isConnected ? "outline" : "default"}
-                className="w-full text-xs"
-                onClick={() => openConnectDialog(platform)}
-              >
-                {isConnected ? (
-                  <>
-                    <RefreshCw className="mr-1.5 h-3 w-3" />
-                    Reconnect
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="mr-1.5 h-3 w-3" />
-                    Connect Account
-                  </>
-                )}
-              </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="w-full text-[10px] h-7"
+                          disabled={isConnecting}
+                          onClick={() =>
+                            handleConnect(brand.id, platform)
+                          }
+                        >
+                          {isConnecting ? (
+                            <>
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              Redirecting...
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink className="mr-1 h-2.5 w-2.5" />
+                              Connect
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
-      </div>
 
-      {/* Connect dialog */}
-      {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-xl bg-[var(--bg-surface)] p-6 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[var(--text-primary)]">
-                Connect {PLATFORM_CONFIG[dialogPlatform]?.label}
-              </h3>
-              <button onClick={() => setDialogOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <p className="mb-4 text-xs text-[var(--text-muted)]">
-              Select the brand to connect to {PLATFORM_CONFIG[dialogPlatform]?.label}.
-              You&apos;ll be redirected to authorize access.
+        {brands.length === 0 && (
+          <div className="rounded-xl border border-dashed border-[var(--border-subtle)] p-12 text-center">
+            <p className="text-sm text-[var(--text-muted)]">
+              No brands found. Create brands in Settings first.
             </p>
-
-            {/* Brand selector */}
-            <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
-              Brand
-            </label>
-            <select
-              value={selectedBrandId}
-              onChange={(e) => setSelectedBrandId(e.target.value)}
-              className="mb-4 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
-            >
-              <option value="">Select a brand...</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => setDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="flex-1"
-                disabled={!selectedBrandId || connecting}
-                onClick={handleConnect}
-              >
-                {connecting ? (
-                  <>
-                    <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                    Redirecting...
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="mr-1.5 h-3 w-3" />
-                    Connect
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
