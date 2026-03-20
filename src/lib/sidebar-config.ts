@@ -31,6 +31,13 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/dashboard",
         roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER", "CLIENT", "FINANCE", "CONTRACTOR"],
       },
+      {
+        id: "calendar",
+        label: "Calendar",
+        icon: "CalendarDays",
+        href: "/calendar",
+        roles: ["ADMIN", "DEPT_HEAD", "MEMBER", "CLIENT"],
+      },
     ],
   },
 

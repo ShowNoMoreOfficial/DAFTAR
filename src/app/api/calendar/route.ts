@@ -73,7 +73,7 @@ export const GET = apiHandler(async (req: NextRequest, { session }) => {
       updatedAt: true,
       brandId: true,
       brand: { select: { name: true } },
-      tree: { select: { headline: true } },
+      tree: { select: { title: true } },
     },
     orderBy: { updatedAt: "asc" },
   });
@@ -157,7 +157,7 @@ export const GET = apiHandler(async (req: NextRequest, { session }) => {
     items.push({
       id: d.id,
       source: "deliverable",
-      title: d.tree?.headline || `${d.pipelineType} deliverable`,
+      title: d.tree?.title || `${d.pipelineType} deliverable`,
       platform: normPlatform(d.platform),
       status: mapDeliverableStatus(d.status),
       date: d.updatedAt,
