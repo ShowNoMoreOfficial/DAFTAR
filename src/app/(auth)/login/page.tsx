@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
@@ -11,11 +11,28 @@ function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const error = searchParams.get("error");
   const verify = searchParams.get("verify");
+  const magicToken = searchParams.get("token");
+  const magicEmail = searchParams.get("email");
 
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(!!verify);
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
+  const [magicLinkAttempted, setMagicLinkAttempted] = useState(false);
+
+  // Auto-login via magic link token
+  useEffect(() => {
+    if (magicToken && magicEmail && !magicLinkAttempted) {
+      setMagicLinkAttempted(true);
+      setMagicLinkLoading(true);
+      signIn("magic-link", {
+        token: magicToken,
+        email: magicEmail,
+        callbackUrl,
+      });
+    }
+  }, [magicToken, magicEmail, callbackUrl, magicLinkAttempted]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +61,18 @@ function LoginForm() {
       setEmailLoading(false);
     }
   };
+
+  // Show loading screen while magic link is being processed
+  if (magicLinkLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg-abyss)]">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent-primary)] border-t-transparent" />
+          <p className="text-sm text-[var(--text-secondary)]">Signing you in...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg-abyss)]">

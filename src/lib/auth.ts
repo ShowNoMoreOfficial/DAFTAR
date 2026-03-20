@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
+import Credentials from "next-auth/providers/credentials";
 import Nodemailer from "next-auth/providers/nodemailer";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
@@ -74,12 +75,58 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
       allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          scope:
+            "openid email profile https://www.googleapis.com/auth/drive.file",
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
     }),
     MicrosoftEntraID({
       clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
       clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
       issuer: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || "common"}/v2.0`,
       allowDangerousEmailAccountLinking: true,
+    }),
+    Credentials({
+      id: "magic-link",
+      name: "Magic Link",
+      credentials: {
+        token: { type: "text" },
+        email: { type: "text" },
+      },
+      async authorize(credentials) {
+        const token = credentials?.token as string | undefined;
+        const email = credentials?.email as string | undefined;
+        if (!token || !email) return null;
+
+        // Validate the token against the VerificationToken table
+        const record = await prisma.verificationToken.findUnique({
+          where: { identifier_token: { identifier: email, token } },
+        });
+        if (!record) return null;
+
+        // Check expiry
+        if (record.expires < new Date()) {
+          await prisma.verificationToken.delete({
+            where: { identifier_token: { identifier: email, token } },
+          });
+          return null;
+        }
+
+        // Consume the token (one-time use)
+        await prisma.verificationToken.delete({
+          where: { identifier_token: { identifier: email, token } },
+        });
+
+        // Return user info for the signIn/jwt callbacks
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return null;
+
+        return { id: user.id, email: user.email, name: user.name, image: user.avatar };
+      },
     }),
     Nodemailer({
       server: {
