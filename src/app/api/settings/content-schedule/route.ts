@@ -37,16 +37,15 @@ export async function PUT(req: Request) {
   try {
     const { schedules } = await req.json();
 
-    for (const [slug, schedule] of Object.entries(schedules)) {
+    for (const [slug, schedule] of Object.entries(schedules as Record<string, Record<string, unknown>>)) {
       const brand = await prisma.brand.findFirst({ where: { slug } });
       if (!brand) continue;
 
       const existing = (brand.config as Record<string, unknown>) || {};
+      const updated = JSON.parse(JSON.stringify({ ...existing, contentSchedule: schedule }));
       await prisma.brand.update({
         where: { id: brand.id },
-        data: {
-          config: { ...existing, contentSchedule: schedule },
-        },
+        data: { config: updated },
       });
     }
 
