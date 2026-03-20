@@ -18,6 +18,13 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER", "CLIENT", "FINANCE", "CONTRACTOR"],
     items: [
       {
+        id: "feed",
+        label: "Feed",
+        icon: "Radio",
+        href: "/feed",
+        roles: ["ADMIN", "DEPT_HEAD", "MEMBER"],
+      },
+      {
         id: "dashboard",
         label: "Dashboard",
         icon: "LayoutDashboard",

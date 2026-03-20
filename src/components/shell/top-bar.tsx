@@ -31,6 +31,11 @@ function buildBreadcrumb(pathname: string): { label: string; href: string }[] {
 
   const labels: Record<string, string> = {
     m: "",
+    feed: "Feed",
+    create: "Create",
+    pipeline: "Pipeline",
+    calendar: "Calendar",
+    settings: "Settings",
     dashboard: "Dashboard",
     tasks: "My Tasks",
     brands: "Brands",
@@ -48,9 +53,7 @@ function buildBreadcrumb(pathname: string): { label: string; href: string }[] {
     admin: "Admin",
     users: "Users & Roles",
     gi: "GI Intelligence",
-    settings: "Settings",
     reports: "Reports",
-    calendar: "Calendar",
     leaderboard: "Leaderboard",
     trends: "Trends",
     signals: "Signals",
@@ -68,7 +71,6 @@ function buildBreadcrumb(pathname: string): { label: string; href: string }[] {
     culture: "Culture",
     queue: "Queue",
     articles: "Articles",
-    pipeline: "Pipeline",
     media: "Media",
     categories: "Categories",
     "narrative-trees": "Narrative Trees",
@@ -84,6 +86,9 @@ function buildBreadcrumb(pathname: string): { label: string; href: string }[] {
     portal: "Client Portal",
     invoices: "Invoices",
     expenses: "Expenses",
+    intelligence: "Intelligence",
+    "content-studio": "Content Studio",
+    files: "Files",
   };
 
   let href = "";

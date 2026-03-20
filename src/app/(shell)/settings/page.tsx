@@ -25,19 +25,79 @@ import {
   GitBranch,
   ArrowRight,
   MessageSquarePlus,
+  CalendarClock,
+  ShieldCheck,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
-type Tab = "profile" | "notifications" | "appearance" | "team" | "brands" | "platforms" | "ai" | "prompts" | "skills" | "feedback";
+type Tab = "profile" | "notifications" | "appearance" | "schedule" | "team" | "brands" | "platforms" | "ai" | "prompts" | "skills" | "feedback" | "admin";
 
-const ADMIN_TABS: { id: Tab; label: string; icon: React.ReactNode; href: string; desc: string }[] = [
+const ADMIN_TABS: { id: Tab; label: string; icon: React.ReactNode; href?: string; desc: string }[] = [
   { id: "team", label: "Team", icon: <Users className="h-4 w-4" />, href: "/admin/users", desc: "Users, roles, departments, invitations" },
   { id: "brands", label: "Brands", icon: <Building className="h-4 w-4" />, href: "/admin/clients", desc: "Client and brand management" },
   { id: "platforms", label: "Platforms", icon: <LinkIcon className="h-4 w-4" />, href: "/relay/connections", desc: "Platform connections and publishing rules" },
+  { id: "schedule", label: "Content Schedule", icon: <CalendarClock className="h-4 w-4" />, desc: "Posting frequency per brand per platform" },
   { id: "ai", label: "AI Config", icon: <Sparkles className="h-4 w-4" />, href: "/admin/gi", desc: "GI configuration, tier assignments, autonomy" },
   { id: "prompts", label: "Prompts", icon: <FileText className="h-4 w-4" />, href: "/m/yantri/prompt-library", desc: "Prompt templates for content generation" },
   { id: "skills", label: "Skills", icon: <BookOpen className="h-4 w-4" />, href: "/admin/skills", desc: "Skill file management and performance" },
   { id: "feedback", label: "Feedback", icon: <MessageSquarePlus className="h-4 w-4" />, href: "/settings/feedback", desc: "Team bug reports, suggestions, content ratings" },
+  { id: "admin", label: "Admin", icon: <ShieldCheck className="h-4 w-4" />, href: "/admin/users", desc: "Users, security, cron status" },
 ];
+
+// --- Content Schedule types & defaults ---
+type FrequencyOption = "hourly" | "every_3h" | "daily" | "2_per_week" | "3_per_week" | "1_per_week" | "when_newsworthy" | "match_shorts" | "match_twitter";
+
+interface SlotConfig {
+  frequency: FrequencyOption;
+  days?: string[];
+  times?: string[];
+  auto?: boolean;
+}
+
+type BrandSchedule = Record<string, SlotConfig>;
+
+const FREQUENCY_LABELS: Record<FrequencyOption, string> = {
+  hourly: "Hourly",
+  every_3h: "Every 3 hours",
+  daily: "Daily",
+  "2_per_week": "2× per week",
+  "3_per_week": "3× per week",
+  "1_per_week": "1× per week",
+  when_newsworthy: "When newsworthy",
+  match_shorts: "Match Shorts cadence",
+  match_twitter: "Match Twitter cadence",
+};
+
+const CONTENT_TYPES = [
+  { key: "x_thread", label: "X Thread" },
+  { key: "x_single", label: "X Post" },
+  { key: "youtube_explainer", label: "YouTube Explainer" },
+  { key: "youtube_short", label: "YouTube Short" },
+  { key: "instagram_carousel", label: "Instagram Carousel" },
+  { key: "instagram_reel", label: "Instagram Reel" },
+  { key: "blog_post", label: "Blog Post" },
+  { key: "linkedin_post", label: "LinkedIn Post" },
+];
+
+const DEFAULT_SCHEDULES: Record<string, BrandSchedule> = {
+  "the-squirrels": {
+    x_thread: { frequency: "every_3h", times: ["08:00", "11:00", "14:00", "17:00", "20:00"] },
+    x_single: { frequency: "hourly", auto: true },
+    youtube_explainer: { frequency: "2_per_week", days: ["tuesday", "friday"] },
+    youtube_short: { frequency: "when_newsworthy", auto: true },
+    instagram_carousel: { frequency: "3_per_week", days: ["monday", "wednesday", "friday"] },
+    instagram_reel: { frequency: "match_shorts", auto: true },
+    blog_post: { frequency: "match_twitter", auto: true },
+    linkedin_post: { frequency: "3_per_week" },
+  },
+  "breaking-tube": {
+    youtube_short: { frequency: "daily" },
+    youtube_explainer: { frequency: "1_per_week", days: ["thursday"] },
+  },
+};
+
+const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -51,6 +111,62 @@ export default function SettingsPage() {
     giSuggestions: true,
     systemUpdates: true,
   });
+
+  // Content Schedule state
+  const [schedules, setSchedules] = useState<Record<string, BrandSchedule>>(DEFAULT_SCHEDULES);
+  const [scheduleSaved, setScheduleSaved] = useState(false);
+  const [activeBrand, setActiveBrand] = useState("the-squirrels");
+
+  // Load saved schedule from API
+  useEffect(() => {
+    fetch("/api/settings/content-schedule")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.schedules) setSchedules(data.schedules); })
+      .catch(() => {});
+  }, []);
+
+  async function handleSaveSchedule() {
+    try {
+      await fetch("/api/settings/content-schedule", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schedules }),
+      });
+      setScheduleSaved(true);
+      setTimeout(() => setScheduleSaved(false), 2000);
+    } catch { /* ignore */ }
+  }
+
+  function updateSlot(brand: string, contentType: string, field: string, value: unknown) {
+    setSchedules((prev) => ({
+      ...prev,
+      [brand]: {
+        ...prev[brand],
+        [contentType]: {
+          ...(prev[brand]?.[contentType] || { frequency: "daily" as FrequencyOption }),
+          [field]: value,
+        },
+      },
+    }));
+  }
+
+  function removeSlot(brand: string, contentType: string) {
+    setSchedules((prev) => {
+      const copy = { ...prev, [brand]: { ...prev[brand] } };
+      delete copy[brand][contentType];
+      return copy;
+    });
+  }
+
+  function addSlot(brand: string, contentType: string) {
+    setSchedules((prev) => ({
+      ...prev,
+      [brand]: {
+        ...prev[brand],
+        [contentType]: { frequency: "daily" as FrequencyOption },
+      },
+    }));
+  }
 
   useEffect(() => {
     if (session?.user?.name) setDisplayName(session.user.name);
@@ -238,8 +354,145 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* Content Schedule tab — inline editor */}
+          {activeTab === "schedule" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--text-primary)]">Content Schedule</h2>
+                <p className="text-xs text-[var(--text-muted)]">Configure posting frequency per brand per platform</p>
+              </div>
+
+              {/* Brand tabs */}
+              <div className="flex gap-2">
+                {Object.keys(schedules).map((brand) => (
+                  <button
+                    key={brand}
+                    onClick={() => setActiveBrand(brand)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      activeBrand === brand
+                        ? "bg-[var(--accent-primary)] text-white"
+                        : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {brand.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+                  </button>
+                ))}
+              </div>
+
+              {/* Slots for active brand */}
+              <div className="space-y-3">
+                {Object.entries(schedules[activeBrand] || {}).map(([ctKey, slot]) => {
+                  const ct = CONTENT_TYPES.find((c) => c.key === ctKey);
+                  return (
+                    <div key={ctKey} className="rounded-lg border border-[var(--border-subtle)] p-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-[var(--text-primary)]">{ct?.label || ctKey}</p>
+                        <div className="flex items-center gap-2">
+                          {slot.auto && (
+                            <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                          )}
+                          <button onClick={() => removeSlot(activeBrand, ctKey)} className="text-[var(--text-muted)] hover:text-red-500">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-1 block text-[10px] font-medium text-[var(--text-muted)]">Frequency</label>
+                          <select
+                            value={slot.frequency}
+                            onChange={(e) => updateSlot(activeBrand, ctKey, "frequency", e.target.value)}
+                            className="w-full rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
+                          >
+                            {Object.entries(FREQUENCY_LABELS).map(([k, v]) => (
+                              <option key={k} value={k}>{v}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-medium text-[var(--text-muted)]">Auto-publish</label>
+                          <button
+                            onClick={() => updateSlot(activeBrand, ctKey, "auto", !slot.auto)}
+                            className={`relative h-6 w-11 rounded-full transition-colors ${
+                              slot.auto ? "bg-[var(--accent-primary)]" : "bg-[#D1D5DB]"
+                            }`}
+                          >
+                            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                              slot.auto ? "translate-x-[22px]" : "translate-x-0.5"
+                            }`} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Day selection for weekly frequencies */}
+                      {(slot.frequency === "2_per_week" || slot.frequency === "3_per_week" || slot.frequency === "1_per_week") && (
+                        <div className="mt-3">
+                          <label className="mb-1 block text-[10px] font-medium text-[var(--text-muted)]">Days</label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {DAYS_OF_WEEK.map((day) => (
+                              <button
+                                key={day}
+                                onClick={() => {
+                                  const current = slot.days || [];
+                                  const next = current.includes(day)
+                                    ? current.filter((d) => d !== day)
+                                    : [...current, day];
+                                  updateSlot(activeBrand, ctKey, "days", next);
+                                }}
+                                className={`rounded px-2 py-1 text-[10px] font-medium transition-colors ${
+                                  (slot.days || []).includes(day)
+                                    ? "bg-[var(--accent-primary)] text-white"
+                                    : "bg-[var(--bg-elevated)] text-[var(--text-muted)]"
+                                }`}
+                              >
+                                {day.slice(0, 3).toUpperCase()}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Add content type */}
+                {(() => {
+                  const existing = Object.keys(schedules[activeBrand] || {});
+                  const available = CONTENT_TYPES.filter((ct) => !existing.includes(ct.key));
+                  if (available.length === 0) return null;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <select
+                        id="add-content-type"
+                        className="rounded border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
+                        defaultValue=""
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            addSlot(activeBrand, e.target.value);
+                            e.target.value = "";
+                          }
+                        }}
+                      >
+                        <option value="" disabled>Add content type...</option>
+                        {available.map((ct) => (
+                          <option key={ct.key} value={ct.key}>{ct.label}</option>
+                        ))}
+                      </select>
+                      <Plus className="h-4 w-4 text-[var(--text-muted)]" />
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <Button onClick={handleSaveSchedule} className="bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90">
+                {scheduleSaved ? (<><Check className="mr-2 h-4 w-4" /> Saved</>) : (<><Save className="mr-2 h-4 w-4" /> Save Schedule</>)}
+              </Button>
+            </div>
+          )}
+
           {/* Admin tabs — link to existing admin pages */}
-          {ADMIN_TABS.some((t) => t.id === activeTab) && (() => {
+          {ADMIN_TABS.some((t) => t.id === activeTab && t.href && t.id !== "schedule") && (() => {
             const tab = ADMIN_TABS.find((t) => t.id === activeTab)!;
             return (
               <div className="space-y-6">
@@ -247,7 +500,7 @@ export default function SettingsPage() {
                   <h2 className="text-sm font-semibold text-[var(--text-primary)]">{tab.label}</h2>
                   <p className="text-xs text-[var(--text-muted)]">{tab.desc}</p>
                 </div>
-                <Link href={tab.href}>
+                <Link href={tab.href!}>
                   <Button className="bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90">
                     Open {tab.label} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
