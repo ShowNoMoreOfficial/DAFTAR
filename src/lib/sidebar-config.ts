@@ -54,6 +54,13 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         ],
       },
       {
+        id: "pipeline",
+        label: "Pipeline",
+        icon: "GitBranch",
+        href: "/pipeline",
+        roles: ["ADMIN", "DEPT_HEAD", "MEMBER"],
+      },
+      {
         id: "content-studio",
         label: "Content",
         icon: "PenTool",
