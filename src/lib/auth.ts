@@ -197,7 +197,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user, trigger, account }) {
+      // Persist Google OAuth tokens for Drive API access
+      if (account?.provider === "google") {
+        if (account.access_token) token.accessToken = account.access_token;
+        if (account.refresh_token) token.refreshToken = account.refresh_token;
+      }
       // On initial sign-in or when session is updated, load user data from DB
       if (user?.email || trigger === "update") {
         const email = user?.email || (token.email as string);
@@ -238,6 +243,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           (token.accessibleBrandIds as string[]) || [];
         session.user.permissions = (token.permissions as string[]) || [];
       }
+      // Expose Drive tokens to API routes
+      if (token.accessToken) session.accessToken = token.accessToken as string;
+      if (token.refreshToken)
+        session.refreshToken = token.refreshToken as string;
       return session;
     },
   },

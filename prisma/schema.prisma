@@ -151,6 +151,8 @@ model User {
   teamFeedbacks       TeamFeedback[]
   // PPC Campaigns
   ppcCampaigns        PPCCampaign[]
+  // File Transfer
+  sharedFiles         SharedFile[]       @relation("FileUploader")
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
@@ -287,6 +289,7 @@ model Brand {
   contentPieces        ContentPiece[]
   deliverables         Deliverable[]
   ppcCampaigns         PPCCampaign[]
+  sharedFiles          SharedFile[]
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -689,6 +692,7 @@ enum NotificationType {
   GI_SUGGESTION
   GI_REVIEW
   SYSTEM
+  FILE_SHARED
 }
 
 model Notification {
@@ -1706,6 +1710,7 @@ model Deliverable {
   researchPrompt String?               @db.Text
   factDossierId  String?
   assets         Asset[]
+  sharedFiles    SharedFile[]
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
@@ -2057,4 +2062,37 @@ model PPCRecommendation {
 
   @@index([campaignId])
   @@map("ppc_recommendations")
+}
+
+// ─── File Transfer (Google Drive) ─────────────────────────
+
+model SharedFile {
+  id            String       @id @default(cuid())
+  deliverableId String?
+  deliverable   Deliverable? @relation(fields: [deliverableId], references: [id])
+  brandId       String
+  brand         Brand        @relation(fields: [brandId], references: [id])
+  uploadedById  String
+  uploadedBy    User         @relation("FileUploader", fields: [uploadedById], references: [id])
+
+  fileName      String
+  mimeType      String
+  fileSize      Int // bytes
+  driveFileId   String // Google Drive file ID
+  driveFolderId String // Parent folder ID
+  viewUrl       String // Drive view link
+  downloadUrl   String? // Drive download link
+  thumbnailUrl  String? // Drive thumbnail
+
+  category  String @default("general") // script, cut, thumbnail, reference, feedback, raw_footage, document
+  notes     String? // Uploader's note about this file
+  direction String // "to_client" or "from_client"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId])
+  @@index([deliverableId])
+  @@index([uploadedById])
+  @@map("shared_files")
 }

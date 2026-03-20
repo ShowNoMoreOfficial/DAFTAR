@@ -13,6 +13,8 @@ declare module "next-auth" {
       accessibleBrandIds: string[];
       permissions: string[];
     };
+    accessToken?: string;
+    refreshToken?: string;
   }
 }
 
@@ -23,5 +25,7 @@ declare module "next-auth/jwt" {
     primaryDepartmentId: string | null;
     accessibleBrandIds: string[];
     permissions: string[];
+    accessToken?: string;
+    refreshToken?: string;
   }
 }
