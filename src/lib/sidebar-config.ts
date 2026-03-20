@@ -126,6 +126,13 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/communication",
         roles: ["ADMIN", "HEAD_HR", "DEPT_HEAD", "MEMBER"],
       },
+      {
+        id: "files",
+        label: "Files",
+        icon: "FolderOpen",
+        href: "/files",
+        roles: ["ADMIN", "DEPT_HEAD"],
+      },
     ],
   },
 
@@ -155,6 +162,13 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         label: "Calendar",
         icon: "Calendar",
         href: "/brands?tab=calendar",
+        roles: ["CLIENT"],
+      },
+      {
+        id: "client-files",
+        label: "Files",
+        icon: "FolderOpen",
+        href: "/files",
         roles: ["CLIENT"],
       },
     ],

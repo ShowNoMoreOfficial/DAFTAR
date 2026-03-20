@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MarkdownContent } from "@/components/ui/markdown-content";
+import { FileTransferSection } from "@/app/(shell)/files/page";
 
 // ─── Types ───
 
@@ -1321,6 +1322,19 @@ export default function DeliverableReviewPage() {
             <div className="text-sm text-[var(--text-primary)] leading-relaxed">
               <MarkdownContent content={deliverable.copyMarkdown!} />
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Shared Files (Google Drive) ─── */}
+      {deliverable.brand && (
+        <Card className="mb-4 border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+          <CardContent className="pt-5">
+            <FileTransferSection
+              brandId={deliverable.brand.id}
+              brandName={deliverable.brand.name}
+              deliverableId={deliverable.id}
+            />
           </CardContent>
         </Card>
       )}

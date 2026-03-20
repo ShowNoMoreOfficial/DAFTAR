@@ -62,6 +62,7 @@ import {
   Link2,
   Search,
   Target,
+  FolderOpen,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 
@@ -109,6 +110,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeW
   Search,
   FileCheck,
   Target,
+  FolderOpen,
 };
 
 const ROLE_LABELS: Record<Role, string> = {
